@@ -1,3 +1,6 @@
+#ifndef MESSAGE_H_
+#define MESSAGE_H_
+
 #include <string>
 
 //This is a sample, so the message only contains a string.  This can be turned
@@ -8,3 +11,5 @@ class message
 public:
 	std::string text;
 };
+
+#endif
