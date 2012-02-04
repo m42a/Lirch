@@ -13,12 +13,12 @@ public:
 	bool plugin_has_message() const;
 	message plugin_peek() const;
 	message plugin_read();
-	message plugin_write();
+	void plugin_write(const message &);
 
 	bool core_has_message() const;
 	message core_peek() const;
 	message core_read();
-	message core_write();
+	void core_write(const message &);
 private:
 	std::shared_ptr<std::queue<message>> to_plugin;
 	std::shared_ptr<std::queue<message>> to_core;
