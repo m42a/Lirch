@@ -1,5 +1,5 @@
 #include <QtGui/QApplication>
-#include "client.h"
+#include "lirch_qt_interface.h"
 
 int main(int argc, char *argv[])
 {

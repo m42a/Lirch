@@ -1,9 +1,9 @@
-#include "client.h"
-#include "ui_client.h"
+#include "lirch_qt_interface.h"
+#include "ui_lirch_qt_interface.h"
 
 LirchQtInterface::LirchQtInterface(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::Client)
+    ui(new Ui::LirchQtInterface)
 {
     ui->setupUi(this);
 }
@@ -29,7 +29,7 @@ void LirchQtInterface::on_msgSendButton_clicked()
 {
     QMessageBox::warning(this,
                          tr("Unimplemented Feature"),
-                         tr("'%1' could not be sent.").arg("[use ui to fetch msgTextArea.getText()]"),
+                         tr("'%1' could not be sent.").arg("// TODO get message text"),
                          QMessageBox::Ok);
 }
 

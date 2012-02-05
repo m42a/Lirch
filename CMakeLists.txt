@@ -7,7 +7,7 @@ set(LIRCH_VERSION_MINOR 1)
 set(LIRCH_VERSION_PATCH 0)
 set(LIRCH_VERSION_TWEAK 1)
 set(LIRCH_VERSION_STRING "${LIRCH_VERSION_MAJOR}.${LIRCH_VERSION_MINOR}.${LIRCH_VERSION_PATCH}.${LIRCH_VERSION_TWEAK}")
-configure_file(client.ui "${CMAKE_BINARY_DIR}/client.ui")
+configure_file(lirch_qt_interface.ui "${CMAKE_BINARY_DIR}/lirch_qt_interface.ui")
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
 include_directories(${CMAKE_BINARY_DIR})
 
@@ -31,20 +31,21 @@ if(BUILD_QT_CLIENT)
 	include(${QT_USE_FILE})
 
 	# Source, headers to moc, and UI files
-	set(client_SOURCES main.cpp client.cpp)
-	set(client_HEADERS client.h)
-	set(client_FORMS "${CMAKE_BINARY_DIR}/client.ui")
+	set(lirch_qt_interface_SOURCES main.cpp lirch_qt_interface.cpp)
+	set(lirch_qt_interface_HEADERS lirch_qt_interface.h)
+	set(lirch_qt_interface_FORMS "${CMAKE_BINARY_DIR}/lirch_qt_interface.ui")
 
 	# Requisites for building with Qt4
-	qt4_wrap_cpp(client_HEADERS_MOC ${client_HEADERS})
-	qt4_wrap_ui(client_FORMS_HEADERS ${client_FORMS})
+	qt4_wrap_cpp(lirch_qt_interface_HEADERS_MOC ${lirch_qt_interface_HEADERS})
+	qt4_wrap_ui(lirch_qt_interface_FORMS_HEADERS ${lirch_qt_interface_FORMS})
 	add_definitions(${QT_DEFINITIONS})
 
-	# Add details for the client target
-	add_executable(client	${client_SOURCES}
-				${client_HEADERS_MOC}
-				${client_FORMS_HEADERS})
-	target_link_libraries(client ${QT_LIBRARIES})
+	# Add details for this target
+	add_executable(qlirch
+		${lirch_qt_interface_SOURCES}
+		${lirch_qt_interface_HEADERS_MOC}
+		${lirch_qt_interface_FORMS_HEADERS})
+	target_link_libraries(qlirch ${QT_LIBRARIES})
 endif(BUILD_QT_CLIENT)
 
 if(BUILD_NCURSES_CLIENT)

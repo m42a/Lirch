@@ -6,7 +6,7 @@
 #include <QMessageBox>
 
 namespace Ui {
-    class Client;
+    class LirchQtInterface;
 }
 
 class LirchQtInterface : public QMainWindow {
@@ -19,7 +19,7 @@ protected:
     void changeEvent(QEvent *e);
 
 private:
-    Ui::Client *ui;
+    Ui::LirchQtInterface *ui;
 
 
 private slots:
