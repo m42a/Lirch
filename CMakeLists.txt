@@ -10,6 +10,7 @@ endif(NOT CMAKE_BUILD_TYPE MATCHES "${CMAKE_BUILD_TYPES}")
 # Basic build options
 option(BUILD_QT_CLIENT      "Build the Qt4 interface" OFF)
 option(BUILD_NCURSES_CLIENT "Build the ncurses interface" OFF)
+option(MAKE_MESSAGE_TEST    "Make the message testing executable" OFF)
 
 if(BUILD_QT_CLIENT)
 	# We need to locate Qt4
@@ -45,3 +46,13 @@ if(BUILD_NCURSES_CLIENT)
 		message(FATAL_ERROR "Cannot find libncurses!")
 	endif(NCURSES_LIBRARY_PATH)
 endif(BUILD_NCURSES_CLIENT)
+
+if(MAKE_MESSAGE_TEST)
+	add_executable(message_test message_test.cpp message_pipe.cpp message.cpp)
+	# Hack to enable C++11 support
+	set(CMAKE_CXX_FLAGS -std=c++0x)
+	enable_testing()
+	add_test(testingWorks message_test)
+	add_test(sendToPlugin message_test toplugin)
+	add_test(sendToCore message_test tocore)
+endif(MAKE_MESSAGE_TEST)
