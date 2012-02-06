@@ -52,7 +52,7 @@ if(MAKE_MESSAGE_TEST)
 	# Hack to enable C++11 support
 	set(CMAKE_CXX_FLAGS -std=c++0x)
 	enable_testing()
-	add_test(testingWorks message_test)
 	add_test(sendToPlugin message_test toplugin)
 	add_test(sendToCore message_test tocore)
+	add_test(readEmptyMessage message_test readempty)
 endif(MAKE_MESSAGE_TEST)
