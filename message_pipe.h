@@ -10,7 +10,7 @@
 class message_pipe
 {
 public:
-	message_pipe() : to_plugin(new std::queue<message>()), to_core(new std::queue<message>()) {}
+	message_pipe() : to_plugin(std::make_shared<std::queue<message>>()), to_core(std::make_shared<std::queue<message>>()) {}
 	//Implicit copy constructor generation is deprecated in certain cases I
 	//don't understand fully, so be cautious and explicitly declare them.
 	message_pipe(const message_pipe &) = default;
