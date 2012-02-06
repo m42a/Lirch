@@ -4,7 +4,7 @@
 #include <string>
 
 //This is a sample, so the message only contains a string.  This can be turned
-//into a useful class later, since message passing is independant of the
+//into a useful class later, since message passing is independent of the
 //message structure.
 class message
 {
