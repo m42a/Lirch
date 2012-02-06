@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <queue>
+#include <mutex>
 
 #include "message.h"
 
@@ -10,7 +11,7 @@
 class message_pipe
 {
 public:
-	message_pipe() : to_plugin(new std::queue<message>()), to_core(new std::queue<message>()) {}
+	message_pipe() : to_plugin(new std::queue<message>()), plugin_mutex(new std::mutex()), to_core(new std::queue<message>()), core_mutex(new std::mutex()) {}
 	//Implicit copy constructor generation is deprecated in certain cases I
 	//don't understand fully, so be cautious and explicitly declare them.
 	message_pipe(const message_pipe &) = default;
@@ -29,7 +30,9 @@ public:
 	void core_write(const message &);
 private:
 	std::shared_ptr<std::queue<message>> to_plugin;
+	std::shared_ptr<std::mutex> plugin_mutex;
 	std::shared_ptr<std::queue<message>> to_core;
+	std::shared_ptr<std::mutex> core_mutex;
 };
 
 #endif

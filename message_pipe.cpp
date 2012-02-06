@@ -1,5 +1,12 @@
 #include "message_pipe.h"
 
+//mutex_lock_guard locks a mutex upon construction, and unlocks
+//it upon destruction
+typedef std::lock_guard<std::mutex> mutex_lock_guard;
+
+//To be thread-safe, we need to lock every function that does multiple const
+//operations, or does any non-const operations.
+
 bool message_pipe::plugin_has_message() const
 {
 	return !to_plugin->empty();
@@ -7,6 +14,7 @@ bool message_pipe::plugin_has_message() const
 
 message message_pipe::plugin_peek() const
 {
+	mutex_lock_guard l(*plugin_mutex);
 	//Do sanity checks so we don't exhibit undefined behavior
 	if (plugin_has_message())
 		return to_plugin->front();
@@ -16,10 +24,11 @@ message message_pipe::plugin_peek() const
 
 message message_pipe::plugin_read()
 {
+	mutex_lock_guard l(*plugin_mutex);
 	message m;
 	if (plugin_has_message())
 	{
-		m=plugin_peek();
+		m=to_plugin->front();
 		to_plugin->pop();
 	}
 	else
@@ -31,6 +40,7 @@ message message_pipe::plugin_read()
 
 void message_pipe::plugin_write(const message &m)
 {
+	mutex_lock_guard l(*core_mutex);
 	to_core->push(m);
 }
 
@@ -41,6 +51,7 @@ bool message_pipe::core_has_message() const
 
 message message_pipe::core_peek() const
 {
+	mutex_lock_guard l(*core_mutex);
 	//Do sanity checks so we don't exhibit undefined behavior
 	if (core_has_message())
 		return to_core->front();
@@ -50,10 +61,11 @@ message message_pipe::core_peek() const
 
 message message_pipe::core_read()
 {
+	mutex_lock_guard l(*core_mutex);
 	message m;
 	if (core_has_message())
 	{
-		m=core_peek();
+		m=to_core->front();
 		to_core->pop();
 	}
 	else
@@ -65,5 +77,6 @@ message message_pipe::core_read()
 
 void message_pipe::core_write(const message &m)
 {
+	mutex_lock_guard l(*plugin_mutex);
 	to_plugin->push(m);
 }
