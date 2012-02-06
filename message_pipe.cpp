@@ -2,13 +2,13 @@
 
 //mutex_lock_guard locks a mutex upon construction, and unlocks
 //it upon destruction
-typedef std::lock_guard<std::mutex> mutex_lock_guard;
+typedef std::lock_guard<std::recursive_mutex> mutex_lock_guard;
 
-//To be thread-safe, we need to lock every function that does multiple const
-//operations, or does any non-const operations.
-
+//To be thread-safe, we need to lock every function that accesses containers,
+//since the STL is not guaranteed to be reentrant.
 bool message_pipe::plugin_has_message() const
 {
+	mutex_lock_guard l(*plugin_mutex);
 	return !to_plugin->empty();
 }
 
@@ -46,6 +46,7 @@ void message_pipe::plugin_write(const message &m)
 
 bool message_pipe::core_has_message() const
 {
+	mutex_lock_guard l(*core_mutex);
 	return !to_core->empty();
 }
 

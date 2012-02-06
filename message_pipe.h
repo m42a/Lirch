@@ -11,7 +11,7 @@
 class message_pipe
 {
 public:
-	message_pipe() : to_plugin(std::make_shared<std::queue<message>>()), plugin_mutex(std::make_shared<std::mutex>()), to_core(std::make_shared<std::queue<message>>()), core_mutex(std::make_shared<std::mutex>()) {}
+	message_pipe() : to_plugin(std::make_shared<std::queue<message>>()), plugin_mutex(std::make_shared<std::recursive_mutex>()), to_core(std::make_shared<std::queue<message>>()), core_mutex(std::make_shared<std::recursive_mutex>()) {}
 	//Implicit copy constructor generation is deprecated in certain cases I
 	//don't understand fully, so be cautious and explicitly declare them.
 	message_pipe(const message_pipe &) = default;
@@ -30,9 +30,9 @@ public:
 	void core_write(const message &);
 private:
 	std::shared_ptr<std::queue<message>> to_plugin;
-	std::shared_ptr<std::mutex> plugin_mutex;
+	std::shared_ptr<std::recursive_mutex> plugin_mutex;
 	std::shared_ptr<std::queue<message>> to_core;
-	std::shared_ptr<std::mutex> core_mutex;
+	std::shared_ptr<std::recursive_mutex> core_mutex;
 };
 
 #endif
