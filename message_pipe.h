@@ -11,7 +11,7 @@
 class message_pipe
 {
 public:
-	message_pipe() : to_plugin(new std::queue<message>()), plugin_mutex(new std::mutex()), to_core(new std::queue<message>()), core_mutex(new std::mutex()) {}
+	message_pipe() : to_plugin(std::make_shared<std::queue<message>>()), plugin_mutex(std::make_shared<std::mutex>()), to_core(std::make_shared<std::queue<message>>()), core_mutex(std::make_shared<std::mutex>()) {}
 	//Implicit copy constructor generation is deprecated in certain cases I
 	//don't understand fully, so be cautious and explicitly declare them.
 	message_pipe(const message_pipe &) = default;
