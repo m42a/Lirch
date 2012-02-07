@@ -9,7 +9,15 @@
 bool load_plugin(std::string fname)
 {
 #ifdef WIN32
-	//TODO: Implement dynamic loading on Windows
+	HMODULE obj=LoadLibrary(fname.c_str());
+	if (HMODULE==NULL)
+		return false;
+	FARPROC func=GetProcAddress(obj,"init");
+	if (func==NULL)
+		return false;
+	//FARPROC returns an int * by default, so cast it to void.  This has
+	//more parentheses than Lisp.
+	(*(void (*)())(func))();
 #else //POSIX
 	//Open the object file whenever you get around to it, and with its own
 	//local symbol table.
