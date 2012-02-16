@@ -55,6 +55,28 @@ int dotest(string test)
 			return 1;
 		return 0;
 	}
+	if (test=="copying")
+	{
+		mp.plugin_write(message{"open the pod bay doors hal"});
+		message_pipe mp2=mp;
+		if (mp2.core_read().text!="open the pod bay doors hal")
+			return 1;
+		cout << "part1\n";
+		mp2.core_write(message{"I'm sorry Dave"});
+		mp.core_write(message{"I'm afraid I can't do that"});
+		if (mp2.plugin_read().text!="I'm sorry Dave")
+			return 1;
+		message_pipe mp3=mp2;
+		if (mp3.plugin_read().text!="I'm afraid I can't do that")
+			return 1;
+		mp2.plugin_write(message{"whats the problem"});
+		if (mp3.core_read().text!="whats the problem")
+			return 1;
+		mp3.core_write(message{"Your grammar is too terrible, Dave"});
+		if (mp.plugin_read().text!="Your grammar is too terrible, Dave")
+			return 1;
+		return 0;
+	}
 	return 2;
 }
 
