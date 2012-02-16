@@ -1,10 +1,10 @@
 #include <QtGui/QApplication>
-#include "client.h"
+#include "lirch_qt_interface.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    Client w;
+    LirchQtInterface w;
     w.show();
     return a.exec();
 }

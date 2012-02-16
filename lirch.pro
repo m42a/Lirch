@@ -10,9 +10,8 @@ TARGET = lirch
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        client.cpp
+SOURCES  += lirch_qt_interface.cpp main.cpp
 
-HEADERS  += client.h
+HEADERS  += lirch_qt_interface.h
 
-FORMS    += client.ui
+FORMS    += lirch_qt_interface.ui
