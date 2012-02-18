@@ -1,6 +1,6 @@
 #include <string>
 
-#ifdef WIN32
+#ifdef _WIN32
 #	include <windows.h>
 #else //POSIX
 #	include <dlfcn.h>
@@ -8,16 +8,16 @@
 
 bool load_plugin(std::string fname)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	HMODULE obj=LoadLibrary(fname.c_str());
 	if (HMODULE==NULL)
 		return false;
-	FARPROC func=GetProcAddress(obj,"init");
+	FARPROC func=GetProcAddress(obj,"plugin_init");
 	if (func==NULL)
 		return false;
 	//FARPROC returns an int * by default, so cast it to void.  This has
 	//more parentheses than Lisp.
-	(*(void (*)())(func))();
+	(*(void __cdecl (*)())(func))();
 #else //POSIX
 	//Open the object file whenever you get around to it, and with its own
 	//local symbol table.
@@ -26,7 +26,7 @@ bool load_plugin(std::string fname)
 		return false;
 	//The POSIX standard says void * must convert to a function pointer,
 	//but the C standard does not, so add a cast to shut up the compiler.
-	void (*func)()=(void (*)())dlsym(obj, "init");
+	void (*func)()=(void (*)())dlsym(obj, "plugin_init");
 	if (func==NULL)
 		return false;
 	//Finally initialize the plugin
