@@ -4,6 +4,8 @@
 #ifndef LIRCH_PLUGIN_H_
 #define LIRCH_PLUGIN_H_
 
+#include "message_pipe.h"
+
 //Why windows, why?
 #if defined(_WIN32)
 #	if defined(_WIN64)
@@ -34,12 +36,12 @@ extern "C"
 		//We need this to ensure semi-consistent name mangling
 		__cdecl
 #endif
-		plugin_init()
+		plugin_init(message_pipe p)
 	{
 		//Generic initialization code will go here
 
 		//This calls the plugin-defined initialization code
-		init();
+		init(p);
 	}
 }
 
