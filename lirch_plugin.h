@@ -17,7 +17,7 @@
 #	endif
 #else
 
-void init();
+void init(message_pipe);
 
 extern "C"
 {
