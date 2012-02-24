@@ -1,5 +1,5 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef LIRCH_QT_INTERFACE_H
+#define LIRCH_QT_INTERFACE_H
 
 #include "lirch_constants.h"
 #include <QMainWindow>
@@ -21,10 +21,9 @@ protected:
 private:
     Ui::LirchQtInterface *ui;
 
-
 private slots:
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
 };
 
-#endif // CLIENT_H
+#endif // LIRCH_QT_INTERFACE_H
