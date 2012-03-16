@@ -1,83 +1,56 @@
 #include "message_pipe.h"
 
+bool message_pipe::locked_has_message() const
+{
+	return !messages->queue.empty();
+}
+
+message message_pipe::locked_peek() const
+{
+	if (locked_has_message())
+		return messages->queue.front();
+	return message();
+}
+
+message message_pipe::locked_read()
+{
+	message m=locked_peek();
+	if (locked_has_message())
+		messages->queue.pop();
+	return m;
+}
+
+void message_pipe::locked_write(const message &m)
+{
+	messages->queue.push(m);
+}
+
 //mutex_lock_guard locks a mutex upon construction, and unlocks
 //it upon destruction
-typedef std::lock_guard<std::recursive_mutex> mutex_lock_guard;
+typedef std::lock_guard<std::mutex> mutex_lock_guard;
 
 //To be thread-safe, we need to lock every function that accesses containers,
 //since the STL is not guaranteed to be reentrant.
-bool message_pipe::plugin_has_message() const
+bool message_pipe::has_message() const
 {
-	mutex_lock_guard l(*plugin_mutex);
-	return !to_plugin->empty();
+	mutex_lock_guard l(messages->mutex);
+	return locked_has_message();
 }
 
-message message_pipe::plugin_peek() const
+message message_pipe::peek() const
 {
-	mutex_lock_guard l(*plugin_mutex);
-	//Do sanity checks so we don't exhibit undefined behavior
-	if (plugin_has_message())
-		return to_plugin->front();
-	else
-		return message();
+	mutex_lock_guard l(messages->mutex);
+	return locked_peek();
 }
 
-message message_pipe::plugin_read()
+message message_pipe::read()
 {
-	mutex_lock_guard l(*plugin_mutex);
-	message m;
-	if (plugin_has_message())
-	{
-		m=to_plugin->front();
-		to_plugin->pop();
-	}
-	else
-	{
-		m=message();
-	}
-	return m;
+	mutex_lock_guard l(messages->mutex);
+	return locked_read();
 }
 
-void message_pipe::plugin_write(const message &m)
+void message_pipe::write(const message &m)
 {
-	mutex_lock_guard l(*core_mutex);
-	to_core->push(m);
-}
-
-bool message_pipe::core_has_message() const
-{
-	mutex_lock_guard l(*core_mutex);
-	return !to_core->empty();
-}
-
-message message_pipe::core_peek() const
-{
-	mutex_lock_guard l(*core_mutex);
-	//Do sanity checks so we don't exhibit undefined behavior
-	if (core_has_message())
-		return to_core->front();
-	else
-		return message();
-}
-
-message message_pipe::core_read()
-{
-	mutex_lock_guard l(*core_mutex);
-	message m;
-	if (core_has_message())
-	{
-		m=to_core->front();
-		to_core->pop();
-	}
-	else
-	{
-		m=message();
-	}
-	return m;
-}
-
-void message_pipe::core_write(const message &m)
-{
-	mutex_lock_guard l(*plugin_mutex);
-	to_plugin->push(m);
+	mutex_lock_guard l(messages->mutex);
+	return locked_write(m);
 }
