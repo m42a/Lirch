@@ -138,7 +138,7 @@ int dotest(string test)
 	{
 		thread t([&mp]()
 		{
-			this_thread::sleep_for(chrono::milliseconds(500));
+			this_thread::sleep_for(chrono::milliseconds(100));
 			mp.plugin_write(message{"Threading"});
 		});
 		if (mp.core_blocking_read().type!="Threading")
@@ -154,7 +154,7 @@ int dotest(string test)
 		thread t([&mp]()
 		{
 			string s=mp.plugin_blocking_read().type;
-			this_thread::sleep_for(chrono::milliseconds(250));
+			this_thread::sleep_for(chrono::milliseconds(100));
 			if (s!="Batman")
 				mp.plugin_write(message{"Aquaman"});
 			else
@@ -191,7 +191,7 @@ int dotest(string test)
 			else
 				mp.plugin_write(message{"-rf"});
 		});
-		this_thread::sleep_for(chrono::milliseconds(250));
+		this_thread::sleep_for(chrono::milliseconds(100));
 		mp.core_write(message{"rm"});
 		if (mp.core_blocking_read().type!="-rf")
 		{
