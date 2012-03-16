@@ -9,7 +9,13 @@
 class message
 {
 public:
-	std::string text;
+	message(const std::string &t="", char p=255) : type(t), priority(p) {}
+
+	std::string gettype() const {return type;}
+	char getpriority() const {return priority;}
+
+	std::string type;
+	char priority;
 };
 
 #endif
