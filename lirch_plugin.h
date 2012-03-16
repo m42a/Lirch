@@ -36,7 +36,7 @@ extern "C"
 		//We need this to ensure semi-consistent name mangling
 		__cdecl
 #endif
-		plugin_init(message_pipe p)
+		plugin_init(bidirectional_message_pipe p)
 	{
 		//Generic initialization code will go here
 

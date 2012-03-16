@@ -8,7 +8,7 @@
 
 #include "message_pipe.h"
 
-bool load_plugin(std::string fname, const message_pipe &p)
+bool load_plugin(std::string fname, const bidirectional_message_pipe &p)
 {
 #ifdef _WIN32
 	HMODULE obj=LoadLibrary(fname.c_str());
