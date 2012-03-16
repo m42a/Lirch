@@ -155,6 +155,53 @@ int dotest(string test)
 		t.join();
 		return 0;
 	}
+	if (test=="shared2bread")
+	{
+		thread t1([&mp]()
+		{
+			if (mp.plugin_blocking_read().type!="rm")
+				mp.plugin_write(message{"/"});
+			else
+				mp.plugin_write(message{"-rf"});
+		});
+		thread t2([&mp]()
+		{
+			if (mp.plugin_blocking_read().type!="rm")
+				mp.plugin_write(message{"/"});
+			else
+				mp.plugin_write(message{"-rf"});
+		});
+		this_thread::sleep_for(chrono::milliseconds(250));
+		mp.core_write(message{"rm"});
+		if (mp.core_blocking_read().type!="-rf")
+		{
+			mp.core_write(message{""});
+			mp.core_write(message{""});
+			t1.join();
+			t2.join();
+			return 1;
+		}
+		if (mp.core_read().type!="")
+		{
+			mp.core_write(message{""});
+			mp.core_write(message{""});
+			t1.join();
+			t2.join();
+			return 1;
+		}
+		mp.core_write(message{"rm"});
+		if (mp.core_blocking_read().type!="-rf")
+		{
+			mp.core_write(message{""});
+			mp.core_write(message{""});
+			t1.join();
+			t2.join();
+			return 1;
+		}
+		t1.join();
+		t2.join();
+		return 0;
+	}
 	return 2;
 }
 
