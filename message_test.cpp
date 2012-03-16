@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
 
 #include "message.h"
 #include "message_pipe.h"
@@ -103,6 +105,54 @@ int dotest(string test)
 		mp3.core_write(message{"Your grammar is too terrible, Dave"});
 		if (mp.plugin_read().type!="Your grammar is too terrible, Dave")
 			return 1;
+		return 0;
+	}
+	if (test=="0bread")
+	{
+		mp.core_write(message{"wa pan nashi!"});
+		if (mp.plugin_blocking_read().type!="wa pan nashi!")
+			return 1;
+		return 0;
+	}
+	if (test=="1bread")
+	{
+		thread t([&mp]()
+		{
+			this_thread::sleep_for(chrono::milliseconds(500));
+			mp.plugin_write(message{"Threading"});
+		});
+		if (mp.core_blocking_read().type!="Threading")
+		{
+			t.join();
+			return 1;
+		}
+		t.join();
+		return 0;
+	}
+	if (test=="2bread")
+	{
+		thread t([&mp]()
+		{
+			string s=mp.plugin_blocking_read().type;
+			this_thread::sleep_for(chrono::milliseconds(250));
+			if (s!="Batman")
+				mp.plugin_write(message{"Aquaman"});
+			else
+				mp.plugin_write(message{"Superman"});
+		});
+		mp.plugin_write(message{"Spiderman"});
+		mp.core_write(message{"Batman"});
+		if (mp.core_blocking_read().type!="Spiderman")
+		{
+			t.join();
+			return 1;
+		}
+		if (mp.core_blocking_read().type!="Superman")
+		{
+			t.join();
+			return 1;
+		}
+		t.join();
 		return 0;
 	}
 	return 2;

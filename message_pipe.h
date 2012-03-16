@@ -4,6 +4,7 @@
 #include <memory>
 #include <queue>
 #include <mutex>
+#include <condition_variable>
 
 #include "message.h"
 
@@ -19,6 +20,7 @@ public:
 	bool has_message() const;
 	message peek() const;
 	message read();
+	message blocking_read();
 	void write(const message &);
 private:
 
@@ -32,6 +34,7 @@ private:
 	{
 		std::queue<message> queue;
 		std::mutex mutex;
+		std::condition_variable cond;
 	};
 	std::shared_ptr<pipe> messages;
 };
@@ -52,11 +55,13 @@ public:
 	bool plugin_has_message() const {return to_plugin.has_message();}
 	message plugin_peek() const {return to_plugin.peek();}
 	message plugin_read() {return to_plugin.read();}
+	message plugin_blocking_read() {return to_plugin.blocking_read();}
 	void plugin_write(const message &m) {to_core.write(m);}
 
 	bool core_has_message() const {return to_core.has_message();}
 	message core_peek() const {return to_core.peek();}
 	message core_read() {return to_core.read();}
+	message core_blocking_read() {return to_core.blocking_read();}
 	void core_write(const message &m) {to_plugin.write(m);}
 private:
 	message_pipe to_plugin;

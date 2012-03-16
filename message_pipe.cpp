@@ -27,7 +27,7 @@ void message_pipe::locked_write(const message &m)
 
 //mutex_lock_guard locks a mutex upon construction, and unlocks
 //it upon destruction
-typedef std::lock_guard<std::mutex> mutex_lock_guard;
+typedef std::unique_lock<std::mutex> mutex_lock_guard;
 
 //To be thread-safe, we need to lock every function that accesses containers,
 //since the STL is not guaranteed to be reentrant.
@@ -49,8 +49,17 @@ message message_pipe::read()
 	return locked_read();
 }
 
+message message_pipe::blocking_read()
+{
+	mutex_lock_guard l(messages->mutex);
+	if (!locked_has_message())
+		messages->cond.wait(l);
+	return locked_read();
+}
+
 void message_pipe::write(const message &m)
 {
 	mutex_lock_guard l(messages->mutex);
-	return locked_write(m);
+	locked_write(m);
+	messages->cond.notify_one();
 }
