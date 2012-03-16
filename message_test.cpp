@@ -6,11 +6,9 @@
 
 using namespace std;
 
-const string tests[]={"toplugin", "tocore", "readempty", "cycle", "order"};
-
 int dotest(string test)
 {
-	message_pipe mp;
+	bidirectional_message_pipe mp;
 	if (test=="toplugin")
 	{
 		mp.core_write(message{"Hello, plugin"});
@@ -42,6 +40,36 @@ int dotest(string test)
 			return 1;
 		return 0;
 	}
+	if (test=="exhaust")
+	{
+		mp.plugin_write(message{"Yukkuri shite itte ne"});
+		if (mp.core_read().type!="Yukkuri shite itte ne")
+			return 1;
+		if (mp.core_read().type!="")
+			return 1;
+		if (mp.plugin_read().type!="")
+			return 1;
+		return 0;
+	}
+	if (test=="sharing")
+	{
+		message_pipe shared;
+		bidirectional_message_pipe mp1(message_pipe(), shared);
+		bidirectional_message_pipe mp2(message_pipe(), shared);
+		mp1.plugin_write(message{"I said hey!"});
+		if (mp1.core_peek().type!="I said hey!")
+			return 1;
+		if (mp2.core_read().type!="I said hey!")
+			return 1;
+		if (mp1.core_read().type!="")
+			return 1;
+		mp1.core_write(message{"HEY!"});
+		if (mp2.plugin_read().type!="")
+			return 1;
+		if (mp1.plugin_read().type!="HEY!")
+			return 1;
+		return 0;
+	}
 	if (test=="order")
 	{
 		mp.plugin_write(message{"Message 1"});
@@ -58,7 +86,7 @@ int dotest(string test)
 	if (test=="copying")
 	{
 		mp.plugin_write(message{"open the pod bay doors hal"});
-		message_pipe mp2=mp;
+		bidirectional_message_pipe mp2=mp;
 		if (mp2.core_read().type!="open the pod bay doors hal")
 			return 1;
 		cout << "part1\n";
@@ -66,7 +94,7 @@ int dotest(string test)
 		mp.core_write(message{"I'm afraid I can't do that"});
 		if (mp2.plugin_read().type!="I'm sorry Dave")
 			return 1;
-		message_pipe mp3=mp2;
+		bidirectional_message_pipe mp3=mp2;
 		if (mp3.plugin_read().type!="I'm afraid I can't do that")
 			return 1;
 		mp2.plugin_write(message{"whats the problem"});
