@@ -107,6 +107,26 @@ int dotest(string test)
 			return 1;
 		return 0;
 	}
+	if (test=="threadseq")
+	{
+		thread t1([&mp]()
+		{
+			mp.plugin_write(message{"na"});
+		});
+		thread t2([&mp]()
+		{
+			mp.plugin_write(message{"na"});
+		});
+		t1.join();
+		t2.join();
+		if (mp.core_read().type!="na")
+			return 1;
+		if (mp.core_read().type!="na")
+			return 1;
+		if (mp.core_read().type!="")
+			return 1;
+		return 0;
+	}
 	if (test=="0bread")
 	{
 		mp.core_write(message{"wa pan nashi!"});
@@ -118,7 +138,7 @@ int dotest(string test)
 	{
 		thread t([&mp]()
 		{
-			this_thread::sleep_for(chrono::milliseconds(500));
+			this_thread::sleep_for(chrono::milliseconds(100));
 			mp.plugin_write(message{"Threading"});
 		});
 		if (mp.core_blocking_read().type!="Threading")
@@ -134,7 +154,7 @@ int dotest(string test)
 		thread t([&mp]()
 		{
 			string s=mp.plugin_blocking_read().type;
-			this_thread::sleep_for(chrono::milliseconds(250));
+			this_thread::sleep_for(chrono::milliseconds(100));
 			if (s!="Batman")
 				mp.plugin_write(message{"Aquaman"});
 			else
@@ -153,6 +173,53 @@ int dotest(string test)
 			return 1;
 		}
 		t.join();
+		return 0;
+	}
+	if (test=="shared2bread")
+	{
+		thread t1([&mp]()
+		{
+			if (mp.plugin_blocking_read().type!="rm")
+				mp.plugin_write(message{"/"});
+			else
+				mp.plugin_write(message{"-rf"});
+		});
+		thread t2([&mp]()
+		{
+			if (mp.plugin_blocking_read().type!="rm")
+				mp.plugin_write(message{"/"});
+			else
+				mp.plugin_write(message{"-rf"});
+		});
+		this_thread::sleep_for(chrono::milliseconds(100));
+		mp.core_write(message{"rm"});
+		if (mp.core_blocking_read().type!="-rf")
+		{
+			mp.core_write(message{""});
+			mp.core_write(message{""});
+			t1.join();
+			t2.join();
+			return 1;
+		}
+		if (mp.core_read().type!="")
+		{
+			mp.core_write(message{""});
+			mp.core_write(message{""});
+			t1.join();
+			t2.join();
+			return 1;
+		}
+		mp.core_write(message{"rm"});
+		if (mp.core_blocking_read().type!="-rf")
+		{
+			mp.core_write(message{""});
+			mp.core_write(message{""});
+			t1.join();
+			t2.join();
+			return 1;
+		}
+		t1.join();
+		t2.join();
 		return 0;
 	}
 	return 2;
