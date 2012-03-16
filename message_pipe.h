@@ -21,12 +21,17 @@ public:
 	message read();
 	void write(const message &);
 private:
+
+	bool locked_has_message() const;
+	message locked_peek() const;
+	message locked_read();
+	void locked_write(const message &);
 	//Group all the variables together so we can't accidentally swap them
 	//around independently.
 	struct pipe
 	{
 		std::queue<message> queue;
-		std::recursive_mutex mutex;
+		std::mutex mutex;
 	};
 	std::shared_ptr<pipe> messages;
 };
