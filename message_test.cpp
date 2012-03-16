@@ -107,6 +107,26 @@ int dotest(string test)
 			return 1;
 		return 0;
 	}
+	if (test=="threadseq")
+	{
+		thread t1([&mp]()
+		{
+			mp.plugin_write(message{"na"});
+		});
+		thread t2([&mp]()
+		{
+			mp.plugin_write(message{"na"});
+		});
+		t1.join();
+		t2.join();
+		if (mp.core_read().type!="na")
+			return 1;
+		if (mp.core_read().type!="na")
+			return 1;
+		if (mp.core_read().type!="")
+			return 1;
+		return 0;
+	}
 	if (test=="0bread")
 	{
 		mp.core_write(message{"wa pan nashi!"});
