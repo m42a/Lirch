@@ -22,6 +22,9 @@ option(BUILD_QT_CLIENT      "Build the Qt4 interface"     ON)
 option(BUILD_NCURSES_CLIENT "Build the ncurses interface" OFF)
 option(BUILD_MESSAGE_TEST   "Build the message testing executable" OFF)
 
+# Build the main program (always happens)
+add_executable(lirch core.cpp message.cpp message_pipe.cpp)
+
 if(BUILD_QT_CLIENT)
 	# We need to locate Qt4
 	find_package(Qt4 REQUIRED)
