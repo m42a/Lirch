@@ -20,7 +20,7 @@ endif(NOT CMAKE_BUILD_TYPE MATCHES "${CMAKE_BUILD_TYPES}")
 # Basic build options
 option(BUILD_QT_CLIENT      "Build the Qt4 interface"     ON)
 option(BUILD_NCURSES_CLIENT "Build the ncurses interface" OFF)
-option(MAKE_MESSAGE_TEST    "Make the message testing executable" OFF)
+option(BUILD_MESSAGE_TEST   "Build the message testing executable" OFF)
 
 if(BUILD_QT_CLIENT)
 	# We need to locate Qt4
@@ -58,9 +58,9 @@ if(BUILD_NCURSES_CLIENT)
 	endif(NCURSES_LIBRARY_PATH)
 endif(BUILD_NCURSES_CLIENT)
 
-if(MAKE_MESSAGE_TEST)
+if(BUILD_MESSAGE_TEST)
 	add_executable(message_test message_test.cpp message_pipe.cpp message.cpp)
-	# Hack to enable C++11 support (and more hacks to enable threading)
+	# At some point maybe I'll consider supporting compilers that aren't gcc
 	set(CMAKE_CXX_FLAGS -std=c++0x\ -lpthread)
 	enable_testing()
 	add_test(sendToPlugin message_test toplugin)
@@ -76,4 +76,4 @@ if(MAKE_MESSAGE_TEST)
 	add_test(threadedBlockingRead message_test 1bread)
 	add_test(doubleBlockingRead message_test 2bread)
 	add_test(sharedDoubleBlockingRead message_test shared2bread)
-endif(MAKE_MESSAGE_TEST)
+endif(BUILD_MESSAGE_TEST)
