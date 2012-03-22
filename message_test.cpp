@@ -13,14 +13,14 @@ int dotest(string test)
 	bidirectional_message_pipe mp;
 	if (test=="toplugin")
 	{
-		mp.core_write(message{"Hello, plugin"});
+		mp.core_write(test_message::create("Hello, plugin"));
 		if (mp.plugin_read().type!="Hello, plugin")
 			return 1;
 		return 0;
 	}
 	if (test=="tocore")
 	{
-		mp.plugin_write(message{"Hello, core"});
+		mp.plugin_write(test_message::create("Hello, core"));
 		if (mp.core_read().type!="Hello, core")
 			return 1;
 		return 0;
@@ -35,7 +35,7 @@ int dotest(string test)
 	}
 	if (test=="cycle")
 	{
-		mp.plugin_write(message{"Whee!"});
+		mp.plugin_write(test_message::create("Whee!"));
 		mp.core_write(mp.core_read());
 		mp.plugin_write(mp.plugin_read());
 		if (mp.core_read().type!="Whee!")
@@ -44,7 +44,7 @@ int dotest(string test)
 	}
 	if (test=="exhaust")
 	{
-		mp.plugin_write(message{"Yukkuri shite itte ne"});
+		mp.plugin_write(test_message::create("Yukkuri shite itte ne"));
 		if (mp.core_read().type!="Yukkuri shite itte ne")
 			return 1;
 		if (mp.core_read().type!="")
@@ -58,25 +58,25 @@ int dotest(string test)
 		message_pipe shared;
 		bidirectional_message_pipe mp1(message_pipe(), shared);
 		bidirectional_message_pipe mp2(message_pipe(), shared);
-		mp1.plugin_write(message{"I said hey!"});
+		mp1.plugin_write(test_message::create("I said hey!"));
 		if (mp1.core_peek().type!="I said hey!")
 			return 1;
 		if (mp2.core_read().type!="I said hey!")
 			return 1;
 		if (mp1.core_read().type!="")
 			return 1;
-		mp1.core_write(message{"HEY!"});
+		mp1.core_write(test_message::create("Whats going on?"));
 		if (mp2.plugin_read().type!="")
 			return 1;
-		if (mp1.plugin_read().type!="HEY!")
+		if (mp1.plugin_read().type!="Whats going on?")
 			return 1;
 		return 0;
 	}
 	if (test=="order")
 	{
-		mp.plugin_write(message{"Message 1"});
-		mp.core_write(message{"Message 2"});
-		mp.plugin_write(message{"Message 3"});
+		mp.plugin_write(test_message::create("Message 1"));
+		mp.core_write(test_message::create("Message 2"));
+		mp.plugin_write(test_message::create("Message 3"));
 		if (mp.core_read().type!="Message 1")
 			return 1;
 		if (mp.plugin_read().type!="Message 2")
@@ -87,22 +87,22 @@ int dotest(string test)
 	}
 	if (test=="copying")
 	{
-		mp.plugin_write(message{"open the pod bay doors hal"});
+		mp.plugin_write(test_message::create("open the pod bay doors hal"));
 		bidirectional_message_pipe mp2=mp;
 		if (mp2.core_read().type!="open the pod bay doors hal")
 			return 1;
 		cout << "part1\n";
-		mp2.core_write(message{"I'm sorry Dave"});
-		mp.core_write(message{"I'm afraid I can't do that"});
+		mp2.core_write(test_message::create("I'm sorry Dave"));
+		mp.core_write(test_message::create("I'm afraid I can't do that"));
 		if (mp2.plugin_read().type!="I'm sorry Dave")
 			return 1;
 		bidirectional_message_pipe mp3=mp2;
 		if (mp3.plugin_read().type!="I'm afraid I can't do that")
 			return 1;
-		mp2.plugin_write(message{"whats the problem"});
+		mp2.plugin_write(test_message::create("whats the problem"));
 		if (mp3.core_read().type!="whats the problem")
 			return 1;
-		mp3.core_write(message{"Your grammar is too terrible, Dave"});
+		mp3.core_write(test_message::create("Your grammar is too terrible, Dave"));
 		if (mp.plugin_read().type!="Your grammar is too terrible, Dave")
 			return 1;
 		return 0;
@@ -111,11 +111,11 @@ int dotest(string test)
 	{
 		thread t1([&mp]()
 		{
-			mp.plugin_write(message{"na"});
+			mp.plugin_write(test_message::create("na"));
 		});
 		thread t2([&mp]()
 		{
-			mp.plugin_write(message{"na"});
+			mp.plugin_write(test_message::create("na"));
 		});
 		t1.join();
 		t2.join();
@@ -129,7 +129,7 @@ int dotest(string test)
 	}
 	if (test=="0bread")
 	{
-		mp.core_write(message{"wa pan nashi!"});
+		mp.core_write(test_message::create("wa pan nashi!"));
 		if (mp.plugin_blocking_read().type!="wa pan nashi!")
 			return 1;
 		return 0;
@@ -139,7 +139,7 @@ int dotest(string test)
 		thread t([&mp]()
 		{
 			this_thread::sleep_for(chrono::milliseconds(100));
-			mp.plugin_write(message{"Threading"});
+			mp.plugin_write(test_message::create("Threading"));
 		});
 		if (mp.core_blocking_read().type!="Threading")
 		{
@@ -156,12 +156,12 @@ int dotest(string test)
 			string s=mp.plugin_blocking_read().type;
 			this_thread::sleep_for(chrono::milliseconds(100));
 			if (s!="Batman")
-				mp.plugin_write(message{"Aquaman"});
+				mp.plugin_write(test_message::create("Aquaman"));
 			else
-				mp.plugin_write(message{"Superman"});
+				mp.plugin_write(test_message::create("Superman"));
 		});
-		mp.plugin_write(message{"Spiderman"});
-		mp.core_write(message{"Batman"});
+		mp.plugin_write(test_message::create("Spiderman"));
+		mp.core_write(test_message::create("Batman"));
 		if (mp.core_blocking_read().type!="Spiderman")
 		{
 			t.join();
@@ -180,40 +180,40 @@ int dotest(string test)
 		thread t1([&mp]()
 		{
 			if (mp.plugin_blocking_read().type!="rm")
-				mp.plugin_write(message{"/"});
+				mp.plugin_write(test_message::create("/"));
 			else
-				mp.plugin_write(message{"-rf"});
+				mp.plugin_write(test_message::create("-rf"));
 		});
 		thread t2([&mp]()
 		{
 			if (mp.plugin_blocking_read().type!="rm")
-				mp.plugin_write(message{"/"});
+				mp.plugin_write(test_message::create("/"));
 			else
-				mp.plugin_write(message{"-rf"});
+				mp.plugin_write(test_message::create("-rf"));
 		});
 		this_thread::sleep_for(chrono::milliseconds(100));
-		mp.core_write(message{"rm"});
+		mp.core_write(test_message::create("rm"));
 		if (mp.core_blocking_read().type!="-rf")
 		{
-			mp.core_write(message{""});
-			mp.core_write(message{""});
+			mp.core_write(test_message::create(""));
+			mp.core_write(test_message::create(""));
 			t1.join();
 			t2.join();
 			return 1;
 		}
 		if (mp.core_read().type!="")
 		{
-			mp.core_write(message{""});
-			mp.core_write(message{""});
+			mp.core_write(test_message::create(""));
+			mp.core_write(test_message::create(""));
 			t1.join();
 			t2.join();
 			return 1;
 		}
-		mp.core_write(message{"rm"});
+		mp.core_write(test_message::create("rm"));
 		if (mp.core_blocking_read().type!="-rf")
 		{
-			mp.core_write(message{""});
-			mp.core_write(message{""});
+			mp.core_write(test_message::create(""));
+			mp.core_write(test_message::create(""));
 			t1.join();
 			t2.join();
 			return 1;
