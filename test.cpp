@@ -228,30 +228,30 @@ int dotest(string test)
 		registry r;
 		r.add(0,"later");
 		r.add(100,"earlier");
-		if (r.get(32767)!="earlier")
+		if (r.get(32767).second!="earlier")
 			return 1;
-		if (r.get(100)!="earlier")
+		if (r.get(100).second!="earlier")
 			return 1;
-		if (r.get(50)!="later")
+		if (r.get(50).second!="later")
 			return 1;
-		if (r.get(0)!="later")
+		if (r.get(0).second!="later")
 			return 1;
-		if (r.get(-12)!="")
+		if (r.get(-12).second!="")
 			return 1;
 		return 0;
 	}
 	if (test=="registryInitList")
 	{
 		registry r{{100,"earlier"},{0,"later"}};
-		if (r.get(32767)!="earlier")
+		if (r.get(32767).second!="earlier")
 			return 1;
-		if (r.get(100)!="earlier")
+		if (r.get(100).second!="earlier")
 			return 1;
-		if (r.get(50)!="later")
+		if (r.get(50).second!="later")
 			return 1;
-		if (r.get(0)!="later")
+		if (r.get(0).second!="later")
 			return 1;
-		if (r.get(-12)!="")
+		if (r.get(-12).second!="")
 			return 1;
 		return 0;
 	}

@@ -14,6 +14,21 @@ static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
 static message_pipe in_pipe;
 
+void to_plugin(message m)
+{
+	if (message_registrations.count(m.gettype())==0)
+		//This message type has no registration, so discard it
+		return;
+	auto plugin=message_registrations[m.gettype()].get(m.getpriority());
+	if (plugin.second=="")
+		return;
+	if (out_pipes.count(plugin.second)==0)
+		//This type does not exist
+		return;
+	//Change the message priority to the registered priority
+	out_pipes[plugin.second].write(m.change_priority(plugin.first));
+}
+
 void add_plugin(const message &m)
 {
 }
@@ -38,7 +53,8 @@ void process(const message &m)
 		add_plugin(m);
 	else if (m.gettype()=="register")
 		add_registration(m);
-	//return true;
+	else
+		to_plugin(m);
 }
 
 void run_core(const vector<message> &vm)

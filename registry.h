@@ -34,12 +34,12 @@ public:
 		return pos.second;
 	}
 
-	std::string get(int i)
+	std::pair<int, std::string> get(int i)
 	{
 		auto pos=registrations.lower_bound(i);
 		if (pos==registrations.end())
-			return "";
-		return pos->second;
+			return {-32767,""};
+		return *pos;
 	}
 
 	void swap(registry &r) {registrations.swap(r.registrations);}
