@@ -22,6 +22,8 @@ protected:
 	message_data(message_data &&) = default;
 	message_data &operator=(const message_data &) = default;
 	message_data &operator=(message_data &&) = default;
+
+	static message message_create(const std::string &s, message_data *d) {return message(s, message::initial_priority, std::unique_ptr<message_data>(d));}
 };
 
 inline message_data::~message_data() = default;
@@ -54,14 +56,14 @@ class test_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new test_message);}
-	static message create(std::string s) {return message(s,message::initial_priority,std::unique_ptr<message_data>(new test_message));}
+	static message create(std::string s) {return message_create(s, new test_message);}
 };
 
 class typed_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new typed_message(type, data));}
-	static message create(const std::string &t, const std::string &d) {return message("typed", message::initial_priority, std::unique_ptr<message_data>(new typed_message(t,d)));}
+	static message create(const std::string &t, const std::string &d) {return message_create("typed", new typed_message(t,d));}
 private:
 	typed_message(const std::string &t, const std::string &d) : type(t), data(d) {}
 	std::string type, data;
@@ -71,7 +73,7 @@ class registration_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_message(priority, plugin_name, message_type));}
-	static message create(int p, const std::string &n, const std::string &m) {return message("registration", message::initial_priority, std::unique_ptr<message_data>(new registration_message(p, n, m)));}
+	static message create(int p, const std::string &n, const std::string &m) {return message_create("registration", new registration_message(p, n, m));}
 
 	int getpriority() const {return priority;}
 	std::string getname() const {return plugin_name;}
@@ -87,7 +89,7 @@ class registration_status : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_status(status, priority, type));}
-	static message create(bool b, int p, const std::string &s) {return message("registration_status", message::initial_priority, std::unique_ptr<message_data>(new registration_status(b,p,s)));}
+	static message create(bool b, int p, const std::string &s) {return message("registration_status", new registration_status(b,p,s));}
 
 	registration_status(bool b, int p, const std::string &s) : status(b), priority(p), type(s) {}
 
