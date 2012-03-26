@@ -1,9 +1,11 @@
+#include <algorithm>
 #include <unordered_map>
 #include <string>
 #include <thread>
 
 #include "message.h"
 #include "message_pipe.h"
+#include "registry.h"
 
 using namespace std;
 
