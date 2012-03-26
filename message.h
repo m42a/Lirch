@@ -23,7 +23,6 @@ protected:
 	message_data &operator=(const message_data &) = default;
 	message_data &operator=(message_data &&) = default;
 
-	static message message_create(const std::string &s, message_data *d) {return message(s, message::initial_priority, std::unique_ptr<message_data>(d));}
 };
 
 inline message_data::~message_data() = default;
@@ -52,11 +51,13 @@ public:
 	std::unique_ptr<message_data> data;
 };
 
+static message message_create(const std::string &s, message_data *d) {return message(s, message::initial_priority, std::unique_ptr<message_data>(d));}
+
 class test_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new test_message);}
-	static message create(std::string s) {return message_create(s, new test_message);}
+	static message create(const std::string &s) {return message_create(s, new test_message);}
 };
 
 class typed_message : public message_data
@@ -64,8 +65,9 @@ class typed_message : public message_data
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new typed_message(type, data));}
 	static message create(const std::string &t, const std::string &d) {return message_create("typed", new typed_message(t,d));}
-private:
+
 	typed_message(const std::string &t, const std::string &d) : type(t), data(d) {}
+
 	std::string type, data;
 };
 
@@ -78,8 +80,9 @@ public:
 	int getpriority() const {return priority;}
 	std::string getname() const {return plugin_name;}
 	std::string getmessage() const {return message_type;}
-private:
+
 	registration_message(int p, const std::string &n, const std::string &m) : priority(p), plugin_name(n), message_type(m) {}
+
 	int priority;
 	std::string plugin_name;
 	std::string message_type;
@@ -89,7 +92,7 @@ class registration_status : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_status(status, priority, type));}
-	static message create(bool b, int p, const std::string &s) {return message("registration_status", new registration_status(b,p,s));}
+	static message create(bool b, int p, const std::string &s) {return message_create("registration_status", new registration_status(b,p,s));}
 
 	registration_status(bool b, int p, const std::string &s) : status(b), priority(p), type(s) {}
 
