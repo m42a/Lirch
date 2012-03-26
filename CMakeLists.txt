@@ -62,7 +62,7 @@ if(BUILD_NCURSES_CLIENT)
 endif(BUILD_NCURSES_CLIENT)
 
 if(BUILD_MESSAGE_TEST)
-	add_executable(message_test message_test.cpp message_pipe.cpp message.cpp)
+	add_executable(test test.cpp message_pipe.cpp message.cpp)
 	# At some point maybe I'll consider supporting compilers that aren't gcc
 	set(CMAKE_CXX_FLAGS -std=c++0x\ -lpthread)
 	enable_testing()
