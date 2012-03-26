@@ -41,7 +41,9 @@ public:
 	std::string gettype() const {return type;}
 	int getpriority() const {return priority;}
 	//This gets deleted when the message destructs, so be careful
-	message_data *getdata() {return data.get();}
+	message_data *getdata() const {return data.get();}
+
+	static const int initial_priority=0;
 
 	std::string type;
 	int priority;
@@ -52,17 +54,46 @@ class test_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new test_message);}
-	static message create(std::string s) {return message(s,0,std::unique_ptr<message_data>(new test_message));}
+	static message create(std::string s) {return message(s,message::initial_priority,std::unique_ptr<message_data>(new test_message));}
 };
 
 class typed_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new typed_message(type, data));}
-	static message create(const std::string &t, const std::string &d) {return message("typed", 0, std::unique_ptr<message_data>(new typed_message(t,d)));}
+	static message create(const std::string &t, const std::string &d) {return message("typed", message::initial_priority, std::unique_ptr<message_data>(new typed_message(t,d)));}
 private:
 	typed_message(const std::string &t, const std::string &d) : type(t), data(d) {}
 	std::string type, data;
+};
+
+class registration_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_message(priority, plugin_name, message_type));}
+	static message create(int p, const std::string &n, const std::string &m) {return message("registration", message::initial_priority, std::unique_ptr<message_data>(new registration_message(p, n, m)));}
+
+	int getpriority() const {return priority;}
+	std::string getname() const {return plugin_name;}
+	std::string getmessage() const {return message_type;}
+private:
+	registration_message(int p, const std::string &n, const std::string &m) : priority(p), plugin_name(n), message_type(m) {}
+	int priority;
+	std::string plugin_name;
+	std::string message_type;
+};
+
+class registration_status : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_status(status, priority, type));}
+	static message create(bool b, int p, const std::string &s) {return message("registration_status", message::initial_priority, std::unique_ptr<message_data>(new registration_status(b,p,s)));}
+
+	registration_status(bool b, int p, const std::string &s) : status(b), priority(p), type(s) {}
+
+	bool status;
+	int priority;
+	std::string type;
 };
 
 #endif
