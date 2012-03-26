@@ -255,6 +255,34 @@ int dotest(string test)
 			return 1;
 		return 0;
 	}
+	if (test=="registryEmpty")
+	{
+		registry r;
+		if (!r.empty())
+			return 1;
+		r.add(0,"name");
+		if (r.empty())
+			return 1;
+		if (r.size()!=1)
+			return 1;
+		r.clear();
+		if (!r.empty())
+			return 1;
+		if (r.size()!=0)
+			return 1;
+		return 0;
+	}
+	if (test=="registryDups")
+	{
+		registry r;
+		if (!r.add(0,"foo"))
+			return 1;
+		if (r.add(0,"foo"))
+			return 1;
+		if (r.add(0,"bar"))
+			return 1;
+		return 0;
+	}
 	return 2;
 }
 

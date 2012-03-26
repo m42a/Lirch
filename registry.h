@@ -42,6 +42,8 @@ public:
 		return pos->second;
 	}
 
+	void swap(registry &r) {registrations.swap(r.registrations);}
+
 private:
 	std::map<int, std::string, std::greater<int>> registrations;
 };
