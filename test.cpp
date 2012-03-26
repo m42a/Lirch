@@ -5,6 +5,7 @@
 
 #include "message.h"
 #include "message_pipe.h"
+#include "registry.h"
 
 using namespace std;
 
@@ -220,6 +221,38 @@ int dotest(string test)
 		}
 		t1.join();
 		t2.join();
+		return 0;
+	}
+	if (test=="register")
+	{
+		registry r;
+		r.add(0,"later");
+		r.add(100,"earlier");
+		if (r.get(32767)!="earlier")
+			return 1;
+		if (r.get(100)!="earlier")
+			return 1;
+		if (r.get(50)!="later")
+			return 1;
+		if (r.get(0)!="later")
+			return 1;
+		if (r.get(-12)!="")
+			return 1;
+		return 0;
+	}
+	if (test=="registryInitList")
+	{
+		registry r{{100,"earlier"},{0,"later"}};
+		if (r.get(32767)!="earlier")
+			return 1;
+		if (r.get(100)!="earlier")
+			return 1;
+		if (r.get(50)!="later")
+			return 1;
+		if (r.get(0)!="later")
+			return 1;
+		if (r.get(-12)!="")
+			return 1;
 		return 0;
 	}
 	return 2;
