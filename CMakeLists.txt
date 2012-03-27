@@ -24,7 +24,8 @@ option(BUILD_TESTS          "Build the testing executable" OFF)
 
 # Build the main program (always happens)
 set(CMAKE_CXX_FLAGS -std=c++0x)
-add_executable(lirch core.cpp message.cpp message_pipe.cpp)
+add_executable(lirch core.cpp message.cpp message_pipe.cpp plugin_loader.cpp)
+target_link_libraries(lirch dl)
 
 if(BUILD_QT_CLIENT)
 	# We need to locate Qt4

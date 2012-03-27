@@ -102,4 +102,16 @@ public:
 	std::string type;
 };
 
+class plugin_adder : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new plugin_adder(*this));}
+	static message create(const std::string &n, const std::string &f) {return message_create("add_plugin", new plugin_adder(n, f));}
+
+	plugin_adder(const std::string &n, const std::string &f) : name(n), filename(f) {}
+
+	std::string name;
+	std::string filename;
+};
+
 #endif

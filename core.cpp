@@ -6,6 +6,7 @@
 #include "message.h"
 #include "message_pipe.h"
 #include "registry.h"
+#include "plugin_loader.h"
 
 using namespace std;
 
@@ -31,6 +32,17 @@ void to_plugin(message m)
 
 void add_plugin(const message &m)
 {
+	auto *pa=dynamic_cast<plugin_adder *>(m.getdata());
+	if (!pa)
+		//The message wasn't a plugin_adder
+		return;
+	if (plugins.count(pa->name)!=0)
+		//There's already a plugin with this name
+		return;
+	bidirectional_message_pipe bmp(message_pipe(), in_pipe);
+	thread t1(load_plugin, pa->filename, bmp);
+	plugins[pa->name]=std::move(t1);
+	//Should we send a hello message to the plugin?
 }
 
 void add_registration(const message &m)
