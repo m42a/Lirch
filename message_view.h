@@ -18,7 +18,7 @@ public:
 	message peek() const {return pipe.plugin_peek();}
 	message read() {return pipe.plugin_read();}
 	message blocking_read() {return pipe.plugin_blocking_read();}
-	void write(const message &) {pipe.plugin_write();}
+	void write(const message &m) {pipe.plugin_write(m);}
 private:
 	bidirectional_message_pipe pipe;
 };
@@ -38,9 +38,9 @@ public:
 	message peek() const {return pipe.core_peek();}
 	message read() {return pipe.core_read();}
 	message blocking_read() {return pipe.core_blocking_read();}
-	void write(const message &) {pipe.core_write();}
+	void write(const message &m) {pipe.core_write(m);}
 private:
 	bidirectional_message_pipe pipe;
-}
+};
 
 #endif

@@ -6,11 +6,11 @@
 #	include <dlfcn.h>
 #endif
 
-#include "message_pipe.h"
+#include "plugin_loader.h"
 
 //We don't *really* need this to be its own separate file, but i refuse to let
 //this code near the main product.
-bool load_plugin(std::string fname, const bidirectional_message_pipe &p)
+bool load_plugin(std::string fname, const plugin_pipe &p)
 {
 #ifdef _WIN32
 	HMODULE obj=LoadLibrary(fname.c_str());
@@ -21,7 +21,7 @@ bool load_plugin(std::string fname, const bidirectional_message_pipe &p)
 		return false;
 	//FARPROC returns an int * by default, so cast it to void.  This has
 	//more parentheses than Lisp.
-	(*(void __cdecl (*)(bidirectional_message_pipe))(func))(p);
+	(*(void __cdecl (*)(plugin_pipe))(func))(p);
 #else //POSIX
 	//Open the object file whenever you get around to it, and with its own
 	//local symbol table.
@@ -30,7 +30,7 @@ bool load_plugin(std::string fname, const bidirectional_message_pipe &p)
 		return false;
 	//The POSIX standard says void * must convert to a function pointer,
 	//but the C standard does not, so add a cast to shut up the compiler.
-	void (*func)(bidirectional_message_pipe)=(void (*)(bidirectional_message_pipe))dlsym(obj, "plugin_init");
+	auto func=(void (*)(plugin_pipe))dlsym(obj, "plugin_init");
 	if (func==NULL)
 		return false;
 	//Finally initialize the plugin

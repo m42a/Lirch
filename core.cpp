@@ -40,7 +40,7 @@ void add_plugin(const message &m)
 		//There's already a plugin with this name
 		return;
 	bidirectional_message_pipe bmp(message_pipe(), in_pipe);
-	thread t1(load_plugin, pa->filename, bmp);
+	thread t1(load_plugin, pa->filename, plugin_pipe(bmp));
 	plugins[pa->name]=std::move(t1);
 	//Should we send a hello message to the plugin?
 }
