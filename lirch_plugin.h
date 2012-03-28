@@ -4,7 +4,8 @@
 #ifndef LIRCH_PLUGIN_H_
 #define LIRCH_PLUGIN_H_
 
-#include "message_pipe.h"
+#include "message_view.h"
+#include "required_messages.h"
 
 //Why windows, why?
 #if defined(_WIN32)
@@ -17,7 +18,7 @@
 #	endif
 #else
 
-void init(message_pipe);
+void run(plugin_pipe);
 
 extern "C"
 {

@@ -7,6 +7,7 @@
 #include "message_pipe.h"
 #include "registry.h"
 #include "plugin_loader.h"
+#include "required_messages.h"
 
 using namespace std;
 

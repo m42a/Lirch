@@ -76,7 +76,7 @@ class registration_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_message(*this));}
-	static message create(int p, const std::string &n, const std::string &m) {return message_create("registration", new registration_message(p, n, m));}
+	static message create(int p, const std::string &n, const std::string &m) {return message_create("register", new registration_message(p, n, m));}
 
 	int getpriority() const {return priority;}
 	std::string getname() const {return plugin_name;}
