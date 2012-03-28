@@ -114,15 +114,4 @@ public:
 	std::string filename;
 };
 
-class hello_message : public message_data
-{
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new hello_message(*this));}
-	static message create(const std::string &s) {return message_create("hello", new hello_message(s));}
-
-	hello_message(const std::string &s) : name(s) {}
-
-	std::string name;
-};
-
 #endif

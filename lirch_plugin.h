@@ -23,7 +23,7 @@ extern "C"
 {
 	int
 #ifdef _WIN32
-		//We need this to ensure semi-consistent name mangling
+		//We need this to ensure semi-consistent name mangling and APIs
 		__cdecl
 #endif
 		plugin_version()
@@ -41,7 +41,7 @@ extern "C"
 		//Generic initialization code will go here
 
 		//This calls the plugin-defined initialization code
-		init(p);
+		run(p);
 	}
 }
 
