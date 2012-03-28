@@ -39,10 +39,13 @@ void add_plugin(const message &m)
 	if (plugins.count(pa->name)!=0)
 		//There's already a plugin with this name
 		return;
-	bidirectional_message_pipe bmp(message_pipe(), in_pipe);
-	thread t1(load_plugin, pa->filename, plugin_pipe(bmp));
+	message_pipe mp;
+	thread t1(load_plugin, pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe)));
 	plugins[pa->name]=std::move(t1);
+	out_pipes[pa->name]=mp;
 	//Should we send a hello message to the plugin?
+	//Yes, that way it knows its name.
+	mp.write(hello_message::create(pa->name));
 }
 
 void add_registration(const message &m)
