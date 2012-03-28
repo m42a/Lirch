@@ -50,9 +50,9 @@ void add_plugin(const message &m)
 
 void add_registration(const message &m)
 {
-	//TODO: check if r is of the correct type
-	registration_message *r=(registration_message *)m.getdata();
-
+	auto r=dynamic_cast<registration_message *>(m.getdata());
+	if (!r)
+		return;
 	if (out_pipes.count(r->getname())==0)
 		//We can't talk to this plugin, so ignore its request
 		return;
