@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <string>
 #include <thread>
+#include <iostream>
 
 #include "message.h"
 #include "message_pipe.h"
@@ -15,17 +16,33 @@ static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
 static message_pipe in_pipe;
 
+static bool verbose;
+
 void to_plugin(message m)
 {
 	if (message_registrations.count(m.gettype())==0)
+	{
 		//This message type has no registration, so discard it
+		if (verbose)
+			cerr << " was not registered" << endl;
 		return;
+	}
 	auto plugin=message_registrations[m.gettype()].get(m.getpriority());
 	if (plugin.second=="")
+	{
+		if (verbose)
+			cerr << " has no more registered plugins" << endl;
 		return;
+	}
 	if (out_pipes.count(plugin.second)==0)
+	{
 		//This type does not exist
+		if (verbose)
+			cerr << " is registered to the non-existent plugin " << plugin.second << endl;
 		return;
+	}
+	if (verbose)
+		cerr << " was sent to " << plugin.second << endl;
 	//Change the message priority to the registered priority
 	out_pipes[plugin.second].write(m.change_priority(plugin.first));
 }
@@ -44,6 +61,8 @@ void add_plugin(const message &m)
 	t1.detach();
 	out_pipes[pa->name]=mp;
 	mp.write(hello_message::create(pa->name));
+	if (verbose)
+		cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
 }
 
 void remove_plugin(const message &m)
@@ -58,6 +77,8 @@ void remove_plugin(const message &m)
 	while ((i=std::find_if(message_registrations.begin(), message_registrations.end(), [](decltype(*i) &p) {return p.second.empty();}))!=message_registrations.end())
 			message_registrations.erase(i);
 	out_pipes.erase(d->name);
+	if (verbose)
+		cerr << " removed plugin " << d->name << endl;
 }
 
 void add_registration(const message &m)
@@ -72,10 +93,14 @@ void add_registration(const message &m)
 	bool b=message_registrations[r->getmessage()].add(r->getpriority(), r->getname());
 	//Tell the plugin whether it failed or not
 	out_pipes[r->getname()].write(registration_status::create(b, r->getpriority(), r->getmessage()));
+	if (verbose)
+		cerr << " registered " << r->message_type << " to " << r->plugin_name << endl;
 }
 
 void process(const message &m)
 {
+	if (verbose)
+		cerr << "Message ( " << m.type << " , " << m.priority << " , " << m.getdata() << " )";
 	if (m.gettype()=="add_plugin")
 		add_plugin(m);
 	else if (m.gettype()=="register")
@@ -100,6 +125,14 @@ int main(int argc, char *argv[])
 {
 	vector<message> vm;
 	for (int i=1; i<argc-1; i+=2)
-		vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
+	{
+		if (argv[i]==string("-v") || argv[i]==string("--verbose"))
+		{
+			verbose=true;
+			--i;
+		}
+		else
+			vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
+	}
 	run_core(vm);
 }
