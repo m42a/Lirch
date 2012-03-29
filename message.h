@@ -32,10 +32,10 @@ class message
 {
 public:
 	message() = default;
-	message(const message &m) : type(m.type), priority(m.priority), data(m.data->copy()) {}
+	message(const message &m) : type(m.type), priority(m.priority), data(m.data ? m.data->copy() : nullptr) {}
 	message(message &&) = default;
 	message(std::string t, int p, std::unique_ptr<message_data> &&d) : type(t), priority(p), data(std::move(d)) {}
-	message &operator=(const message &m) {type=m.type; priority=m.priority; data=std::move(m.data->copy()); return *this;}
+	message &operator=(const message &m) {type=m.type; priority=m.priority; if (m.data) data=std::move(m.data->copy()); return *this;}
 	message &operator=(message &&) = default;
 
 	//the variables might become private later, so use these functions
