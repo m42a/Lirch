@@ -40,9 +40,16 @@ extern "C"
 		plugin_init(plugin_pipe p)
 	{
 		//Generic initialization code will go here
-
-		//This calls the plugin-defined initialization code
-		run(p);
+		try 
+		{
+			//This calls the plugin-defined initialization code
+			run(p);
+		}
+		catch (...)
+		{
+			//Catch every exception, since uncaught exceptions will terminate the program
+			//We might want to put some logging here
+		}
 	}
 }
 
