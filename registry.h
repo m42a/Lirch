@@ -5,15 +5,9 @@
 #include <functional>
 #include <map>
 
-// So basically, we have a std::vector of std::pair<index,value> sorted by
-// (x.first>y.first), which lets us use STL algorithms to do all of our work.
-
-//The int type should have a strict total ordering (both numbers and strings
-//have this)
 class registry
 {
 public:
-	//TODO: sort assigned values
 	registry() = default;
 	registry(const registry &) = default;
 	registry(registry &&) = default;
@@ -29,12 +23,15 @@ public:
 
 	bool add(int i, const std::string &s)
 	{
+		//Fail if we get an out-of-bounds priority
+		if (i>32766 || i<-32766)
+			return false;
 		//auto pos=registrations.emplace(i, s);
 		auto pos=registrations.insert({i, s});
 		return pos.second;
 	}
 
-	std::pair<int, std::string> get(int i)
+	std::pair<int, std::string> get(int i) const
 	{
 		auto pos=registrations.lower_bound(i);
 		if (pos==registrations.end())
