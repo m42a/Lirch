@@ -27,6 +27,12 @@ set(CMAKE_CXX_FLAGS -std=c++0x)
 add_executable(lirch core.cpp message.cpp message_pipe.cpp plugin_loader.cpp)
 target_link_libraries(lirch dl)
 
+# Build the meat grinder (always happens)
+find_package(Qt4 REQUIRED)
+include(${QT_USE_FILE})
+add_library(meatgrinder SHARED meatgrinder.cpp message.cpp message_pipe.cpp)
+target_link_libraries(meatgrinder ${QT_LIBRARIES})
+
 if(BUILD_QT_CLIENT)
 	# We need to locate Qt4
 	find_package(Qt4 REQUIRED)

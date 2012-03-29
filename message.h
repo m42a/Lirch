@@ -62,17 +62,6 @@ public:
 	static message create(const std::string &s) {return message_create(s, new test_message);}
 };
 
-class typed_message : public message_data
-{
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new typed_message(*this));}
-	static message create(const std::string &t, const std::string &d) {return message_create("typed", new typed_message(t,d));}
-
-	typed_message(const std::string &t, const std::string &d) : type(t), data(d) {}
-
-	std::string type, data;
-};
-
 class registration_message : public message_data
 {
 public:

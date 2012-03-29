@@ -18,7 +18,7 @@
 #		pragma comment(linker, "/EXPORT:plugin_version=_plugin_version")
 #		pragma comment(linker, "/EXPORT:plugin_init=_plugin_init")
 #	endif
-#else
+#endif
 
 void run(plugin_pipe, std::string);
 
@@ -43,7 +43,7 @@ extern "C"
 		message m=p.blocking_read();
 		if (m.type!="hello")
 			return;
-		auto d=dynamic_cast<hello_message *>(m.data);
+		auto d=dynamic_cast<hello_message *>(m.getdata());
 		if (!d)
 			return;
 		try
