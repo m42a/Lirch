@@ -96,7 +96,10 @@ void run_core(const vector<message> &vm)
 	}
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-	run_core({});
+	vector<message> vm;
+	for (int i=1; i<argc-1; i+=2)
+		vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
+	run_core(vm);
 }
