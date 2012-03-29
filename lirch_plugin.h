@@ -4,6 +4,8 @@
 #ifndef LIRCH_PLUGIN_H_
 #define LIRCH_PLUGIN_H_
 
+#include <string>
+
 #include "message_view.h"
 #include "required_messages.h"
 
@@ -18,7 +20,7 @@
 #	endif
 #else
 
-void run(plugin_pipe);
+void run(plugin_pipe, std::string);
 
 extern "C"
 {
@@ -34,22 +36,27 @@ extern "C"
 
 	void
 #ifdef _WIN32
-		//We need this to ensure semi-consistent name mangling
 		__cdecl
 #endif
 		plugin_init(plugin_pipe p)
 	{
-		//Generic initialization code will go here
-		try 
+		message m=p.blocking_read();
+		if (m.type!="hello")
+			return;
+		auto d=dynamic_cast<hello_message *>(m.data);
+		if (!d)
+			return;
+		try
 		{
-			//This calls the plugin-defined initialization code
-			run(p);
+			//This calls the plugin-defined code
+			run(p, d->name);
 		}
 		catch (...)
 		{
 			//Catch every exception, since uncaught exceptions will terminate the program
 			//We might want to put some logging here
 		}
+		p.write(done_message::create(d->name));
 	}
 }
 
