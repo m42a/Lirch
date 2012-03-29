@@ -39,6 +39,14 @@ public:
 		return *pos;
 	}
 
+	void removeall(std::string name)
+	{
+		decltype(registrations.begin()) i;
+		while ((i=std::find_if(registrations.begin(), registrations.end(), [name](const std::pair<int, std::string> &p) {return p.second==name;}))!=registrations.end())
+			registrations.erase(i);
+
+	}
+
 	void swap(registry &r) {registrations.swap(r.registrations);}
 
 private:

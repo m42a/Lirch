@@ -11,7 +11,7 @@
 
 using namespace std;
 
-static unordered_map<string, thread> plugins;
+//static unordered_map<string, thread> plugins;
 static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
 static message_pipe in_pipe;
@@ -33,20 +33,35 @@ void to_plugin(message m)
 
 void add_plugin(const message &m)
 {
-	auto *pa=dynamic_cast<plugin_adder *>(m.getdata());
+	auto pa=dynamic_cast<plugin_adder *>(m.getdata());
 	if (!pa)
 		//The message wasn't a plugin_adder
 		return;
-	if (plugins.count(pa->name)!=0)
+	if (out_pipes.count(pa->name)!=0)
 		//There's already a plugin with this name
 		return;
 	message_pipe mp;
 	thread t1(load_plugin, pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe)));
-	plugins[pa->name]=std::move(t1);
+	t1.detach();
+	//plugins[pa->name]=std::move(t1);
 	out_pipes[pa->name]=mp;
 	//Should we send a hello message to the plugin?
 	//Yes, that way it knows its name.
 	mp.write(hello_message::create(pa->name));
+}
+
+void remove_plugin(const message &m)
+{
+	auto d=dynamic_cast<done_message *>(m.getdata());
+	if (!d)
+		return;
+	for (auto &i : message_registrations)
+		i.second.removeall(d->name);
+	decltype(message_registrations.begin()) i;
+	//Who says C++ is verbose?
+	while ((i=std::find_if(message_registrations.begin(), message_registrations.end(), [](decltype(*i) &p) {return p.second.empty();}))!=message_registrations.end())
+			message_registrations.erase(i);
+	out_pipes.erase(d->name);
 }
 
 void add_registration(const message &m)
@@ -69,6 +84,8 @@ void process(const message &m)
 		add_plugin(m);
 	else if (m.gettype()=="register")
 		add_registration(m);
+	else if (m.type=="done")
+		remove_plugin(m);
 	else
 		to_plugin(m);
 }
@@ -77,7 +94,7 @@ void run_core(const vector<message> &vm)
 {
 	for (auto m : vm)
 		process(m);
-	while (!plugins.empty())
+	while (!out_pipes.empty())
 	{
 		process(in_pipe.blocking_read());
 	}
