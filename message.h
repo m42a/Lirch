@@ -42,6 +42,7 @@ public:
 	std::string gettype() const {return type;}
 	int getpriority() const {return priority;}
 	message &change_priority(int p) {priority=p; return *this;}
+	message &decrement_priority() {--priority; return *this;}
 	//This gets deleted when the message destructs, so be careful
 	message_data *getdata() const {return data.get();}
 
