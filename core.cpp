@@ -11,7 +11,6 @@
 
 using namespace std;
 
-//static unordered_map<string, thread> plugins;
 static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
 static message_pipe in_pipe;
@@ -43,10 +42,7 @@ void add_plugin(const message &m)
 	message_pipe mp;
 	thread t1(load_plugin, pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe)));
 	t1.detach();
-	//plugins[pa->name]=std::move(t1);
 	out_pipes[pa->name]=mp;
-	//Should we send a hello message to the plugin?
-	//Yes, that way it knows its name.
 	mp.write(hello_message::create(pa->name));
 }
 
