@@ -35,7 +35,11 @@ class done_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new done_message(*this));}
-	static message create(const std::string &s) {return message_create("done", NULL);}
+	static message create(const std::string &s) {return message_create("done", new done_message(s));}
+
+	done_message(const std::string &n) : name(n) {}
+
+	std::string name;
 };
 
 #endif
