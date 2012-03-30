@@ -102,6 +102,18 @@ void add_registration(const message &m)
 		cerr << " registered " << r->message_type << " to " << r->plugin_name << endl;
 }
 
+void target_plugin(const message &m)
+{
+	auto i=dynamic_cast<targeted_message *>(m.getdata());
+	if (!i)
+		return;
+	if (out_pipes.count(i->name)==0)
+		return;
+	out_pipes[i->name].write(i->mess);
+	if (verbose)
+		cerr << " targeted " << i->mess << " towards " << i->name << endl;
+}
+
 void process(const message &m)
 {
 	if (verbose)
@@ -112,6 +124,8 @@ void process(const message &m)
 		add_registration(m);
 	else if (m.type=="done")
 		remove_plugin(m);
+	else if (m.type=="target")
+		target_plugin(m);
 	else
 		to_plugin(m);
 }

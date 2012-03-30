@@ -115,4 +115,15 @@ public:
 	int msecs;
 };
 
+class targeted_message : public message_data
+{
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new targeted_message(*this));}
+	static message create(const std::string &n, const message &m) {return message_create("target", new targeted_message(n,m));}
+
+	targeted_message(const std::string &n, const message &m) : name(n), mess(m) {}
+
+	string name;
+	message mess;
+}
+
 #endif
