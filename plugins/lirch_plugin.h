@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "message_view.h"
-#include "required_messages.h"
+#include "core/message_view.h"
+#include "core/required_messages.h"
 
 //Why windows, why?
 #if defined(_WIN32)

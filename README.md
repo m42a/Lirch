@@ -21,17 +21,23 @@ Lirch uses the BSD license, so it is open-source software.
 (See ./LICENSE and ./CONTRIBUTORS.)
 
 ## Building Lirch
-There are currently two ways to build Lirch.
+The prefered way to build Lirch is through CMake. (highly recommended)
 
-### Using qmake (quick and messy, less configurable)
-Just run: `qmake lirch.pro && make`
+Lirch leverages some of the new features of C++11. (Awesome!)
+Most of our developers use a *nix operating system. (Cool!)
+Generally, we prefer using gcc, specifically g++ 4.6 or better. (Okay!)
+So for the moment, this is our initial target build platform. (Yay?)
+
+On Windows, we are working toward developing a build process for VS11 Beta.
+(This version or better is required for C++11. Booo!) We are also curious about Clang.
+Any assistance toward getting additional build platforms working would be _much_ appreciated.
 
 ### Using cmake (better for developers, isolated source)
 1. Create a directory to perform the build. `../lirch-build` is a good choice. We will use this in our example.
 2. Navigate to this directory. We will assume the source is located in `../lirch-source`; if not, adjust accordingly.
 3. From here, point cmake to the top source directory, which contains a file named CMakeLists.txt. We will use the ncurses interface to cmake, ccmake: `ccmake ../lirch-source`
     - You can also select from a variety of generators, using (c)cmake's -G argument. See `cmake` for list.
-4. Use the keyboard to select the desired build options. You will need Qt4. Press `c` to configure, then `g` to generate.
+4. Use the keyboard to select the desired build options. You will need Qt4.8. Press `c` to configure, then `g` to generate.
 5. If you used a Makefile generator option, run `make`. Otherwise, load the project into your desired environment.
 
 Happy Coding!

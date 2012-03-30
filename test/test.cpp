@@ -3,9 +3,9 @@
 #include <chrono>
 #include <thread>
 
-#include "message.h"
-#include "message_pipe.h"
-#include "registry.h"
+#include "core/message.h"
+#include "core/message_pipe.h"
+#include "core/registry.h"
 
 using namespace std;
 

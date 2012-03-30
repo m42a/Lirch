@@ -1,0 +1,22 @@
+# Test executable
+add_executable(lirch_tests test.cpp)
+target_link_libraries(lirch_tests envelope pthread)
+
+# Unit tests
+add_test(sendToPlugin "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" toplugin)
+add_test(sendToCore "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" tocore)
+add_test(readEmptyMessage "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" readempty)
+add_test(cycleMessage "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" cycle)
+add_test(exhaustMessages "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" exhaust)
+add_test(share1Pipe "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" sharing)
+add_test(messageOrder "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" order)
+add_test(multiPipe "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" copying)
+add_test(threadSequencing "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" threadseq)
+add_test(immediateBlockingRead "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" 0bread)
+add_test(threadedBlockingRead "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" 1bread)
+add_test(doubleBlockingRead "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" 2bread)
+add_test(sharedDoubleBlockingRead "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" shared2bread)
+add_test(registration "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" register)
+add_test(initializingRegistration "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" registryInitList)
+add_test(registrationSize "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" registryEmpty)
+add_test(registryDuplicateHandling "${EXECUTABLE_OUTPUT_PATH}/lirch_tests" registryDups)

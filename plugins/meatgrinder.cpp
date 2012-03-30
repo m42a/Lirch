@@ -1,5 +1,3 @@
-#include <QString>
-
 #include "lirch_plugin.h"
 #include "edict_messages.h"
 

@@ -1,9 +1,9 @@
 #ifndef EDICT_MESSAGES_H_
 #define EDICT_MESSAGES_H_
 
-#include <QString>
+#include <QtCore/QString>
 
-#include "message.h"
+#include "core/message.h"
 
 class raw_edict_message : public message_data
 {
