@@ -46,7 +46,7 @@ public:
 	//This gets deleted when the message destructs, so be careful
 	message_data *getdata() const {return data.get();}
 
-	static const int initial_priority=0;
+	static const int initial_priority=32767;
 
 	std::string type;
 	int priority;
@@ -102,6 +102,17 @@ public:
 
 	std::string name;
 	std::string filename;
+};
+
+class timed_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new timed_message(*this));}
+	static message create(int m) {return message_create("timer", new timed_message(m));}
+
+	timed_message(int m) : msecs(m) {}
+
+	int msecs;
 };
 
 #endif

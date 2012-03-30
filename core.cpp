@@ -18,6 +18,11 @@ static message_pipe in_pipe;
 
 static bool verbose;
 
+ostream &operator<<(ostream &out, const message &m)
+{
+	return out << '(' << m.type << ',' << m.priority << ',' << m.getdata() << ')';
+}
+
 void to_plugin(message m)
 {
 	if (message_registrations.count(m.gettype())==0)
@@ -41,10 +46,10 @@ void to_plugin(message m)
 			cerr << " is registered to the non-existent plugin " << plugin.second << endl;
 		return;
 	}
-	if (verbose)
-		cerr << " was sent to " << plugin.second << endl;
 	//Change the message priority to the registered priority
 	out_pipes[plugin.second].write(m.change_priority(plugin.first));
+	if (verbose)
+		cerr << " was sent to " << plugin.second << " as " << m << endl;
 }
 
 void add_plugin(const message &m)
@@ -100,7 +105,7 @@ void add_registration(const message &m)
 void process(const message &m)
 {
 	if (verbose)
-		cerr << "Message ( " << m.type << " , " << m.priority << " , " << m.getdata() << " )";
+		cerr << "Message " << m;
 	if (m.gettype()=="add_plugin")
 		add_plugin(m);
 	else if (m.gettype()=="register")
