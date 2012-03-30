@@ -40,13 +40,13 @@ option(BUILD_PLUGINS        "Build the plugin suite"      ON)
 
 # Figure out which Qt components to load, if any
 if(BUILD_NCURSES_CLIENT OR BUILD_PLUGINS)
-  set(QT_COMPONENTS "${QT_COMPONENTS} QtCore QtNetwork")
+  set(QT_COMPONENTS ${QT_COMPONENTS} ; QtCore ; QtNetwork)
 endif(BUILD_NCURSES_CLIENT OR BUILD_PLUGINS)
 if(BUILD_QT_CLIENT)
-  set(QT_COMPONENTS "${QT_COMPONENTS} QtGui")
+  set(QT_COMPONENTS ${QT_COMPONENTS} ; QtGui)
 endif(BUILD_QT_CLIENT)
 if(BUILD_TESTING)
-  set(QT_COMPONENTS "${QT_COMPONENTS} QtTest")
+  set(QT_COMPONENTS ${QT_COMPONENTS} ; QtTest)
 endif(BUILD_TESTING)
 # Load them
 if(QT_COMPONENTS)
