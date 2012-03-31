@@ -52,17 +52,17 @@ public:
 	bidirectional_message_pipe &operator=(const bidirectional_message_pipe &) = default;
 	bidirectional_message_pipe &operator=(bidirectional_message_pipe &&) = default;
 
-	bool plugin_has_message() const {return to_plugin.has_message();}
-	message plugin_peek() const {return to_plugin.peek();}
-	message plugin_read() {return to_plugin.read();}
-	message plugin_blocking_read() {return to_plugin.blocking_read();}
-	void plugin_write(const message &m) {to_core.write(m);}
+	bool plugin_has_message() const;
+	message plugin_peek() const;
+	message plugin_read();
+	message plugin_blocking_read();
+	void plugin_write(const message &m);
 
-	bool core_has_message() const {return to_core.has_message();}
-	message core_peek() const {return to_core.peek();}
-	message core_read() {return to_core.read();}
-	message core_blocking_read() {return to_core.blocking_read();}
-	void core_write(const message &m) {to_plugin.write(m);}
+	bool core_has_message() const;
+	message core_peek() const;
+	message core_read();
+	message core_blocking_read();
+	void core_write(const message &m);
 private:
 	message_pipe to_plugin;
 	message_pipe to_core;

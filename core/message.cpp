@@ -63,3 +63,15 @@ void message_pipe::write(const message &m)
 	locked_write(m);
 	messages->cond.notify_one();
 }
+
+bool bidirectional_message_pipe::plugin_has_message() const {return to_plugin.has_message();}
+message bidirectional_message_pipe::plugin_peek() const {return to_plugin.peek();}
+message bidirectional_message_pipe::plugin_read() {return to_plugin.read();}
+message bidirectional_message_pipe::plugin_blocking_read() {return to_plugin.blocking_read();}
+void bidirectional_message_pipe::plugin_write(const message &m) {to_core.write(m);}
+
+bool bidirectional_message_pipe::core_has_message() const {return to_core.has_message();}
+message bidirectional_message_pipe::core_peek() const {return to_core.peek();}
+message bidirectional_message_pipe::core_read() {return to_core.read();}
+message bidirectional_message_pipe::core_blocking_read() {return to_core.blocking_read();}
+void bidirectional_message_pipe::core_write(const message &m) {to_plugin.write(m);}
