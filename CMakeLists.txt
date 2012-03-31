@@ -34,6 +34,7 @@ include_directories("${CMAKE_BINARY_DIR}")
 # Basic build options
 option(BUILD_QT_CLIENT      "Build the Qt4 interface"     ON)
 option(BUILD_NCURSES_CLIENT "Build the ncurses interface" OFF)
+option(BUILD_BASIC_CLIENT   "Build the basic interface"   OFF)
 option(BUILD_PLUGINS        "Build the plugin suite"      ON)
 
 ## LIBRARIES
@@ -76,6 +77,10 @@ add_subdirectory(core)
 if(BUILD_PLUGINS)
   add_subdirectory(plugins)
 endif(BUILD_PLUGINS)
+
+if(BUILD_BASIC_CLIENT)
+  add_subdirectory(ui/basic)
+endif(BUILD_BASIC_CLIENT)
 
 if(BUILD_NCURSES_CLIENT)
   add_subdirectory(ui/ncurses)
