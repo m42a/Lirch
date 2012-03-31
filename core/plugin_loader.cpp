@@ -35,6 +35,10 @@ bool load_plugin(std::string fname, const plugin_pipe &p)
 		return false;
 	//Finally initialize the plugin
 	(*func)(p);
+	//We should close the object here, but can't for technical reasons.
+	//They're described in detail at:
+	//https://github.com/m42a/Lirch/wiki/Stuff-That-Should-Be-Written-Down-Somewhere
+
 #endif
 	return true;
 }
