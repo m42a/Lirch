@@ -24,7 +24,7 @@ ostream &operator<<(ostream &out, const message &m)
 	return out << '(' << m.type << ',' << m.priority << ',' << m.getdata() << ')';
 }
 
-void to_plugin(message m)
+static void to_plugin(message m)
 {
 	if (message_registrations.count(m.gettype())==0)
 	{
@@ -53,7 +53,7 @@ void to_plugin(message m)
 		cerr << " was sent to " << plugin.second << " as " << m << endl;
 }
 
-void add_plugin(const message &m)
+static void add_plugin(const message &m)
 {
 	auto pa=dynamic_cast<plugin_adder *>(m.getdata());
 	if (!pa)
@@ -71,7 +71,7 @@ void add_plugin(const message &m)
 		cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
 }
 
-void remove_plugin(const message &m)
+static void remove_plugin(const message &m)
 {
 	auto d=dynamic_cast<done_message *>(m.getdata());
 	if (!d)
@@ -87,7 +87,7 @@ void remove_plugin(const message &m)
 		cerr << " removed plugin " << d->name << endl;
 }
 
-void add_registration(const message &m)
+static void add_registration(const message &m)
 {
 	auto r=dynamic_cast<registration_message *>(m.getdata());
 	if (!r)
@@ -103,7 +103,7 @@ void add_registration(const message &m)
 		cerr << " registered " << r->message_type << " to " << r->plugin_name << endl;
 }
 
-void target_plugin(const message &m)
+static void target_plugin(const message &m)
 {
 	auto i=dynamic_cast<targeted_message *>(m.getdata());
 	if (!i)
@@ -115,7 +115,7 @@ void target_plugin(const message &m)
 		cerr << " targeted " << i->mess << " towards " << i->name << endl;
 }
 
-void process(const message &m)
+static void process(const message &m)
 {
 	if (verbose)
 		cerr << "Message " << m;
@@ -131,7 +131,7 @@ void process(const message &m)
 		to_plugin(m);
 }
 
-void run_core(const vector<message> &vm)
+static void run_core(const vector<message> &vm)
 {
 	for (auto m : vm)
 		process(m);
