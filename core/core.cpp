@@ -9,6 +9,7 @@
 #include "registry.h"
 #include "plugin_loader.h"
 #include "required_messages.h"
+#include "core_messages.h"
 
 using namespace std;
 

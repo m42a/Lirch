@@ -42,4 +42,35 @@ public:
 	std::string name;
 };
 
+class registration_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_message(*this));}
+	static message create(int p, const std::string &n, const std::string &m) {return message_create("register", new registration_message(p, n, m));}
+
+	int getpriority() const {return priority;}
+	std::string getname() const {return plugin_name;}
+	std::string getmessage() const {return message_type;}
+
+	registration_message(int p, const std::string &n, const std::string &m) : priority(p), plugin_name(n), message_type(m) {}
+
+	int priority;
+	std::string plugin_name;
+	std::string message_type;
+};
+
+class registration_status : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_status(*this));}
+	static message create(bool b, int p, const std::string &s) {return message_create("registration_status", new registration_status(b,p,s));}
+
+	registration_status(bool b, int p, const std::string &s) : status(b), priority(p), type(s) {}
+
+	bool status;
+	int priority;
+	std::string type;
+};
+
+
 #endif

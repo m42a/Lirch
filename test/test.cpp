@@ -9,6 +9,13 @@
 
 using namespace std;
 
+class test_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new test_message);}
+	static message create(const std::string &s) {return message_create(s, new test_message);}
+};
+
 int dotest(string test)
 {
 	bidirectional_message_pipe mp;
