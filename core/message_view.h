@@ -14,11 +14,11 @@ public:
 	plugin_pipe &operator=(const plugin_pipe &) = default;
 	plugin_pipe &operator=(plugin_pipe &&) = default;
 
-	bool has_message() const {return pipe.plugin_has_message();}
-	message peek() const {return pipe.plugin_peek();}
-	message read() {return pipe.plugin_read();}
-	message blocking_read() {return pipe.plugin_blocking_read();}
-	void write(const message &m) {pipe.plugin_write(m);}
+	bool has_message() const;
+	message peek() const;
+	message read();
+	message blocking_read();
+	void write(const message &m);
 private:
 	bidirectional_message_pipe pipe;
 };
@@ -34,11 +34,11 @@ public:
 	core_pipe &operator=(const core_pipe &) = default;
 	core_pipe &operator=(core_pipe &&) = default;
 
-	bool has_message() const {return pipe.core_has_message();}
-	message peek() const {return pipe.core_peek();}
-	message read() {return pipe.core_read();}
-	message blocking_read() {return pipe.core_blocking_read();}
-	void write(const message &m) {pipe.core_write(m);}
+	bool has_message() const;
+	message peek() const;
+	message read();
+	message blocking_read();
+	void write(const message &m);
 private:
 	bidirectional_message_pipe pipe;
 };

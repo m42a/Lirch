@@ -1,4 +1,4 @@
-#include "message_pipe.h"
+#include "message_view.h"
 
 bool message_pipe::locked_has_message() const
 {
@@ -75,3 +75,15 @@ message bidirectional_message_pipe::core_peek() const {return to_core.peek();}
 message bidirectional_message_pipe::core_read() {return to_core.read();}
 message bidirectional_message_pipe::core_blocking_read() {return to_core.blocking_read();}
 void bidirectional_message_pipe::core_write(const message &m) {to_plugin.write(m);}
+
+bool plugin_pipe::has_message() const {return pipe.plugin_has_message();}
+message plugin_pipe::peek() const {return pipe.plugin_peek();}
+message plugin_pipe::read() {return pipe.plugin_read();}
+message plugin_pipe::blocking_read() {return pipe.plugin_blocking_read();}
+void plugin_pipe::write(const message &m) {pipe.plugin_write(m);}
+
+bool core_pipe::has_message() const {return pipe.core_has_message();}
+message core_pipe::peek() const {return pipe.core_peek();}
+message core_pipe::read() {return pipe.core_read();}
+message core_pipe::blocking_read() {return pipe.core_blocking_read();}
+void core_pipe::write(const message &m) {pipe.core_write(m);}
