@@ -143,6 +143,7 @@ static void run_core(const vector<message> &vm)
 
 int main(int argc, char *argv[])
 {
+	setlocale(LC_ALL,"");
 	vector<message> vm;
 	for (int i=1; i<argc-1; i+=2)
 	{
