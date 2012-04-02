@@ -52,8 +52,7 @@ message message_pipe::read()
 message message_pipe::blocking_read()
 {
 	mutex_lock_guard l(messages->mutex);
-	if (!locked_has_message())
-		messages->cond.wait(l);
+	messages->cond.wait(l, [this](){return this->locked_has_message();});
 	return locked_read();
 }
 
