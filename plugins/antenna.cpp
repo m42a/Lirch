@@ -28,7 +28,7 @@ namespace std
 	struct hash<QHostAddress>
 	{size_t operator()(const QHostAddress& v) const
 		{
-			return std::hash(v.toString());
+			return std::hash<std::string>()(v.toString().toStdString());
 		}
 	};
 
