@@ -9,33 +9,36 @@ class raw_edict_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new raw_edict_message(*this));}
-	static message create(const QString &c) {return message_create("raw_edict", new raw_edict_message(c));}
+	static message create(const QString &c, const QString &d) {return message_create("raw_edict", new raw_edict_message(c,d));}
 
-	raw_edict_message(const QString &c) : contents(c) {}
+	raw_edict_message(const QString &c, const QString &d) : contents(c), channel(d) {}
 
 	QString contents;
+	QString channel;
 };
 
 class edict_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new edict_message(*this));}
-	static message create(const QString &c) {return message_create("edict", new edict_message(c));}
+	static message create(const QString &c, const QString &d) {return message_create("edict", new edict_message(c,d));}
 
-	edict_message(const QString &c) : contents(c) {}
+	edict_message(const QString &c, const QString &d) : contents(c), channel(d) {}
 
 	QString contents;
+	QString channel;
 };
 
 class me_edict_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new me_edict_message(*this));}
-	static message create(const QString &c) {return message_create("me_edict", new me_edict_message(c));}
+	static message create(const QString &c, const QString &d) {return message_create("me_edict", new me_edict_message(c,d));}
 
-	me_edict_message(const QString &c) : contents(c) {}
+	me_edict_message(const QString &c, const QString &d) : contents(c), channel(d) {}
 
 	QString contents;
+	QString channel;
 };
 
 #endif

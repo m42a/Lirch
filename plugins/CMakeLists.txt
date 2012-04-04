@@ -8,8 +8,8 @@ include_directories(
 )
 
 # Antenna plugin
-# add_library(antenna SHARED antenna.cpp)
-# target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
+ add_library(antenna SHARED antenna.cpp)
+ target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
 
 # Logger plugin
 # add_library(logger SHARED logger.cpp)
