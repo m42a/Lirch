@@ -29,16 +29,16 @@ void run(plugin_pipe p, string name)
 			auto e=dynamic_cast<raw_edict_message *>(m.getdata());
 			if (!e)
 				continue;
-			auto str=e->contents;
+			auto &str=e->contents;
 			if (str.isEmpty())
 				//We don't propagate empty messages (on principle)
 				continue;
 			if (str[0]!='/')
-				p.write(edict_message::create(str));
+				p.write(edict_message::create(str,e->channel));
 			else
 			{
 				if (str.startsWith("/me "))
-					p.write(me_edict_message::create(str.section(' ',1)));
+					p.write(me_edict_message::create(str.section(' ',1),e->channel));
 			}
 		}
 		else
