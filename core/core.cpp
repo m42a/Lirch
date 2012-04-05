@@ -117,6 +117,8 @@ static void target_plugin(const message &m)
 
 static void initiate_shutdown()
 {
+	if (verbose)
+		cerr << " initiated a shutdown" << endl;
 	for (auto &i : out_pipes)
 		i.second.write(shutdown_message::create());
 }
@@ -147,6 +149,7 @@ static void run_core(const vector<message> &vm)
 	{
 		process(in_pipe.blocking_read());
 	}
+	cout << "Exiting core" << endl;
 }
 
 int main(int argc, char *argv[])

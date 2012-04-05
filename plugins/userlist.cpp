@@ -18,6 +18,24 @@ public:
 	int msecs;
 };
 
+void thread_notify(plugin_pipe pin, plugin_pipe pout)
+{
+	while (true)
+	{
+		message m=pin.blocking_read();
+		if (m.type=="userlist_timer")
+		{
+			auto s=dynamic_cast<userlist_timer *>(m.getdata());
+			if (!s)
+				continue;
+			this_thread::sleep_for(chrono::milliseconds(s->msecs));
+			pout.write(userlist_timer::create(s->msecs));
+		}
+		else
+			return;
+	}
+}
+
 void run(plugin_pipe p, string name)
 {
 	p.write(registration_message::create(0, name, "userlist_request"));
@@ -25,11 +43,15 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_me"));
 	unordered_map<QString, user_status> statuses;
+	bidirectional_message_pipe bmp;
+	thread t(thread_notify, plugin_pipe(bmp), p);
 	while (true)
 	{
 		message m=p.blocking_read();
 		if (m.type=="shutdown")
 		{
+			bmp.core_write(shutdown_message::create());
+			t.join();
 			return;
 		}
 		else if (m.type=="registration_status")
@@ -59,20 +81,13 @@ void run(plugin_pipe p, string name)
 			auto s=dynamic_cast<userlist_timer *>(m.getdata());
 			if (!s)
 				continue;
+			bmp.core_write(m);
 			time_t now=time(NULL);
 			//Remove all nicks that haven't been seen in 2 minutes
 			decltype(statuses.begin()) i;
 			while ((i=std::find_if(statuses.begin(), statuses.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=statuses.end())
 				statuses.erase(i);
 			p.write(userlist_message::create(statuses));
-			int msecs=s->msecs;
-			thread th([&p,msecs]()
-			{
-				plugin_pipe pp;
-				this_thread::sleep_for(chrono::milliseconds(msecs));
-				pp.write(userlist_timer::create(msecs));
-			});
-			th.detach();
 		}
 		else if (m.type=="received")
 		{
