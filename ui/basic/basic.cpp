@@ -49,7 +49,7 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			cout << s->channel.toLocal8Bit().constData() << ": " << s->nick.toLocal8Bit().constData() << " " << s->contents.toLocal8Bit().constData() << endl;
+			cout << s->channel.toLocal8Bit().constData() << ": * " << s->nick.toLocal8Bit().constData() << " " << s->contents.toLocal8Bit().constData() << endl;
 		}
 		else
 		{
