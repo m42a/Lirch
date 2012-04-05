@@ -1,3 +1,5 @@
+#include <thread>
+
 #include "lirch_plugin.h"
 #include "userlist_messages.h"
 #include "user_status.h"
@@ -63,7 +65,14 @@ void run(plugin_pipe p, string name)
 			while ((i=std::find_if(statuses.begin(), statuses.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=statuses.end())
 				statuses.erase(i);
 			p.write(userlist_message::create(statuses));
-			p.write(userlist_timer::create(s->msecs));
+			int msecs=s->msecs;
+			thread th([&p,msecs]()
+			{
+				plugin_pipe pp;
+				this_thread::sleep_for(chrono::milliseconds(msecs));
+				pp.write(userlist_timer::create(msecs));
+			});
+			th.detach();
 		}
 		else if (m.type=="received")
 		{
