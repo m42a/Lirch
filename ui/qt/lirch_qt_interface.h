@@ -2,6 +2,7 @@
 #define LIRCH_QT_INTERFACE_H
 
 #include <QEvent>
+#include <QFileDialog>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QObject>
@@ -78,6 +79,13 @@ private:
     // chatArea draws (alternating) -----/_____ b/t messages?
 
 private slots:
+    void on_actionOpenLog_triggered();
+    void on_actionSaveLog_triggered();
+    void on_actionWizard_triggered();
+    void on_actionViewTransfers_triggered();
+    void on_actionViewDefault_triggered();
+    void on_actionNewTransfer_triggered();
+    void on_actionNewChannel_triggered();
     void on_actionConnect_triggered(bool);
     void on_actionViewSendButton_toggled(bool);
     void on_actionViewUserList_toggled(bool);
@@ -86,6 +94,9 @@ private slots:
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
     void fatal_error(QString);
+
+signals:
+    void tabChanged(int);
 };
 
 #endif // LIRCH_QT_INTERFACE_H

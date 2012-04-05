@@ -19,7 +19,7 @@
 #include "plugins/edict_messages.h"
 
 void run(plugin_pipe p, std::string name) {
-    p.write(registration_message::create(LIRCH_MSG_PRI_REG_STAT, name, "me_edict_message"));
+    p.write(registration_message::create(LIRCH_MSG_PRI_REG_STAT, name, "display"));
     // TODO register for recieved messages
     while (true) {
         // Fetch a message from the pipe
@@ -37,8 +37,8 @@ void run(plugin_pipe p, std::string name) {
             // Try again on failure
             if (!reg->status) {
                 if (reg->priority > 30000) {
-                  // ??? reg->decrement_priority();
-                  p.write(registration_message::create(reg->priority, name, reg->type));
+                  // FIXME??? reg->decrement_priority(); instead of -1
+                  p.write(registration_message::create(reg->priority - 1, name, reg->type));
                 } else {
                   return;
                 }
@@ -226,7 +226,7 @@ void LirchQtInterface::on_msgSendButton_clicked()
     //dynamic_cast<edict_message *>();
     //dynamic_cast<me_edict_message *>();
     // FIXME Update the proper model, default:
-    ui->chatViewArea->append(prefix);
+    //ui->chatViewArea->append(prefix);
 
     // FIXME here is the failure condition
     // QMessageBox::warning(this,
@@ -286,4 +286,58 @@ void LirchQtInterface::fatal_error(QString msg)
                              tr("Fatal Error"),
                              tr("Details: '%1'").arg(msg));
     emit close();
+}
+
+void LirchQtInterface::on_actionNewChannel_triggered()
+{
+    QMessageBox::information(this,
+                             tr("Unimplemented Feature"),
+                             tr("The %1 feature is forthcoming.").arg("New > Private Channel"));
+}
+
+void LirchQtInterface::on_actionNewTransfer_triggered()
+{
+    QMessageBox::information(this,
+                             tr("Unimplemented Feature"),
+                             tr("The %1 feature is forthcoming.").arg("New > File Tranfer"));
+}
+
+void LirchQtInterface::on_actionViewDefault_triggered()
+{
+    int index = ui->chatTabWidget->indexOf(ui->defaultChannelTab);
+    if (index != -1) {
+        ui->chatTabWidget->setCurrentIndex(index);
+    }
+}
+
+void LirchQtInterface::on_actionViewTransfers_triggered()
+{
+    QMessageBox::information(this,
+                             tr("Unimplemented Feature"),
+                             tr("The %1 feature is forthcoming.").arg("View > File Tranfers"));
+}
+
+void LirchQtInterface::on_actionWizard_triggered()
+{
+    QMessageBox::information(this,
+                             tr("Unimplemented Feature"),
+                             tr("The %1 feature is forthcoming.").arg("Help > Setup Wizard"));
+}
+
+void LirchQtInterface::on_actionSaveLog_triggered()
+{
+    QMessageBox::information(this,
+                             tr("Confirmation"),
+                             tr("Log saved: %1/default.log").arg(LIRCH_DEFAULT_LOG_DIR));
+}
+
+void LirchQtInterface::on_actionOpenLog_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
+    ui->chatLogArea->clear();
+    ui->chatLogArea->append(filename);
+    int index = ui->chatTabWidget->indexOf(ui->logChannelTab);
+    if (index != -1) {
+        ui->chatTabWidget->setCurrentIndex(index);
+    }
 }

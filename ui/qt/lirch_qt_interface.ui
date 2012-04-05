@@ -26,21 +26,24 @@
    <string>Lirch @LIRCH_VERSION_STRING@</string>
   </property>
   <widget class="QWidget" name="mainWidget">
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>32</x>
-      <y>12</y>
-      <width>416</width>
-      <height>229</height>
+      <x>2</x>
+      <y>2</y>
+      <width>631</width>
+      <height>441</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="mainLayout">
      <item>
       <widget class="QSplitter" name="chatLayout">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
        <widget class="QTabWidget" name="chatTabWidget">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="tabsClosable">
          <bool>false</bool>
@@ -53,6 +56,14 @@
           <string>Chat View</string>
          </attribute>
          <widget class="QTextEdit" name="chatViewArea">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>256</width>
+            <height>192</height>
+           </rect>
+          </property>
           <property name="readOnly">
            <bool>true</bool>
           </property>
@@ -63,6 +74,14 @@
           <string>Log View</string>
          </attribute>
          <widget class="QTextEdit" name="chatLogArea">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>256</width>
+            <height>192</height>
+           </rect>
+          </property>
           <property name="readOnly">
            <bool>true</bool>
           </property>
@@ -103,6 +122,14 @@
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>640</width>
+     <height>27</height>
+    </rect>
+   </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>&amp;File</string>
