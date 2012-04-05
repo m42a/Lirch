@@ -15,6 +15,7 @@
 #include <QtNetwork>
 #include <unordered_set>
 
+#include "lirch_constants.h"
 #include "blocker_messages.h"
 #include "edict_messages.h"
 #include "lirch_plugin.h"

@@ -43,25 +43,30 @@
          <number>0</number>
         </property>
         <property name="tabsClosable">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="movable">
          <bool>true</bool>
         </property>
-        <widget class="QWidget" name="tab1">
+        <widget class="QWidget" name="defaultChannelTab">
          <attribute name="title">
-          <string>Tab 1</string>
+          <string>Chat View</string>
+         </attribute>
+         <widget class="QTextEdit" name="chatViewArea">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="logChannelTab">
+         <attribute name="title">
+          <string>Log View</string>
          </attribute>
          <widget class="QTextEdit" name="chatLogArea">
           <property name="readOnly">
            <bool>true</bool>
           </property>
          </widget>
-        </widget>
-        <widget class="QWidget" name="tab2">
-         <attribute name="title">
-          <string>Tab 2</string>
-         </attribute>
         </widget>
        </widget>
        <widget class="QListView" name="chatUserList"/>

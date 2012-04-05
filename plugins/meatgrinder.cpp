@@ -39,7 +39,7 @@ void run(plugin_pipe p, string name)
 			else
 			{
 				if (str.startsWith("/me "))
-					p.write(me_edict_message::create(str.section(' ',1)));
+					p.write(me_edict_message::create(str.section(' ',1),e->channel));
 				if (str=="/quit" || str.startsWith("/quit "))
 					p.write(core_quit_message::create());
 			}

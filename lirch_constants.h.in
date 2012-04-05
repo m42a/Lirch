@@ -13,6 +13,11 @@
 #define LIRCH_MSG_MAX_PRI     32766
 #define LIRCH_MSG_MIN_PRI    -32766
 
+// UI
+
+#define LIRCH_DEFAULT_CHANNEL_ID "default"
+#define LIRCH_QT_INTERFACE_ID    "qt_ui_v@LIRCH_VERSION_STRING@"
+
 // MESSAGES
 
 #define LIRCH_MSG_TYPE_SHUTDOWN  "shutdown"
@@ -25,8 +30,7 @@
 #define LIRCH_MSG_TYPE_REG_STAT "registration_status"
 #define LIRCH_MSG_PRI_REG_STAT  32000
 
-#define LIRCH_MSG_TYPE_QT_UI "qt_ui"
-#define LIRCH_MSG_PRI_QT_UI  30000
+// TODO constants for different message types the UI receives
 
 // ANTENNA
 

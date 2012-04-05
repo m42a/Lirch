@@ -1,7 +1,5 @@
 #include "lirch_qt_interface.h"
 #include "ui_lirch_qt_interface.h"
-#include "plugins/lirch_plugin.h"
-#include "plugins/edict_messages.h"
 
 // TODO (not in order of importance)
 // 1) Ugh, fix the layout somehow?
@@ -17,15 +15,17 @@
 //    a) Channel creation
 //    b) Polling for participants
 
+#include "plugins/lirch_plugin.h"
+#include "plugins/edict_messages.h"
+
 void run(plugin_pipe p, std::string name) {
-    p.write(registration_message::create(LIRCH_MSG_DPRI_REG_STAT, name, LIRCH_MSG_TYPE_QT_UI));
+    p.write(registration_message::create(LIRCH_MSG_PRI_REG_STAT, name, "me_edict_message"));
     // TODO register for recieved messages
     while (true) {
         // Fetch a message from the pipe
         message m = p.blocking_read();
         // Determine what type of message it is
         if (m.type == LIRCH_MSG_TYPE_SHUTDOWN) {
-            // TODO shutdown the UI
             return;
         } else if (m.type == LIRCH_MSG_TYPE_REG_STAT) {
             // Recieved a registration status message
@@ -35,12 +35,11 @@ void run(plugin_pipe p, std::string name) {
                 continue;
             }
             // Try again on failure
-            if (!reg->status)
-                if (reg->priority > LIRCH_MSG_DPRI_QT_UI) {
+            if (!reg->status) {
+                if (reg->priority > 30000) {
                   // ??? reg->decrement_priority();
                   p.write(registration_message::create(reg->priority, name, reg->type));
                 } else {
-                  // TODO shutdown the UI
                   return;
                 }
             }
@@ -51,23 +50,77 @@ void run(plugin_pipe p, std::string name) {
     }
 };
 
+LirchClientPipe::LirchClientPipe()
+{
+    // FIXME is has_connection necessary?
+    static bool has_connection = false;
+    hole = nullptr;
+    if (!has_connection) {
+        has_connection = true;
+        hole = new plugin_pipe();
+    }
+}
+
+LirchClientPipe::~LirchClientPipe()
+{
+    if (hole != nullptr) {
+        delete hole;
+    }
+}
+
+void LirchClientPipe::start()
+{
+    run(*hole, LIRCH_QT_INTERFACE_ID);
+    emit stop("core_processor");
+}
+
+// TODO for Tor (by priority)
+// Get QTUI to interact with Core (message display)
+// Get QTUI to interact with Core (nick requests, blocking and polling)
+// Write Wizard/nickchange widgets
+
 LirchQtInterface::LirchQtInterface(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::LirchQtInterface),
     settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME)
 {
+    // Initialize the UI
     ui->setupUi(this);
-    // Add a variety of enhancements
+    // Add a variety of UI enhancements (select on focus and quit action)
     ui->msgTextBox->installEventFilter(this);
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
-    // Load up the settings
-    loadSettings();
+
+    // client_pipe facilitates communication with the core
+    client_pipe = new LirchClientPipe();
+    if (client_pipe->hole == nullptr) {
+        emit fatal_error("client_pipe");
+    } else {
+        // Setup core_processor to run client_pipe
+        QThread *core_processor = new QThread();
+        client_pipe->moveToThread(core_processor);
+        connect(core_processor, SIGNAL(started()), client_pipe, SLOT(start()));
+        // When the client_pipe is done, quit the thread
+        connect(client_pipe, SIGNAL(stop(QString)), core_processor, SLOT(quit()));
+        // The first of these is required for cleanup, second can be done otherwise
+        connect(client_pipe, SIGNAL(stop(QString)), client_pipe, SLOT(deleteLater()));
+        connect(client_pipe, SIGNAL(stop(QString)), core_processor, SLOT(deleteLater()));
+        // Kill the UI if core_processor receives shutdown (TODO should reconnect?)
+        connect(client_pipe, SIGNAL(stop(QString)), this, SLOT(fatal_error(QString)));
+
+        // Load up the settings and kick things off
+        loadSettings();
+        core_processor->start();
+    }
 }
 
 LirchQtInterface::~LirchQtInterface()
 {
     // Save settings on destruction, right? Right.
     saveSettings();
+
+    // TODO free the client_pipe? Think this is handled above.
+    // delete client_pipe;
+
     delete ui;
 }
 
@@ -162,14 +215,18 @@ void LirchQtInterface::on_msgSendButton_clicked()
         prefix += "[" + QTime::currentTime().toString() + "] ";
     }
 
-    // TODO wrap text in message and delegate to core
-    message edict, echo;
-    edict = raw_edict_message::create(text, "default");
-    client_pipe->write(edict);
-    // FIXME cast to recieved{,me}
-    echo = client_pipe->blocking_read();
+    // The core will pass this raw edict to the meatgrinder
+    message edict = raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL_ID);
+    client_pipe->hole->write(edict);
+
+    // And send back a response
+    message echo = client_pipe->hole->blocking_read();
+
+    // FIXME cast echo to recieved{,me}
+    //dynamic_cast<edict_message *>();
+    //dynamic_cast<me_edict_message *>();
     // FIXME Update the proper model, default:
-    ui->chatLogArea->append(prefix + echo->contents);
+    ui->chatViewArea->append(prefix);
 
     // FIXME here is the failure condition
     // QMessageBox::warning(this,
@@ -221,4 +278,12 @@ void LirchQtInterface::on_actionViewTimestamps_toggled(bool checked)
 void LirchQtInterface::on_actionViewIgnored_toggled(bool checked)
 {
     show_ignored_messages = checked;
+}
+
+void LirchQtInterface::fatal_error(QString msg)
+{
+    QMessageBox::information(this,
+                             tr("Fatal Error"),
+                             tr("Details: '%1'").arg(msg));
+    emit close();
 }

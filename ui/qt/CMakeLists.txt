@@ -1,11 +1,14 @@
-# Use QtCore and QtGui
+# Use QtCore and QtGui, QtNetwork and QtTest (eventually)
 set(QT_DONT_USE_QTCORE FALSE)
 set(QT_DONT_USE_QTGUI FALSE)
+set(QT_USE_QTNETWORK TRUE)
+set(QT_USE_QTTEST TRUE)
 include("${QT_USE_FILE}")
 set(LIRCH_QT_DIR "${CMAKE_BINARY_DIR}/ui/qt")
 include_directories(
   "${QT_INCLUDE_DIR}"
   "${QT_QTNETWORK_INCLUDE_DIR}"
+  "${QT_QTTEST_INCLUDE_DIR}"
   "${LIRCH_QT_DIR}"
 )
 
@@ -25,5 +28,5 @@ add_executable(lirch-qt
 	${lirch_qt_interface_MOC_HEADERS}
 	${lirch_qt_interface_UI_HEADERS}
 	${lirch_qt_interface_QRC_HEADERS})
-target_link_libraries(lirch-qt ${QT_LIBRARIES})
+target_link_libraries(lirch-qt envelope ${QT_LIBRARIES})
 

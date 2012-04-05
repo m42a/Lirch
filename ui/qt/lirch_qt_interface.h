@@ -1,15 +1,33 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
-#include "lirch_constants.h"
+#include <QEvent>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QObject>
 #include <QSettings>
 #include <QString>
+#include <QThread>
 #include <QTime>
-#include <QObject>
-#include <QEvent>
 #include <QTimer>
+
+#include "lirch_constants.h"
+#include <string>
+#include "core/message_view.h"
+
+class LirchClientPipe : public QObject {
+    Q_OBJECT
+    friend class LirchQtInterface;
+public:
+    explicit LirchClientPipe();
+    ~LirchClientPipe();
+private:
+    plugin_pipe * hole;
+public slots:
+    void start();
+signals:
+    void stop(QString);
+};
 
 namespace Ui {
     class LirchQtInterface;
@@ -18,18 +36,25 @@ namespace Ui {
 class LirchQtInterface : public QMainWindow {
     Q_OBJECT
 public:
-    LirchQtInterface(QWidget *parent = 0);
+    explicit LirchQtInterface(QWidget *parent = 0);
     ~LirchQtInterface();
     bool eventFilter(QObject *object, QEvent *event);
 
 protected:
     void changeEvent(QEvent *e);
-    void loadSettings();
-    void saveSettings();
 
 private:
+    void loadSettings();
+    void saveSettings();
     Ui::LirchQtInterface *ui;
-    // Antenna, Logger, and Message Pipe references
+    LirchClientPipe *client_pipe;
+    // Application settings
+    QSettings settings;
+    QString nick;
+    // QString default_save_path;
+    bool show_message_timestamps;
+    bool show_ignored_messages;
+
     // Antenna Slots:
     //   Add to blocklist
     //     Complain if and only if failure to fulfill request
@@ -43,14 +68,6 @@ private:
     //     If not in blocklist, package a message and send to core
     //     If in blocklist, ignore
 
-    plugin_pipe * client_pipe;
-
-    // Application settings
-    QSettings settings;
-    QString nick;
-    // QString default_save_path;
-    bool show_message_timestamps;
-    bool show_ignored_messages;
     // How to represent chatArea?
     // Ideas: class extends QTabWidget
     // Registers QTab on channel creation/removal
@@ -68,6 +85,7 @@ private slots:
     void on_actionViewTimestamps_toggled(bool);
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
+    void fatal_error(QString);
 };
 
 #endif // LIRCH_QT_INTERFACE_H
