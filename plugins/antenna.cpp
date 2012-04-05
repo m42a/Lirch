@@ -17,6 +17,7 @@
 
 #include "blocker_messages.h"
 #include "edict_messages.h"
+#include "received_messages.h"
 #include "lirch_plugin.h"
 
 using namespace std;
@@ -145,6 +146,32 @@ void run(plugin_pipe p, string name)
 			}
 		}
 
+		while (udpSocket.hasPendingDatagrams())
+		{
+			char broadcast[512];
+			QHostAddress senderIP;
+			udpSocket.readDatagram(broadcast,512,senderIP,45454);
+
+			QString destinationChannel=QString::toUtf8(broadcast+4);
+			QString senderNick=QString::toUtf8(broadcast+68);
+			QString sentContents=QString::toUtf8(broadcast+132);
+
+			string type(broadcast,4);
+			if (type=="edct")
+			{
+				p.write(received_message::create(destinationChannel,SenderNick,sentContents));
+			}
+			else if (type=="mdct")
+			{
+				p.write(received_me_message::create(destinationChannel,SenderNick,sentContents));
+			}
+			else
+			{
+				continue;
+			}
+
+		}
+
 
 	}
 
@@ -152,12 +179,13 @@ void run(plugin_pipe p, string name)
 
 };
 
+//if components are too long, the cropped version might not have a \0 to terminate it.  might need fixing later.
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents)
 {
 	QByteArray output;
 	output += type.toUtf8();
 	output += channel.toUtf8().leftJustified(64,'\0',true);
 	output += nick.toUtf8().leftJustified(64,'\0',true);
-	output += contents.toUtf8();
+	output += contents.toUtf8().truncate(256);
 	return output;
 };
