@@ -1,5 +1,7 @@
 #include "lirch_qt_interface.h"
 #include "ui_lirch_qt_interface.h"
+#include "plugins/lirch_plugin.h"
+#include "plugins/edict_messages.h"
 
 // TODO (not in order of importance)
 // 1) Ugh, fix the layout somehow?
@@ -15,10 +17,44 @@
 //    a) Channel creation
 //    b) Polling for participants
 
+void run(plugin_pipe p, std::string name) {
+    p.write(registration_message::create(LIRCH_MSG_DPRI_REG_STAT, name, LIRCH_MSG_TYPE_QT_UI));
+    // TODO register for recieved messages
+    while (true) {
+        // Fetch a message from the pipe
+        message m = p.blocking_read();
+        // Determine what type of message it is
+        if (m.type == LIRCH_MSG_TYPE_SHUTDOWN) {
+            // TODO shutdown the UI
+            return;
+        } else if (m.type == LIRCH_MSG_TYPE_REG_STAT) {
+            // Recieved a registration status message
+            auto reg = dynamic_cast<registration_status *>(m.getdata());
+            // Or not...
+            if (!reg) {
+                continue;
+            }
+            // Try again on failure
+            if (!reg->status)
+                if (reg->priority > LIRCH_MSG_DPRI_QT_UI) {
+                  // ??? reg->decrement_priority();
+                  p.write(registration_message::create(reg->priority, name, reg->type));
+                } else {
+                  // TODO shutdown the UI
+                  return;
+                }
+            }
+        } else {
+            // By default, echo the message with decremented priority
+            p.write(m.decrement_priority());
+        }
+    }
+};
+
 LirchQtInterface::LirchQtInterface(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::LirchQtInterface),
-    settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch")
+    settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME)
 {
     ui->setupUi(this);
     // Add a variety of enhancements
@@ -51,7 +87,7 @@ void LirchQtInterface::loadSettings()
 {
     settings.beginGroup("UserData");
     // TODO mitigate need for default nick
-    nick = settings.value("nick", "Spartacus").value<QString>();
+    nick = settings.value("nick", "").value<QString>();
     settings.endGroup();
     settings.beginGroup("QtMainWindow");
     resize(settings.value("size", QSize(640, 480)).toSize());
@@ -120,27 +156,26 @@ void LirchQtInterface::on_msgSendButton_clicked()
     }
 
     // All text is prefixed with the nick
-    QString prefix = "<" + nick + ">";
+    QString prefix = "<" + nick + "> ";
     // And potentially a timestamp
     if (show_message_timestamps) {
-        prefix += " [" + QTime::currentTime().toString() + "]";
+        prefix += "[" + QTime::currentTime().toString() + "] ";
     }
 
     // TODO wrap text in message and delegate to core
-    //message edict, echo;
-    //edict.set_data(prefix + ": " + text);
-    //client_pipe->write(edict);
-    //echo = client_pipe->blocking_read();
-    //ui->chatLogArea->append(echo.get_data());
-
+    message edict, echo;
+    edict = raw_edict_message::create(text, "default");
+    client_pipe->write(edict);
+    // FIXME cast to recieved{,me}
+    echo = client_pipe->blocking_read();
     // FIXME Update the proper model, default:
-    ui->chatLogArea->append(prefix + ": " + text);
+    ui->chatLogArea->append(prefix + echo->contents);
 
     // FIXME here is the failure condition
-    QMessageBox::warning(this,
-                         tr("Unimplemented Feature"),
-                         tr("'%1' could not be sent.").arg(text),
-                         QMessageBox::Ok);
+    // QMessageBox::warning(this,
+    //                     tr("Unimplemented Feature"),
+    //                     tr("'%1' could not be sent.").arg(text),
+    //                     QMessageBox::Ok);
 
     // Don't forget to clear the text from the box
     ui->msgTextBox->clear();

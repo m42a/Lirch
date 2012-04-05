@@ -1,11 +1,40 @@
 #ifndef LIRCH_CONSTANTS_H
 #define LIRCH_CONSTANTS_H
 
+// GLOBALS && CORE
+
 #define LIRCH_VERSION_STRING "v@LIRCH_VERSION_STRING@"
 #define LIRCH_BUILD_HASH     "@LIRCH_BUILD_HASH@"
 
 #define LIRCH_COMPANY_NAME   "The Addams Family"
 #define LIRCH_PRODUCT_NAME   "LIRCH"
 #define LIRCH_COPYRIGHT_YEAR "2012"
+
+#define LIRCH_MSG_MAX_PRI     32766
+#define LIRCH_MSG_MIN_PRI    -32766
+
+// MESSAGES
+
+#define LIRCH_MSG_TYPE_SHUTDOWN  "shutdown"
+
+// Edict messages
+#define LIRCH_MSG_TYPE_EDICT     "edict"
+#define LIRCH_MSG_TYPE_RAW_EDICT "raw_edict"
+#define LIRCH_MSG_TYPE_ME_EDICT  "me_edict"
+
+#define LIRCH_MSG_TYPE_REG_STAT "registration_status"
+#define LIRCH_MSG_PRI_REG_STAT  32000
+
+#define LIRCH_MSG_TYPE_QT_UI "qt_ui"
+#define LIRCH_MSG_PRI_QT_UI  30000
+
+// ANTENNA
+
+#define LIRCH_DEFAULT_ADDR "244.0.0.244"
+#define LIRCH_DEFAULT_PORT 45454
+
+// LOGGER
+
+#define LIRCH_DEFAULT_LOG_DIR "@LIRCH_DEFAULT_LOG_DIR@"
 
 #endif // LIRCH_CONSTANTS_H

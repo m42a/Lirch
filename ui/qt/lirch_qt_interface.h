@@ -43,6 +43,8 @@ private:
     //     If not in blocklist, package a message and send to core
     //     If in blocklist, ignore
 
+    plugin_pipe * client_pipe;
+
     // Application settings
     QSettings settings;
     QString nick;

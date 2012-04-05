@@ -26,6 +26,19 @@ public:
 	static message create() {return message_create("shutdown", NULL);}
 };
 
+class registration_status : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_status(*this));}
+	static message create(bool b, int p, const std::string &s) {return message_create("registration_status", new registration_status(b,p,s));}
+
+	registration_status(bool b, int p, const std::string &s) : status(b), priority(p), type(s) {}
+
+	bool status;
+	int priority;
+	std::string type;
+};
+
 //You must be able to send these messages
 
 //This message tells the core you are done running.  Your plugin should exit
@@ -58,19 +71,5 @@ public:
 	std::string plugin_name;
 	std::string message_type;
 };
-
-class registration_status : public message_data
-{
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new registration_status(*this));}
-	static message create(bool b, int p, const std::string &s) {return message_create("registration_status", new registration_status(b,p,s));}
-
-	registration_status(bool b, int p, const std::string &s) : status(b), priority(p), type(s) {}
-
-	bool status;
-	int priority;
-	std::string type;
-};
-
 
 #endif

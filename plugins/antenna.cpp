@@ -51,8 +51,8 @@ void run(plugin_pipe p, string name)
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
-	QHostAddress groupAddress("224.0.0.224");
-	quint16 port = 45454;
+	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
+	quint16 port = LIRCH_DEFAULT_PORT;
 
 	if (!(udpSocket.bind(groupAddress,port) && udpSocket.joinMulticastGroup(groupAddress)))
 	{
