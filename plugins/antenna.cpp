@@ -172,6 +172,8 @@ void run(plugin_pipe p, string name)
 			quint16 senderPort;
 			qint64 size = udpSocket.readDatagram(broadcast,512,&senderIP,&senderPort);
 			broadcast[size]='\0';
+			if(blocklist.end()!=blocklist.find(senderIP))
+				continue;
 
 			QString destinationChannel=QString::fromUtf8(broadcast+4);
 			QString senderNick=QString::fromUtf8(broadcast+68);

@@ -1,6 +1,10 @@
+#include <QtCore>
+#include <QHostAddress>
+
 #include "lirch_plugin.h"
 #include "edict_messages.h"
 #include "core/core_messages.h"
+#include "blocker_messages.h"
 
 using namespace std;
 
@@ -42,6 +46,10 @@ void run(plugin_pipe p, string name)
 					p.write(me_edict_message::create(str.section(' ',1),e->channel));
 				if (str=="/quit" || str.startsWith("/quit "))
 					p.write(core_quit_message::create());
+				if (str.startsWith("/block "))
+					p.write(block_message::create(QHostAddress(str.section(' ',1))));
+				if (str.startsWith("/unblock "))
+					p.write(unblock_message::create(QHostAddress(str.section(' ',1))));
 			}
 		}
 		else
