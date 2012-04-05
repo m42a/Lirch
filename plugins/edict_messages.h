@@ -48,7 +48,7 @@ public:
 	static message create(const QString &ch, const QString &c, const QString &nik) {return message_create("display", new display_message(ch, c, nik));}
 
 	display_message(const QString &ch, const QString &c, const QString &nik) : contents(c), channel(ch), nick(nik)  {}
-	
+
 	QString channel;
 	QString contents;
 	QString nick;

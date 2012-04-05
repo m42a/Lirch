@@ -26,7 +26,16 @@ void run(plugin_pipe p, string name)
 		message m=p.blocking_read();
 		if (m.type=="shutdown")
 		{
+			t.join();
 			return;
+		}
+		else if (m.type=="display")
+		{
+			auto s=dynamic_cast<display_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+			cout << s->channel.toLocal8Bit().constData() << ": <" << s->nick.toLocal8Bit().constData() << "> " << s->contents.toLocal8Bit().constData() << endl;
 		}
 		else
 		{
