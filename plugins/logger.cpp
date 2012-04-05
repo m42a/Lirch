@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <iostream>
 #include "core/message.h"
 #include "edict_messages.h"
 #include "lirch_plugin.h"
@@ -12,6 +13,7 @@ void run(plugin_pipe pipe, std::string name)
 {
 	bool shutdown = false;
 	pipe.write(registration_message::create(0, name, "display"));
+	pipe.write(registration_message::create(0, name, "me_display"));
 	map<QString, unique_ptr<ofstream> > open_files;
 	while(!shutdown)
 	{
@@ -44,8 +46,30 @@ void run(plugin_pipe pipe, std::string name)
 					open_files[channelname] = unique_ptr<ofstream>(new ofstream());
 					open_files[channelname]->open(filename.c_str(), fstream::app);
 				}
-				string output(internals->contents.toUtf8().data());
-				open_files[channelname]->write(output.c_str(), sizeof output);
+				string nick(internals->nick.toUtf8().data());
+				string contents(internals->contents.toUtf8().data());
+				string output = "<"+nick+"> "+contents+"\n";
+				open_files[channelname]->write(output.c_str(), output.size());
+			}
+		}
+		else if (front.type == "me_display")
+		{
+			me_display_message * internals = dynamic_cast<me_display_message *>(front.getdata());
+			if(internals)
+			{
+				pipe.write(front.decrement_priority());
+				QString channelname = internals->channel;
+				if(!open_files.count(channelname))
+				{
+					string filename(channelname.toUtf8().data());
+					filename += ".txt";
+					open_files[channelname] = unique_ptr<ofstream>(new ofstream());
+					open_files[channelname]->open(filename.c_str(), fstream::app);
+				}
+				string nick(internals->nick.toUtf8().data());
+				string contents(internals->contents.toUtf8().data());
+				string output = "* "+nick+" "+contents+"\n";
+				open_files[channelname]->write(output.c_str(), output.size());
 			}
 		}
 		else
