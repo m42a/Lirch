@@ -27,4 +27,11 @@ public:
 	message mess;
 };
 
+class core_quit_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new core_quit_message(*this));}
+	static message create() {return message_create("core_quit", NULL);}
+};
+
 #endif
