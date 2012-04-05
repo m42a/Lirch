@@ -14,7 +14,7 @@ void send_input(plugin_pipe p)
 		//I can't use the regular constructor since that assumes the
 		//locale is ASCII
 		QString q=QString::fromLocal8Bit(line.c_str());
-		p.write(raw_edict_message::create(q));
+		p.write(raw_edict_message::create(q,"default"));
 	}
 }
 
