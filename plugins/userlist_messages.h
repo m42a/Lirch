@@ -7,20 +7,6 @@
 #include "core/message.h"
 #include "user_status.h"
 
-namespace std
-{
-
-	template <>
-	struct hash<QString>
-	{
-		size_t operator()(const QString& v) const
-		{
-			return std::hash<std::string>()(v.toStdString());
-		}
-	};
-
-}
-
 class blocklist_message : public message_data
 {
 public:
