@@ -2,27 +2,27 @@
 #define USERLIST_MESSAGES_H_
 
 #include <unordered_map>
-#include <QCore/QString>
+#include <QtCore/QString>
 
 #include "core/message.h"
 #include "user_status.h"
 
-class blocklist_message : public message_data
+class userlist_message : public message_data
 {
 public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new blocklist_message(*this));}
-	static message create(const unordered_map<QString, user_status> &m) {return message_create("blocklist", new blocklist_message(m));}
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new userlist_message(*this));}
+	static message create(const std::unordered_map<QString, user_status> &m) {return message_create("userlist", new userlist_message(m));}
 
-	blocklist_message(const unordered_map<QString, user_status> &m) : statuses(m) {}
+	userlist_message(const std::unordered_map<QString, user_status> &m) : statuses(m) {}
 
-	unordered_map<QString, user_status> statuses;
+	std::unordered_map<QString, user_status> statuses;
 };
 
-class blocklist_request : public message_data
+class userlist_request : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(nullptr);}
-	static message create() {return message_create("blocklist_request", nullptr);}
+	static message create() {return message_create("userlist_request", nullptr);}
 };
 
 #endif

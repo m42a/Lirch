@@ -1,8 +1,8 @@
 #ifndef USER_STATUS_H_
 #define USER_STATUS_H_
 
-#include <QCore/QString>
-#include <QNetwork>
+#include <QtCore/QString>
+#include <QtNetwork>
 #include <ctime>
 #include <unordered_set>
 
@@ -23,7 +23,7 @@ namespace std
 struct user_status
 {
 	QString nick;
-	unordered_set<QString> channels;
+	std::unordered_set<QString> channels;
 	QHostAddress ip;
 	time_t lastseen;
 };

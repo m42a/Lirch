@@ -1,23 +1,25 @@
 #include "lirch_plugin.h"
 #include "userlist_messages.h"
 #include "user_status.h"
+#include "received_messages.h"
 
 using namespace std;
 
-class blocklist_timer : public message_data
+class userlist_timer : public message_data
 {
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new blocklist_timer(*this));}
-	static message create(int m) {return message_create("blocklist_timer", new blocklist_timer(m));}
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new userlist_timer(*this));}
+	static message create(int m) {return message_create("userlist_timer", new userlist_timer(m));}
 
-	blocklist_timer(int m) : msecs(m) {}
+	userlist_timer(int m) : msecs(m) {}
 
 	int msecs;
 };
 
 void run(plugin_pipe p, string name)
 {
-	p.write(registration_message::create(0, name, "blocklist_request"));
-	p.write(registration_message::create(0, name, "blocklist_timer"));
+	p.write(registration_message::create(0, name, "userlist_request"));
+	p.write(registration_message::create(0, name, "userlist_timer"));
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_me"));
 	unordered_map<QString, user_status> statuses;
@@ -42,27 +44,26 @@ void run(plugin_pipe p, string name)
 			}
 			else
 			{
-				if (s->type=="blocklist_timer")
-					p.write(blocklist_timer::create(10000));
+				if (s->type=="userlist_timer")
+					p.write(userlist_timer::create(10000));
 			}
 		}
-		else if (m.type=="blocklist_request")
+		else if (m.type=="userlist_request")
 		{
-			p.write(block_message::create(statuses));
+			p.write(userlist_message::create(statuses));
 		}
-		else if (m.type=="blocklist_timer")
+		else if (m.type=="userlist_timer")
 		{
-			auto s=dynamic_cast<blocklist_timer *>(m.getdata());
+			auto s=dynamic_cast<userlist_timer *>(m.getdata());
 			if (!s)
 				continue;
-			time_t now=time();
+			time_t now=time(NULL);
 			//Remove all nicks that haven't been seen in 2 minutes
-			statuses::iterator i=statuses.begin();
 			decltype(statuses.begin()) i;
 			while ((i=std::find_if(statuses.begin(), statuses.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=statuses.end())
 				statuses.erase(i);
-			p.write(block_message::create(statuses));
-			p.write(blocklist_timer::create(s->msec));
+			p.write(userlist_message::create(statuses));
+			p.write(userlist_timer::create(s->msecs));
 		}
 		else if (m.type=="received")
 		{

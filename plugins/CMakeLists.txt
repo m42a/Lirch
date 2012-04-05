@@ -26,3 +26,7 @@ target_link_libraries(meatgrinder envelope ${QT_LIBRARIES})
 # Timer plugin
 add_library(timer SHARED timer.cpp)
 target_link_libraries(timer envelope)
+
+# Userlist
+add_library(userlist SHARED userlist.cpp)
+target_link_libraries(userlist envelope ${QT_LIBRARIES})
