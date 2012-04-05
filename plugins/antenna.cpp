@@ -190,6 +190,8 @@ void run(plugin_pipe p, string name)
 
 		}
 
+		this_thread::sleep_for(chrono::milliseconds(50));
+
 
 	}
 
