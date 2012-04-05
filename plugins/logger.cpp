@@ -46,6 +46,10 @@ void run(plugin_pipe pipe, std::string name)
 				string output(internals->contents.toUtf8().data());
 				open_files[channelname]->write(output.c_str(), sizeof output);
 			}
+			message bounceback;
+			bounceback.type = "display";
+			bounceback.data = internals->copy();
+			pipe.write(bounceback);
 		}
 	}
 	//done_message::create(name);
