@@ -167,11 +167,11 @@ void run(plugin_pipe p, string name)
 			string type(broadcast,4);
 			if (type=="edct")
 			{
-				p.write(received_message::create(destinationChannel,senderNick,sentContents));
+				p.write(received_message::create(destinationChannel,senderNick,sentContents,senderIP));
 			}
 			else if (type=="mdct")
 			{
-				p.write(received_me_message::create(destinationChannel,senderNick,sentContents));
+				p.write(received_me_message::create(destinationChannel,senderNick,sentContents,senderIP));
 			}
 			else
 			{
