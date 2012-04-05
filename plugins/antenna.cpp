@@ -5,6 +5,11 @@
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
+ *
+ *
+ * To Do:
+ * make sure the nick/channel/message length being broadcast is short enough
+ * toss a notify to the UI if ^ fails
  */
 
 
@@ -24,15 +29,14 @@ using namespace std;
 
 namespace std
 {
-
 	template <>
 	struct hash<QHostAddress>
-	{size_t operator()(const QHostAddress& v) const
+	{
+		size_t operator()(const QHostAddress& v) const
 		{
 			return std::hash<std::string>()(v.toString().toStdString());
 		}
 	};
-
 }
 
 
@@ -68,7 +72,8 @@ void run(plugin_pipe p, string name)
 
 			if (m.type=="shutdown")
 			{
-				//disconnect from multicast group
+				udpSocket.leaveMulticastGroup(groupAddress);
+				udpSocket.close();
 				return;
 			}
 			else if (m.type=="registration_status")
@@ -76,9 +81,9 @@ void run(plugin_pipe p, string name)
 				auto s=dynamic_cast<registration_status *>(m.getdata());
 				if (!s)
 					continue;
-				//Retry 2000 times until we succeed
-				if (!s->status && s->priority>30000)
-					p.write(registration_message::create(s->priority-1, name, s->type));
+				//Retry 1900 or 2000 times until we succeed
+				if (!s->status && s->priority<2000)
+					p.write(registration_message::create(s->priority+1, name, s->type));
 			}
 			else if(m.type=="block")
 			{
@@ -122,7 +127,8 @@ void run(plugin_pipe p, string name)
 				QString contents=castMessage->contents;
 				QByteArray message = formatMessage("edct",channel,nick,contents);
 
-				udpSocket.writeDatagram(message,groupAddress,port);
+				if(message.length()>0)
+					udpSocket.writeDatagram(message,groupAddress,port);
 			}
 			else if(m.type=="me_edict")
 			{
@@ -137,7 +143,8 @@ void run(plugin_pipe p, string name)
 				QString contents=castMessage->contents;
 				QByteArray message = formatMessage("mdct",channel,nick,contents);
 
-				udpSocket.writeDatagram(message,groupAddress,port);
+				if(message.length()>0)
+					udpSocket.writeDatagram(message,groupAddress,port);
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
@@ -150,20 +157,21 @@ void run(plugin_pipe p, string name)
 		{
 			char broadcast[512];
 			QHostAddress senderIP;
-			udpSocket.readDatagram(broadcast,512,senderIP,45454);
+			quint16 senderPort;
+			udpSocket.readDatagram(broadcast,512,&senderIP,&senderPort);
 
-			QString destinationChannel=QString::toUtf8(broadcast+4);
-			QString senderNick=QString::toUtf8(broadcast+68);
-			QString sentContents=QString::toUtf8(broadcast+132);
+			QString destinationChannel=QString::fromUtf8(broadcast+4);
+			QString senderNick=QString::fromUtf8(broadcast+68);
+			QString sentContents=QString::fromUtf8(broadcast+132);
 
 			string type(broadcast,4);
 			if (type=="edct")
 			{
-				p.write(received_message::create(destinationChannel,SenderNick,sentContents));
+				p.write(received_message::create(destinationChannel,senderNick,sentContents));
 			}
 			else if (type=="mdct")
 			{
-				p.write(received_me_message::create(destinationChannel,SenderNick,sentContents));
+				p.write(received_me_message::create(destinationChannel,senderNick,sentContents));
 			}
 			else
 			{
@@ -186,6 +194,11 @@ QByteArray formatMessage(QString type, QString channel, QString nick, QString co
 	output += type.toUtf8();
 	output += channel.toUtf8().leftJustified(64,'\0',true);
 	output += nick.toUtf8().leftJustified(64,'\0',true);
-	output += contents.toUtf8().truncate(256);
+	QByteArray holder =contents.toUtf8();
+	if (holder.length()>256)
+	{
+		return QByteArray();
+	}
+	output += holder;
 	return output;
 };

@@ -11,7 +11,7 @@ public:
 	//received messages have three contents, the channel to display to, the nick of the sender, and the contents of the broadcast.
 	static message create(const QString &c, const QString &d, const QString &e) {return message_create("received", new received_message(c,d,e));}
 
-	received_message(const QString &c, const QString &d, const QString &e) : channel(c), nick(d), conents(e) {}
+	received_message(const QString &c, const QString &d, const QString &e) : channel(c), nick(d), contents(e) {}
 
 	QString channel;
 	QString nick;
@@ -26,7 +26,7 @@ public:
 	//received me messages have three contents, the channel to display to, the nick of the sender, and the contents of the broadcast.
 	static message create(const QString &c, const QString &d, const QString &e) {return message_create("received_me", new received_me_message(c,d,e));}
 
-	received_me_message(const QString &c, const QString &d, const QString &e) : channel(c), nick(d), conents(e) {}
+	received_me_message(const QString &c, const QString &d, const QString &e) : channel(c), nick(d), contents(e) {}
 
 	QString channel;
 	QString nick;
