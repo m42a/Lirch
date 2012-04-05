@@ -22,6 +22,7 @@ void run(plugin_pipe p, string name)
 {
 	thread t(send_input, p);
 	p.write(registration_message::create(-32000, name, "display"));
+	p.write(registration_message::create(-32000, name, "me_display"));
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -41,6 +42,14 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 			cout << s->channel.toLocal8Bit().constData() << ": <" << s->nick.toLocal8Bit().constData() << "> " << s->contents.toLocal8Bit().constData() << endl;
+		}
+		else if (m.type=="me_display")
+		{
+			auto s=dynamic_cast<me_display_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+			cout << s->channel.toLocal8Bit().constData() << ": * " << s->nick.toLocal8Bit().constData() << " " << s->contents.toLocal8Bit().constData() << endl;
 		}
 		else
 		{
