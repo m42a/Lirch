@@ -28,29 +28,28 @@ void run(plugin_pipe pipe, std::string name)
 				//This is a registration_status message, just like it said
 				if (!internals->status)
 					pipe.write(registration_message::create(internals->priority-1, name, internals->type));
-			}	
+			}
 		}
 		else if (front.type == "display")
 		{
 			display_message * internals = dynamic_cast<display_message *>(front.getdata());
 			if(internals)
 			{
+				pipe.write(front.decrement_priority());
 				QString channelname = internals->channel;
 				if(!open_files.count(channelname))
 				{
 					string filename(channelname.toUtf8().data());
 					filename += ".txt";
 					open_files[channelname] = unique_ptr<ofstream>(new ofstream());
-					open_files[channelname]->open(filename.c_str(), fstream::app);	
+					open_files[channelname]->open(filename.c_str(), fstream::app);
 				}
 				string output(internals->contents.toUtf8().data());
 				open_files[channelname]->write(output.c_str(), sizeof output);
 			}
-			message bounceback;
-			bounceback.type = "display";
-			bounceback.data = internals->copy();
-			pipe.write(bounceback);
 		}
+		else
+			pipe.write(front.decrement_priority());
 	}
 	//done_message::create(name);
 }
