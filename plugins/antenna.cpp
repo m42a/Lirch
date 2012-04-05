@@ -1,4 +1,8 @@
 /*
+ * IP address for the multicast group 224.0.0.224
+ * Port for multicast group 45454
+ *
+ *
  * broadcasts are of the format
  * [type][channel][nick][contents]
  * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts.
@@ -17,6 +21,7 @@
 #include <iostream>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
+#include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
 
@@ -24,6 +29,7 @@
 #include "edict_messages.h"
 #include "received_messages.h"
 #include "lirch_plugin.h"
+#include "lirch_constants.h"
 
 using namespace std;
 
@@ -63,6 +69,10 @@ void run(plugin_pipe p, string name)
 	{
 		//flip out, you failed to connect
 	}
+
+	//needed to send nick with your messages
+	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
+	settings.beginGroup("UserData");
 
 	while(true)
 	{
@@ -122,7 +132,7 @@ void run(plugin_pipe p, string name)
 					continue;
 
 
-				QString nick="";
+				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
 				QByteArray message = formatMessage("edct",channel,nick,contents);
@@ -138,7 +148,7 @@ void run(plugin_pipe p, string name)
 				if (!castMessage)
 					continue;
 
-				QString nick="";
+				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
 				QByteArray message = formatMessage("mdct",channel,nick,contents);
