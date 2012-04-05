@@ -1,5 +1,6 @@
 #include "lirch_qt_interface.h"
 #include "ui_lirch_qt_interface.h"
+#include "lirch_qlineedit_dialog.h"
 
 // TODO (not in order of importance)
 // 1) Ugh, fix the layout somehow?
@@ -42,6 +43,13 @@ void run(plugin_pipe p, std::string name) {
                 } else {
                   return;
                 }
+            }
+        } else if (m.type == "display") {
+            auto data = dynamic_cast<display_message *>(m.getdata());
+            if (!data) {
+                emit display_message("", "");
+            } else {
+                emit display_message(data->channel, data->contents);
             }
         } else {
             // By default, echo the message with decremented priority
@@ -89,6 +97,7 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // Add a variety of UI enhancements (select on focus and quit action)
     ui->msgTextBox->installEventFilter(this);
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
+    connect(this, SIGNAL(startup_hooks(bool)), this, SLOT(on_actionConnect_triggered(bool)));
 
     // client_pipe facilitates communication with the core
     client_pipe = new LirchClientPipe();
@@ -106,6 +115,7 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
         connect(client_pipe, SIGNAL(stop(QString)), core_processor, SLOT(deleteLater()));
         // Kill the UI if core_processor receives shutdown (TODO should reconnect?)
         connect(client_pipe, SIGNAL(stop(QString)), this, SLOT(fatal_error(QString)));
+        connect(client_pipe, SIGNAL(display_message(QString, QString)), this, SLOT(display_message(QString, QString)));
 
         // Load up the settings and kick things off
         loadSettings();
@@ -152,6 +162,15 @@ void LirchQtInterface::loadSettings()
     show_message_timestamps = settings.value("show_message_timestamps", true).value<bool>();
     settings.endGroup();
     settings.endGroup();
+
+    // Some defaults
+
+    // The first tab is always the default channel
+    int index = ui->chatTabWidget->indexOf(ui->defaultChannelTab);
+    if (index != -1) {
+        ui->chatTabWidget->setCurrentIndex(index);
+    }
+    emit startup_hooks(true);
 }
 
 void LirchQtInterface::saveSettings()
@@ -176,13 +195,9 @@ void LirchQtInterface::on_actionConnect_triggered(bool checked)
 {
     // TODO actual delegation to core (core forwards to antenna)
     if (checked) {
-        QMessageBox::information(this,
-                                 tr("Alert"),
-                                 tr("You connected!"));
+        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /join'd #default");
     } else {
-        QMessageBox::information(this,
-                                 tr("Alert"),
-                                 tr("You disconnected!"));
+        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /part'd #default");
     }
 }
 
@@ -208,25 +223,9 @@ void LirchQtInterface::on_msgSendButton_clicked()
         return;
     }
 
-    // All text is prefixed with the nick
-    QString prefix = "<" + nick + "> ";
-    // And potentially a timestamp
-    if (show_message_timestamps) {
-        prefix += "[" + QTime::currentTime().toString() + "] ";
-    }
-
     // The core will pass this raw edict to the meatgrinder
     message edict = raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL_ID);
     client_pipe->hole->write(edict);
-
-    // And send back a response
-    message echo = client_pipe->hole->blocking_read();
-
-    // FIXME cast echo to recieved{,me}
-    //dynamic_cast<edict_message *>();
-    //dynamic_cast<me_edict_message *>();
-    // FIXME Update the proper model, default:
-    //ui->chatViewArea->append(prefix);
 
     // FIXME here is the failure condition
     // QMessageBox::warning(this,
@@ -340,4 +339,51 @@ void LirchQtInterface::on_actionOpenLog_triggered()
     if (index != -1) {
         ui->chatTabWidget->setCurrentIndex(index);
     }
+}
+
+void LirchQtInterface::display_message(QString channel, QString contents) {
+    if (channel == "") {
+        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /recv'd mangled message");
+        return;
+    }
+    if (channel != "default") {
+        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /recv'd message on channel: " + channel);
+    }
+    // All text is prefixed with the nick
+    QString prefix = "<" + nick + "> ";
+    // And potentially a timestamp
+    if (show_message_timestamps) {
+        prefix += "[" + QTime::currentTime().toString() + "] ";
+    }
+    // Show the message in the view
+    ui->chatViewArea->append(prefix + contents);
+}
+
+void LirchQtInterface::on_actionEditNick_triggered()
+{
+    LirchQLineEditDialog nick_dialog;
+    connect(&nick_dialog, SIGNAL(submit(QString, bool)), this, SLOT(nick_changed(QString, bool)));
+    nick_dialog.exec();
+}
+
+void LirchQtInterface::on_actionEditIgnored_triggered()
+{
+    LirchQLineEditDialog ignore_dialog;
+    connect(&ignore_dialog, SIGNAL(submit(QString, bool)), this, SLOT(ignore_changed(QString, bool)));
+    ignore_dialog.exec();
+}
+
+void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
+{
+    nick = new_nick;
+    if (permanent) {
+        saveSettings();
+    }
+    emit display_message("internal", "/nick " + nick);
+}
+
+void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
+{
+    // TODO actual block and ignore list
+    emit display_message("internal", "/ignore " + new_ignore);
 }

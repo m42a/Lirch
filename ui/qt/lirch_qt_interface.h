@@ -1,11 +1,15 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
+#include <Qt>
+#include <QCheckBox>
 #include <QEvent>
 #include <QFileDialog>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QObject>
+#include <QPushButton>
 #include <QSettings>
 #include <QString>
 #include <QThread>
@@ -13,7 +17,6 @@
 #include <QTimer>
 
 #include "lirch_constants.h"
-#include <string>
 #include "core/message_view.h"
 
 class LirchClientPipe : public QObject {
@@ -28,6 +31,7 @@ public slots:
     void start();
 signals:
     void stop(QString);
+    void display_message(QString, QString);
 };
 
 namespace Ui {
@@ -79,6 +83,8 @@ private:
     // chatArea draws (alternating) -----/_____ b/t messages?
 
 private slots:
+    void on_actionEditIgnored_triggered();
+    void on_actionEditNick_triggered();
     void on_actionOpenLog_triggered();
     void on_actionSaveLog_triggered();
     void on_actionWizard_triggered();
@@ -93,10 +99,14 @@ private slots:
     void on_actionViewTimestamps_toggled(bool);
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
+
+    void nick_changed(QString, bool);    
+    void ignore_changed(QString, bool);
+    void display_message(QString, QString);
     void fatal_error(QString);
 
 signals:
-    void tabChanged(int);
+    void startup_hooks(bool);
 };
 
 #endif // LIRCH_QT_INTERFACE_H
