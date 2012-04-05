@@ -21,6 +21,7 @@ void send_input(plugin_pipe p)
 void run(plugin_pipe p, string name)
 {
 	thread t(send_input, p);
+	p.write(registration_message::create(-32000, name, "display"));
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -28,6 +29,10 @@ void run(plugin_pipe p, string name)
 		{
 			t.join();
 			return;
+		}
+		else if (m.type=="registration_status")
+		{
+			//Handle this
 		}
 		else if (m.type=="display")
 		{
