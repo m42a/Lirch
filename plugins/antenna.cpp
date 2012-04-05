@@ -137,6 +137,7 @@ void run(plugin_pipe p, string name)
 				QString contents=castMessage->contents;
 				QByteArray message = formatMessage("edct",channel,nick,contents);
 
+				//change to use write() function when we have time
 				if(message.length()>0)
 					udpSocket.writeDatagram(message,groupAddress,port);
 			}
@@ -153,6 +154,7 @@ void run(plugin_pipe p, string name)
 				QString contents=castMessage->contents;
 				QByteArray message = formatMessage("mdct",channel,nick,contents);
 
+				//change to use write() function when we have time
 				if(message.length()>0)
 					udpSocket.writeDatagram(message,groupAddress,port);
 			}
@@ -168,7 +170,8 @@ void run(plugin_pipe p, string name)
 			char broadcast[512];
 			QHostAddress senderIP;
 			quint16 senderPort;
-			udpSocket.readDatagram(broadcast,512,&senderIP,&senderPort);
+			qint64 size = udpSocket.readDatagram(broadcast,512,&senderIP,&senderPort);
+			broadcast[size]='\0';
 
 			QString destinationChannel=QString::fromUtf8(broadcast+4);
 			QString senderNick=QString::fromUtf8(broadcast+68);
@@ -212,5 +215,6 @@ QByteArray formatMessage(QString type, QString channel, QString nick, QString co
 		return QByteArray();
 	}
 	output += holder;
+	output += '\0';
 	return output;
 };
