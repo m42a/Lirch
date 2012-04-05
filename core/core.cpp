@@ -115,6 +115,12 @@ static void target_plugin(const message &m)
 		cerr << " targeted " << i->mess << " towards " << i->name << endl;
 }
 
+static void initiate_shutdown()
+{
+	for (auto &i : out_pipes)
+		i.second.write(shutdown_message::create());
+}
+
 static void process(const message &m)
 {
 	if (verbose)
@@ -127,6 +133,8 @@ static void process(const message &m)
 		remove_plugin(m);
 	else if (m.type=="target")
 		target_plugin(m);
+	else if (m.type=="core_quit")
+		initiate_shutdown();
 	else
 		to_plugin(m);
 }
