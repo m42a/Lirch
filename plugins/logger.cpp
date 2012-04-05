@@ -1,48 +1,52 @@
-#include "lirch_plugin.h"
-#include "core/message.h"
 #include <fstream>
-#include "unistd.h"
+#include <string>
+#include <map>
+#include <memory>
+#include "core/message.h"
 #include "edict_messages.h"
+#include "lirch_plugin.h"
+
+using namespace std;
 
 void run(plugin_pipe pipe, std::string name)
 {
 	bool shutdown = false;
 	pipe.write(registration_message::create(0, name, "display"));
+	map<QString, unique_ptr<ofstream> > open_files;
 	while(!shutdown)
 	{
-		if(pipe.has_message())
+		message front = pipe.blocking_read();
+		if(front.type == "shutdown")
 		{
-			message front = pipe.read();
-			if(front.type == "shutdown")
+			shutdown = true;
+		}
+		else if(front.type == "registration_status")
+		{
+			registration_status * internals=dynamic_cast<registration_status *>(front.getdata());
+			if (internals)
 			{
-				shutdown = true;
-			}
-			else if(front.type == "registration_status")
+				//This is a registration_status message, just like it said
+				if (!internals->status)
+					pipe.write(registration_message::create(internals->priority-1, name, internals->type));
+			}	
+		}
+		else if (front.type == "display")
+		{
+			display_message * internals = dynamic_cast<display_message *>(front.getdata());
+			if(internals)
 			{
-				registration_status * internals=(registration_status *)(front.getdata());
-				if (internals)
+				QString channelname = internals->channel;
+				if(!open_files.count(channelname))
 				{
-					//This is a registration_status message, just like it said
-					if (!internals->status)
-						pipe.write(registration_message::create(internals->priority-1, name, internals->type));
-				}	
-			}
-			else if (front.type == "display")
-			{
-				display_message * internals = (display_message *)(front.getdata());
-				if(internals)
-				{
-					ofstream channel_log;
-					string filename = internals->channel.ToStdString();
+					string filename(channelname.toUtf8().data());
 					filename += ".txt";
-					channel_log.open(filename, fstream::app);
-					channel_log.write(internals->content.ToStdString());
-					channel_log.close();
+					open_files[channelname] = unique_ptr<ofstream>(new ofstream());
+					open_files[channelname]->open(filename.c_str(), fstream::app);	
 				}
+				string output(internals->contents.toUtf8().data());
+				open_files[channelname]->write(output.c_str(), sizeof output);
 			}
 		}
-		else
-			sleep(50);
 	}
-	done_message::create(name);
+	//done_message::create(name);
 }

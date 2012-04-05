@@ -12,8 +12,8 @@ include_directories(
 # target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
 
 # Logger plugin
-# add_library(logger SHARED logger.cpp)
-# target_link_libraries(logger envelope ${QT_LIBRARIES})
+ add_library(logger SHARED logger.cpp)
+ target_link_libraries(logger envelope ${QT_LIBRARIES})
 
 # Meatgrinder plugin
 add_library(meatgrinder SHARED meatgrinder.cpp)
