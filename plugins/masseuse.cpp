@@ -20,7 +20,7 @@ using namespace std;
 
 void run(plugin_pipe p, string name)
 {
-	//register for the message types the antenna can handle
+	//register for the message types the display adapter can handle
 	p.write(registration_message::create(-30000, name, "received"));
 	p.write(registration_message::create(-30000, name, "received_me"));
 	p.write(registration_message::create(-30000, name, "edict"));
@@ -32,6 +32,7 @@ void run(plugin_pipe p, string name)
 
 	while(true)
 	{
+		//waits until any messages are sent to it
 		message m=p.blocking_read();
 
 		if (m.type=="shutdown")
@@ -47,6 +48,9 @@ void run(plugin_pipe p, string name)
 			if (!s->status && s->priority<-28000)
 				p.write(registration_message::create(s->priority+1, name, s->type));
 		}
+
+		//message parsing is simple, just putting the right things in the right fields.
+		//tacks on your nick to the local messages, uses sender nick for inbound ones.
 		else if (m.type=="edict")
 		{
 			auto castMessage=dynamic_cast<edict_message *>(m.getdata());
@@ -88,6 +92,12 @@ void run(plugin_pipe p, string name)
 				continue;
 
 			p.write(display_message::create(castMessage->channel,castMessage->contents,castMessage->nick));
+		}
+
+		//what is this doing here? take it back, i don't want it.
+		else
+		{
+			p.write(m.decrement_priority());
 		}
 	}
 }
