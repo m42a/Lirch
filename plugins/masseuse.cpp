@@ -71,7 +71,7 @@ void run(plugin_pipe p, string name)
 				continue;
 
 			QString nick=settings.value("nick","spartacus").value<QString>();
-			p.write(display_message::create(castMessage->channel,castMessage->contents,nick));
+			p.write(me_display_message::create(castMessage->channel,castMessage->contents,nick));
 		}
 		else if (m.type=="received")
 		{
@@ -91,7 +91,7 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(display_message::create(castMessage->channel,castMessage->contents,castMessage->nick));
+			p.write(me_display_message::create(castMessage->channel,castMessage->contents,castMessage->nick));
 		}
 
 		//what is this doing here? take it back, i don't want it.
