@@ -67,4 +67,16 @@ public:
 	QString nick;
 };
 
+class information_display_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new information_display_message(*this));}
+	static message create(const QString &ch, const QString &c) {return message_create("information_display", new information_display_message(ch, c));}
+
+	information_display_message(const QString &ch, const QString &c) : contents(c), channel(ch)  {}
+
+	QString channel;
+	QString contents;
+};
+
 #endif
