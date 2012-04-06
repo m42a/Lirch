@@ -6,6 +6,7 @@
 #include "edict_messages.h"
 #include "grinder_messages.h"
 #include "core/core_messages.h"
+#include "blocker_messages.h"
 
 using namespace std;
 

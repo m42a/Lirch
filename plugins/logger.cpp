@@ -1,3 +1,8 @@
+/*
+ * At some point, the logger needs to have a better default location to put the files
+ * as well as being able to read a custom path from the .ini
+ */
+
 #include <fstream>
 #include <string>
 #include <map>
@@ -45,6 +50,7 @@ void run(plugin_pipe pipe, std::string name)
 					filename += ".txt";
 					open_files[channelname] = unique_ptr<ofstream>(new ofstream());
 					open_files[channelname]->open(filename.c_str(), fstream::app);
+					open_files[channelname]->write("~~~~~~~~\n", 9);
 				}
 				string nick(internals->nick.toUtf8().data());
 				string contents(internals->contents.toUtf8().data());

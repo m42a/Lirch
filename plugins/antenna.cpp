@@ -30,6 +30,7 @@
 #include "received_messages.h"
 #include "lirch_plugin.h"
 #include "lirch_constants.h"
+#include "grinder_messages.h"
 
 using namespace std;
 
@@ -45,6 +46,17 @@ namespace std
 	};
 }
 
+message sendBlock(QString str, QString)
+{
+	if (str.startsWith("/block "))
+		return block_message::create(QHostAddress(str.section(' ',1)));
+}
+
+message sendUnblock(QString str, QString)
+{
+	if (str.startsWith("/unblock "))
+		return unblock_message::create(QHostAddress(str.section(' ',1)));
+}
 
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents);
 
@@ -92,8 +104,18 @@ void run(plugin_pipe p, string name)
 				if (!s)
 					continue;
 				//Retry 1900 or 2000 times until we succeed
-				if (!s->status && s->priority<2000)
-					p.write(registration_message::create(s->priority+1, name, s->type));
+				if (!s->status)
+				{
+					if (s->priority<2000)
+						p.write(registration_message::create(s->priority+1, name, s->type));
+				}
+				else
+				{
+					if (s->type=="block")
+						p.write(register_handler::create("/block", sendBlock));
+					if (s->type=="unblock")
+						p.write(register_handler::create("/unblock", sendUnblock));
+				}
 			}
 			else if(m.type=="block")
 			{
@@ -172,6 +194,8 @@ void run(plugin_pipe p, string name)
 			quint16 senderPort;
 			qint64 size = udpSocket.readDatagram(broadcast,512,&senderIP,&senderPort);
 			broadcast[size]='\0';
+			if(blocklist.end()!=blocklist.find(senderIP))
+				continue;
 
 			QString destinationChannel=QString::fromUtf8(broadcast+4);
 			QString senderNick=QString::fromUtf8(broadcast+68);
