@@ -13,7 +13,7 @@ endif(NOT CMAKE_BUILD_TYPE MATCHES "${CMAKE_BUILD_TYPES}")
 set(LIRCH_VERSION_MAJOR 0)
 set(LIRCH_VERSION_MINOR 1)
 set(LIRCH_VERSION_PATCH 0)
-set(LIRCH_VERSION_TWEAK 1)
+set(LIRCH_VERSION_TWEAK 2)
 set(LIRCH_VERSION_STRING "${LIRCH_VERSION_MAJOR}.${LIRCH_VERSION_MINOR}.${LIRCH_VERSION_PATCH}.${LIRCH_VERSION_TWEAK}")
 
 # Find git and fetch a hash
@@ -28,6 +28,7 @@ else(GIT_EXECUTABLE)
 endif(GIT_EXECUTABLE)
 
 # Configure some string literals and include build dir
+file(WRITE "${CMAKE_BINARY_DIR}/log/default.log" "" MAKE_DIRECTORY)
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
 include_directories("${CMAKE_BINARY_DIR}")
 
@@ -51,7 +52,7 @@ if(BUILD_TESTING)
 endif(BUILD_TESTING)
 # Load them
 if(QT_COMPONENTS)
-  set(QT_MIN_VERSION 4.8.0)
+  set(QT_MIN_VERSION 4.6.2)
   find_package(Qt4 ${QT_MIN_VERSION} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 endif(QT_COMPONENTS)
 
