@@ -69,7 +69,7 @@ void run(plugin_pipe p, string name)
 			else
 			{
 				if (s->type=="userlist_timer")
-					p.write(userlist_timer::create(10000));
+					p.write(userlist_timer::create(1000));
 			}
 		}
 		else if (m.type=="userlist_request")
