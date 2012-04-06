@@ -3,7 +3,7 @@
 
 #include "plugins/lirch_plugin.h"
 #include "plugins/edict_messages.h"
-
+#include "core/core_messages.h"
 
 using namespace std;
 
@@ -17,6 +17,7 @@ void send_input(plugin_pipe p)
 		QString q=QString::fromLocal8Bit(line.c_str());
 		p.write(raw_edict_message::create(q,"default"));
 	}
+	p.write(core_quit_message::create());
 }
 
 void run(plugin_pipe p, string name)
