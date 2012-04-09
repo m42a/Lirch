@@ -21,6 +21,13 @@ public:
 	QString replacement;
 };
 
+class replacer_ready : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new replacer_ready(nullptr));}
+	static message create() {return message_create("replacer_ready", nullptr);}
+};
+
 class register_handler : public message_data
 {
 public:
@@ -31,6 +38,13 @@ public:
 
 	QString command;
 	std::function<message (QString, QString)> handler;
+};
+
+class handler_ready : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new handler_ready(nullptr));}
+	static message create() {return message_create("handler_ready", nullptr);}
 };
 
 #endif
