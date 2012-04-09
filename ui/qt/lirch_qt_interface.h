@@ -19,21 +19,6 @@
 #include "lirch_constants.h"
 #include "core/message_view.h"
 
-class LirchClientPipe : public QObject {
-    Q_OBJECT
-    friend class LirchQtInterface;
-public:
-    explicit LirchClientPipe();
-    ~LirchClientPipe();
-private:
-    plugin_pipe * hole;
-public slots:
-    void start();
-signals:
-    void stop(QString);
-    void display_message(QString, QString);
-};
-
 namespace Ui {
     class LirchQtInterface;
 }
@@ -41,7 +26,7 @@ namespace Ui {
 class LirchQtInterface : public QMainWindow {
     Q_OBJECT
 public:
-    explicit LirchQtInterface(QWidget *parent = 0);
+    explicit LirchQtInterface(plugin_pipe &client_pipe, QWidget *parent = 0);
     ~LirchQtInterface();
     bool eventFilter(QObject *object, QEvent *event);
 
@@ -52,10 +37,10 @@ private:
     void loadSettings();
     void saveSettings();
     Ui::LirchQtInterface *ui;
-    LirchClientPipe *client_pipe;
+    plugin_pipe *client_pipe;
     // Application settings
     QSettings settings;
-    QString nick;
+    QString nick, default_nick;
     // QString default_save_path;
     bool show_message_timestamps;
     bool show_ignored_messages;
@@ -100,13 +85,15 @@ private slots:
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
 
-    void nick_changed(QString, bool);    
+    void alert_user(QString);
+    void close_prompt();
+    // TODO these need to query the antenna
     void ignore_changed(QString, bool);
-    void display_message(QString, QString);
-    void fatal_error(QString);
+    void nick_changed(QString, bool);    
 
-signals:
-    void startup_hooks(bool);
+public slots:
+    void display_message(QString, QString);
+    void fatal_error(QString msg = "unknown error");
 };
 
 #endif // LIRCH_QT_INTERFACE_H

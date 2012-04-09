@@ -27,23 +27,41 @@ else(GIT_EXECUTABLE)
   set(LIRCH_BUILD_HASH "GIT_NOT_FOUND")
 endif(GIT_EXECUTABLE)
 
+# Basic build options
+option(BUILD_BASIC_CLIENT   "Build the basic interface"       OFF)
+option(BUILD_NCURSES_CLIENT "Build the ncurses interface"     OFF)
+option(BUILD_QT_CLIENT      "Build the Qt4 interface"         ON)
+option(BUILD_PLUGINS        "Build the standard plugin suite" ON)
+
+# Preload options (advanced)
+option(PRELOAD_BASIC_CLIENT   "Preload the basic UI plugin"     OFF)
+option(PRELOAD_NCURSES_CLIENT "Preload the ncurses UI plugin"   OFF)
+option(PRELOAD_QT_CLIENT      "Preload the Qt UI plugin"        OFF)
+option(PRELOAD_ANTENNA        "Preload the antenna plugin"      OFF)
+option(PRELOAD_LOGGER         "Preload the logger plugin"       OFF)
+option(PRELOAD_MEATGRINDER    "Preload the meatgrinder plugin"  OFF)
+mark_as_advanced(
+  PRELOAD_BASIC_CLIENT
+  PRELOAD_QT_CLIENT
+  PRELOAD_NCURSES_CLIENT
+  PRELOAD_ANTENNA
+  PRELOAD_LOGGER
+  PRELOAD_MEATGRINDER
+)
+# TODO disable preloads when corresponding build is disabled?
+set(LIRCH_NUM_PRELOADS 0)
+
 # Configure some string literals and include build dir
 file(WRITE "${CMAKE_BINARY_DIR}/log/default.log" "" MAKE_DIRECTORY)
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
 include_directories("${CMAKE_BINARY_DIR}")
 
-# Basic build options
-option(BUILD_QT_CLIENT      "Build the Qt4 interface"     ON)
-option(BUILD_NCURSES_CLIENT "Build the ncurses interface" OFF)
-option(BUILD_BASIC_CLIENT   "Build the basic interface"   OFF)
-option(BUILD_PLUGINS        "Build the plugin suite"      ON)
-
 ## LIBRARIES
 
 # Figure out which Qt components to load, if any
-if(BUILD_NCURSES_CLIENT OR BUILD_PLUGINS)
+if(BUILD_BASIC_CLIENT OR BUILD_NCURSES_CLIENT OR BUILD_PLUGINS)
   set(QT_COMPONENTS ${QT_COMPONENTS} ; QtCore ; QtNetwork)
-endif(BUILD_NCURSES_CLIENT OR BUILD_PLUGINS)
+endif(BUILD_BASIC_CLIENT OR BUILD_NCURSES_CLIENT OR BUILD_PLUGINS)
 if(BUILD_QT_CLIENT)
   set(QT_COMPONENTS ${QT_COMPONENTS} ; QtGui)
 endif(BUILD_QT_CLIENT)
@@ -52,7 +70,7 @@ if(BUILD_TESTING)
 endif(BUILD_TESTING)
 # Load them
 if(QT_COMPONENTS)
-  set(QT_MIN_VERSION 4.6.2)
+  set(QT_MIN_VERSION 4.8.0)
   find_package(Qt4 ${QT_MIN_VERSION} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 endif(QT_COMPONENTS)
 
@@ -62,8 +80,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
 # Find the libraries we'll be needing (for core)
 find_library(PTHREAD_LIBRARY_PATH pthread REQUIRED)
-# TODO is this is *nix only? Windows alternative?
-find_library(DL_LIBRARY_PATH dl REQUIRED)
+if(UNIX)
+  # TODO is this is *nix only? Windows alternative?
+  find_library(DL_LIBRARY_PATH dl REQUIRED)
+endif(UNIX)
 
 ## COMPILATION
 

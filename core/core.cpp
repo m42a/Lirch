@@ -4,6 +4,7 @@
 #include <thread>
 #include <iostream>
 
+#include "lirch_constants.h"
 #include "message.h"
 #include "message_pipe.h"
 #include "registry.h"
@@ -12,6 +13,8 @@
 #include "core_messages.h"
 
 using namespace std;
+
+// TODO lirch (core) namespace?
 
 static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
@@ -151,8 +154,19 @@ static void run_core(const vector<message> &vm)
 
 int main(int argc, char *argv[])
 {
+	// Setup system locale and prepare to load plugins
 	setlocale(LC_ALL,"");
 	vector<message> vm;
+	// Preload a variety of plugins specified in build (see lirch_constants.h)
+	string name, filename;
+	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
+	for (int i = 0; i < LIRCH_NUM_PRELOADS; ++i)
+	{
+		name = preloads[i].name;
+		filename = preloads[i].filename;
+		vm.push_back(plugin_adder::create(name, filename));
+	}
+	// Load plugins specified on command line
 	for (int i=1; i<argc-1; i+=2)
 	{
 		if (argv[i]==string("-v") || argv[i]==string("--verbose"))
@@ -163,5 +177,6 @@ int main(int argc, char *argv[])
 		else
 			vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
 	}
+	// Loop until core shutdown
 	run_core(vm);
 }
