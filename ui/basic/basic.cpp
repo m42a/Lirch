@@ -3,6 +3,7 @@
 
 #include "plugins/lirch_plugin.h"
 #include "plugins/edict_messages.h"
+#include "plugins/display_messages.h"
 
 using namespace std;
 

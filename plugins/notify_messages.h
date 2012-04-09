@@ -19,12 +19,13 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new local_notify_message(*this));}
 
 	//local notify messages have only one conent, string to be displayed
-	static message create(const QString &c) {return message_create("local notify", new local_notify_message(c));}
+	static message create(const QString &chan, const QString &con) {return message_create("local_notify", new local_notify_message(chan,con));}
 
-	local_notify_message(const QString &c) : contents(c) {}
+	local_notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
 
 	QString contents;
-}
+	QString channel;
+};
 
 class sendable_notify_message : public message_data
 {
@@ -32,12 +33,13 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new sendable_notify_message(*this));}
 
 	//local notify messages have only one conent, string to be displayed
-	static message create(const QString &c) {return message_create("sendable notify", new sendable_notify_message(c));}
+	static message create(const QString &chan, const QString &con) {return message_create("sendable_notify", new sendable_notify_message(chan,con));}
 
-	sendable_notify_message(const QString &c) : contents(c) {}
+	sendable_notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
 
 	QString contents;
-}
+	QString channel;
+};
 
 class received_notify_message : public message_data
 {
@@ -45,11 +47,12 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new received_notify_message(*this));}
 
 	//local notify messages have only one conent, string to be displayed
-	static message create(const QString &c) {return message_create("received notify", new received_notify_message(c));}
+	static message create(const QString &chan, const QString &con) {return message_create("received_notify", new received_notify_message(chan,con));}
 
-	received_message(const QString &c) : contents(c) {}
+	received_notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
 
 	QString contents;
-}
+	QString channel;
+};
 
 #endif // NOTIFY_MESSAGES_H

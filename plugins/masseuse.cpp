@@ -12,7 +12,9 @@
 #include <QSettings>
 
 #include "edict_messages.h"
+#include "display_messages.h"
 #include "received_messages.h"
+#include "notify_messages.h"
 #include "lirch_plugin.h"
 #include "lirch_constants.h"
 
@@ -23,8 +25,8 @@ void run(plugin_pipe p, string name)
 	//register for the message types the display adapter can handle
 	p.write(registration_message::create(-30000, name, "received"));
 	p.write(registration_message::create(-30000, name, "received_me"));
-	p.write(registration_message::create(-30000, name, "edict"));
-	p.write(registration_message::create(-30000, name, "me_edict"));
+	p.write(registration_message::create(-30000, name, "local_notify"));
+	p.write(registration_message::create(-30000, name, "received_notify"));
 
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
@@ -50,29 +52,6 @@ void run(plugin_pipe p, string name)
 		}
 
 		//message parsing is simple, just putting the right things in the right fields.
-		//tacks on your nick to the local messages, uses sender nick for inbound ones.
-		else if (m.type=="edict")
-		{
-			auto castMessage=dynamic_cast<edict_message *>(m.getdata());
-
-			//if it's not actually an edict message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			QString nick=settings.value("nick","spartacus").value<QString>();
-			p.write(display_message::create(castMessage->channel,castMessage->contents,nick));
-		}
-		else if (m.type=="me_edict")
-		{
-			auto castMessage=dynamic_cast<me_edict_message *>(m.getdata());
-
-			//if it's not actually a medict message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			QString nick=settings.value("nick","spartacus").value<QString>();
-			p.write(me_display_message::create(castMessage->channel,castMessage->contents,nick));
-		}
 		else if (m.type=="received")
 		{
 			auto castMessage=dynamic_cast<received_message *>(m.getdata());
@@ -92,6 +71,26 @@ void run(plugin_pipe p, string name)
 				continue;
 
 			p.write(me_display_message::create(castMessage->channel,castMessage->contents,castMessage->nick));
+		}
+		else if (m.type=="local_notify")
+		{
+			auto castMessage=dynamic_cast<local_notify_message *>(m.getdata());
+
+			//if it's not actually a local notify me message, ignore it and move on
+			if (!castMessage)
+				continue;
+
+			p.write(notify_display_message::create(castMessage->channel,castMessage->contents));
+		}
+		else if (m.type=="received_notify")
+		{
+			auto castMessage=dynamic_cast<received_notify_message *>(m.getdata());
+
+			//if it's not actually a received notify me message, ignore it and move on
+			if (!castMessage)
+				continue;
+
+			p.write(notify_display_message::create(castMessage->channel,castMessage->contents));
 		}
 
 		//what is this doing here? take it back, i don't want it.
