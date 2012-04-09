@@ -16,8 +16,11 @@
 //    a) Channel creation
 //    b) Polling for participants
 
+// changed lines 51-55 in order to make it compile.  no idea what was going on in there.  ~Jeff
+
 #include "plugins/lirch_plugin.h"
 #include "plugins/edict_messages.h"
+#include "plugins/display_messages.h"
 
 void run(plugin_pipe p, std::string name) {
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_STAT, name, "display"));
@@ -47,9 +50,9 @@ void run(plugin_pipe p, std::string name) {
         } else if (m.type == "display") {
             auto data = dynamic_cast<display_message *>(m.getdata());
             if (!data) {
-                emit display_message("", "");
+				//emit display_message("", "");
             } else {
-                emit display_message(data->channel, data->contents);
+				emit *data;
             }
         } else {
             // By default, echo the message with decremented priority

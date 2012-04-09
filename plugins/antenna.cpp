@@ -70,6 +70,12 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "unblock"));
 	p.write(registration_message::create(100, name, "edict"));
 	p.write(registration_message::create(100, name, "me_edict"));
+	p.write(registration_message::create(0, name, "handler_ready"));
+
+	p.write(register_handler::create("/block", sendBlock));
+	p.write(register_handler::create("/unblock", sendUnblock));
+
+
 
 
 
@@ -110,13 +116,12 @@ void run(plugin_pipe p, string name)
 					if (s->priority<2000)
 						p.write(registration_message::create(s->priority+1, name, s->type));
 				}
-				else
-				{
-					if (s->type=="block")
-						p.write(register_handler::create("/block", sendBlock));
-					if (s->type=="unblock")
-						p.write(register_handler::create("/unblock", sendUnblock));
-				}
+			}
+			else if(m.type=="handler_ready")
+			{
+				p.write(register_handler::create("/block", sendBlock));
+				p.write(register_handler::create("/unblock", sendUnblock));
+				p.write(m.decrement_priority());
 			}
 			else if(m.type=="block")
 			{
