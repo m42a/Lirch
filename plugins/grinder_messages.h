@@ -24,7 +24,7 @@ public:
 class replacer_ready : public message_data
 {
 public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new replacer_ready(nullptr));}
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(nullptr);}
 	static message create() {return message_create("replacer_ready", nullptr);}
 };
 
@@ -43,7 +43,7 @@ public:
 class handler_ready : public message_data
 {
 public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new handler_ready(nullptr));}
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(nullptr);}
 	static message create() {return message_create("handler_ready", nullptr);}
 };
 
