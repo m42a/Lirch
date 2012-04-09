@@ -117,6 +117,8 @@ static void target_plugin(const message &m)
 
 static void initiate_shutdown()
 {
+	if (verbose)
+		cerr << " initiated a shutdown" << endl;
 	for (auto &i : out_pipes)
 		i.second.write(shutdown_message::create());
 }

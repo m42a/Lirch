@@ -4,6 +4,7 @@
 #include "plugins/lirch_plugin.h"
 #include "plugins/edict_messages.h"
 #include "plugins/display_messages.h"
+#include "core/core_messages.h"
 
 using namespace std;
 
@@ -17,6 +18,7 @@ void send_input(plugin_pipe p)
 		QString q=QString::fromLocal8Bit(line.c_str());
 		p.write(raw_edict_message::create(q,"default"));
 	}
+	p.write(core_quit_message::create());
 }
 
 void run(plugin_pipe p, string name)
@@ -24,6 +26,7 @@ void run(plugin_pipe p, string name)
 	thread t(send_input, p);
 	p.write(registration_message::create(-32000, name, "display"));
 	p.write(registration_message::create(-32000, name, "me_display"));
+	p.write(registration_message::create(-32000, name, "information_display"));
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -51,6 +54,14 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 			cout << s->channel.toLocal8Bit().constData() << ": * " << s->nick.toLocal8Bit().constData() << " " << s->contents.toLocal8Bit().constData() << endl;
+		}
+		else if (m.type=="information_display")
+		{
+			auto s=dynamic_cast<information_display_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+			cout << s->channel.toLocal8Bit().constData() << ": -!- " << s->contents.toLocal8Bit().constData() << endl;
 		}
 		else
 		{

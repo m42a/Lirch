@@ -25,11 +25,13 @@
 #include <QtNetwork>
 #include <unordered_set>
 
+#include "lirch_constants.h"
 #include "blocker_messages.h"
 #include "edict_messages.h"
 #include "received_messages.h"
 #include "lirch_plugin.h"
 #include "lirch_constants.h"
+#include "grinder_messages.h"
 
 using namespace std;
 
@@ -45,6 +47,17 @@ namespace std
 	};
 }
 
+message sendBlock(QString str, QString)
+{
+	if (str.startsWith("/block "))
+		return block_message::create(QHostAddress(str.section(' ',1)));
+}
+
+message sendUnblock(QString str, QString)
+{
+	if (str.startsWith("/unblock "))
+		return unblock_message::create(QHostAddress(str.section(' ',1)));
+}
 
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents);
 
@@ -62,8 +75,8 @@ void run(plugin_pipe p, string name)
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
-	QHostAddress groupAddress("224.0.0.224");
-	quint16 port = 45454;
+	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
+	quint16 port = LIRCH_DEFAULT_PORT;
 
 	if (!(udpSocket.bind(groupAddress,port) && udpSocket.joinMulticastGroup(groupAddress)))
 	{
@@ -92,8 +105,18 @@ void run(plugin_pipe p, string name)
 				if (!s)
 					continue;
 				//Retry 1900 or 2000 times until we succeed
-				if (!s->status && s->priority<2000)
-					p.write(registration_message::create(s->priority+1, name, s->type));
+				if (!s->status)
+				{
+					if (s->priority<2000)
+						p.write(registration_message::create(s->priority+1, name, s->type));
+				}
+				else
+				{
+					if (s->type=="block")
+						p.write(register_handler::create("/block", sendBlock));
+					if (s->type=="unblock")
+						p.write(register_handler::create("/unblock", sendUnblock));
+				}
 			}
 			else if(m.type=="block")
 			{
