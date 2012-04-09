@@ -48,7 +48,7 @@
 #define LIRCH_UI_QT_NAME       "ui_qt_v@LIRCH_VERSION_STRING@"
 
 struct preload_data {
-	const char * name, filename; 
+	const char *name, *filename; 
 };
 
 static const preload_data preloads[LIRCH_NUM_PRELOADS] = {

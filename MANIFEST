@@ -1,17 +1,16 @@
 .
 |-- bin
 |   |-- lirch
-|   |-- lirch-core-tester
-|   `-- lirch-qt
+|   `-- lirch-core-tester
 |-- lib
 |   |-- libantenna.so
 |   |-- libenvelope.so
 |   |-- liblirch-basic.so
+|   |-- liblirch-qt.so
 |   |-- liblogger.so
 |   |-- libmeatgrinder.so
 |   `-- libtimer.so
 |-- lirch_constants.h
-|-- lirch.manifest
 |-- log
 |   `-- default.log
 `-- Makefile

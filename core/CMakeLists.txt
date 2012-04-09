@@ -9,6 +9,20 @@
 # Build a shared library that practically everything uses
 add_library(envelope SHARED message.cpp)
 
+set(CORE_LIBRARIES envelope ; dl ; pthread)
+
+if(BUILD_QT_CLIENT)
+  # Use QtCore and QtGui
+  set(QT_DONT_USE_QTCORE FALSE)
+  set(QT_DONT_USE_QTGUI FALSE)
+  set(QT_USE_QTNETWORK FALSE)
+  set(QT_USE_QTTEST FALSE)
+  include(${QT_USE_FILE})
+  include_directories(${QT_INCLUDE_DIR})
+  add_definitions(-DLIRCH_CORE_USE_QT)
+  list(APPEND CORE_LIBRARIES ${QT_LIBRARIES})
+endif(BUILD_QT_CLIENT)
+
 # Build the core executable
 add_executable(lirch core.cpp plugin_loader.cpp)
-target_link_libraries(lirch envelope dl pthread)
+target_link_libraries(lirch ${CORE_LIBRARIES})

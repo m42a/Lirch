@@ -25,8 +25,7 @@ void run(plugin_pipe p, std::string name) {
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "display"));
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "me_display"));
 
-    // Init the GUI
-    // TODO need QApplication?
+    // Init the GUI (core makes QApp)
     LirchQtInterface w(p);
 
     // Run the GUI in a QThread
@@ -35,7 +34,7 @@ void run(plugin_pipe p, std::string name) {
     // When the thread is started, show the UI
     QObject::connect(&gui_thread, SIGNAL(started()), &w, SLOT(show()));
     // When the UI closes, quit the thread
-    QObject::connect(&w, SIGNAL(closed()), &gui_thread, SLOT(quit()));
+    QObject::connect(&w, SIGNAL(shutdown()), &gui_thread, SLOT(quit()));
 
     // Kick things off
     gui_thread.start();
@@ -88,7 +87,7 @@ LirchQtInterface::LirchQtInterface(plugin_pipe &pipe, QWidget *parent) :
     ui->setupUi(this);
     // Add a variety of UI enhancements (select on focus and quit action)
     ui->msgTextBox->installEventFilter(this);
-    connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close_prompt()));
+    connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
 
     // client_pipe facilitates communication with the core
     client_pipe = &pipe;
@@ -334,12 +333,14 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 // INTERNAL SLOTS
 
-void LirchQtInterface::close_prompt()
+void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
 	LirchQLineEditDialog close_dialog;
 	bool status = close_dialog.exec();
 	if (status) {
-		emit close();
+		e->accept();
+	} else {
+		e->ignore();
 	}
 }
 
@@ -358,7 +359,7 @@ void LirchQtInterface::fatal_error(QString msg)
     QMessageBox::information(this,
                              tr("Fatal Error"),
                              tr("Details: '%1'").arg(msg));
-    emit close();
+    close();
 }
 
 void LirchQtInterface::display_message(QString channel, QString contents) {

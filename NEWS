@@ -1,0 +1,20 @@
+Lirch allows you quick and easy access to an IRC-like channel on any LAN.
+
+== Version Info ==
+
+=== 0.1.0.3 ==
+
+NEW: Qt GUI
+NEW: Improved build and stability
+
+=== 0.1.0.2 ==
+
+NEW: Basic UI
+NEW: Fragile GUI
+
+=== 0.1.0.1 ==
+
+Primary version
+
+NEW: Core messaging
+NEW: Plugin loading

@@ -3,6 +3,7 @@
 
 #include <Qt>
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QEvent>
 #include <QFileDialog>
 #include <QLineEdit>
@@ -67,6 +68,13 @@ private:
     // chatArea floats timestamps to the right?
     // chatArea draws (alternating) -----/_____ b/t messages?
 
+public slots:
+    void display_message(QString, QString);
+    void fatal_error(QString msg = "unknown error");
+
+protected slots:
+    void closeEvent(QCloseEvent *e);
+
 private slots:
     void on_actionEditIgnored_triggered();
     void on_actionEditNick_triggered();
@@ -86,14 +94,12 @@ private slots:
     void on_msgSendButton_clicked();
 
     void alert_user(QString);
-    void close_prompt();
     // TODO these need to query the antenna
     void ignore_changed(QString, bool);
-    void nick_changed(QString, bool);    
+    void nick_changed(QString, bool);
 
-public slots:
-    void display_message(QString, QString);
-    void fatal_error(QString msg = "unknown error");
+signals:
+    void shutdown();
 };
 
 #endif // LIRCH_QT_INTERFACE_H
