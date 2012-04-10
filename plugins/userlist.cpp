@@ -11,30 +11,8 @@ class userlist_timer : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new userlist_timer(*this));}
-	static message create(int m) {return message_create("userlist_timer", new userlist_timer(m));}
-
-	userlist_timer(int m) : msecs(m) {}
-
-	int msecs;
+	static message create() {return message_create("userlist_timer", nullptr);}
 };
-
-void thread_notify(plugin_pipe pin, plugin_pipe pout)
-{
-	while (true)
-	{
-		message m=pin.blocking_read();
-		if (m.type=="userlist_timer")
-		{
-			auto s=dynamic_cast<userlist_timer *>(m.getdata());
-			if (!s)
-				continue;
-			this_thread::sleep_for(chrono::milliseconds(s->msecs));
-			pout.write(userlist_timer::create(s->msecs));
-		}
-		else
-			return;
-	}
-}
 
 void run(plugin_pipe p, string name)
 {
@@ -43,15 +21,11 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_me"));
 	unordered_map<QString, user_status> statuses;
-	bidirectional_message_pipe bmp;
-	thread t(thread_notify, plugin_pipe(bmp), p);
 	while (true)
 	{
 		message m=p.blocking_read();
 		if (m.type=="shutdown")
 		{
-			bmp.core_write(shutdown_message::create());
-			t.join();
 			return;
 		}
 		else if (m.type=="registration_status")
@@ -69,7 +43,9 @@ void run(plugin_pipe p, string name)
 			else
 			{
 				if (s->type=="userlist_timer")
-					p.write(userlist_timer::create(1000));
+				{
+					p.write(userlist_timer::create());
+				}
 			}
 		}
 		else if (m.type=="userlist_request")
@@ -78,16 +54,17 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type=="userlist_timer")
 		{
-			auto s=dynamic_cast<userlist_timer *>(m.getdata());
-			if (!s)
-				continue;
-			bmp.core_write(m);
 			time_t now=time(NULL);
 			//Remove all nicks that haven't been seen in 2 minutes
 			decltype(statuses.begin()) i;
 			while ((i=std::find_if(statuses.begin(), statuses.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=statuses.end())
 				statuses.erase(i);
 			p.write(userlist_message::create(statuses));
+			thread([](plugin_pipe p)
+			{
+				this_thread::sleep_for(chrono::seconds(10));
+				p.write(userlist_timer::create());
+			}, p).detach();
 		}
 		else if (m.type=="received")
 		{
