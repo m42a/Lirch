@@ -70,8 +70,7 @@ void run(plugin_pipe p, string name)
 
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
-	p.write(registration_message::create(100, name, "edict"));
-	p.write(registration_message::create(100, name, "me_edict"));
+	p.write(registration_message::create(0, name, "edict"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 
 	p.write(register_handler::create("/block", sendBlock));
@@ -79,8 +78,8 @@ void run(plugin_pipe p, string name)
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
-	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
-	quint16 port = LIRCH_DEFAULT_PORT;
+	QHostAddress groupAddress("224.0.0.224");
+	quint16 port = 45454;
 
 
 	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
