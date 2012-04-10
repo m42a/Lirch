@@ -78,7 +78,8 @@ void run(plugin_pipe p, string name)
 	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
 	quint16 port = LIRCH_DEFAULT_PORT;
 
-	if (!(udpSocket.bind(groupAddress,port) && udpSocket.joinMulticastGroup(groupAddress)))
+	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
+	if (!(udpSocket.bind(groupAddress,port,QUdpSocket::ShareAddress) && udpSocket.joinMulticastGroup(groupAddress)))
 	{
 		//flip out, you failed to connect
 	}
