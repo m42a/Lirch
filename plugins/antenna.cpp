@@ -35,6 +35,8 @@
 
 using namespace std;
 
+
+//this nonsense is needed in order to have our blocklist be searchable
 namespace std
 {
 	template <>
@@ -84,11 +86,16 @@ void run(plugin_pipe p, string name)
 	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
 	quint16 port = LIRCH_DEFAULT_PORT;
 
-	if (!(udpSocket.bind(groupAddress,port) && udpSocket.joinMulticastGroup(groupAddress)))
+	if (!udpSocket.bind(groupAddress,port))
 	{
-		//flip out, you failed to connect
+		cout <<"failed to bind"<<endl;
+		return;
 	}
-
+	if(!udpSocket.joinMulticastGroup(groupAddress))
+	{
+		cout<<"failed to join multicast"<<endl;
+		return;
+	}
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
 	settings.beginGroup("UserData");

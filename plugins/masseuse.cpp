@@ -60,7 +60,7 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(display_message::create(castMessage->channel,castMessage->contents,castMessage->nick));
+			p.write(display_message::create(NORMAL,castMessage->channel,castMessage->contents,castMessage->nick));
 		}
 		else if (m.type=="received_me")
 		{
@@ -70,7 +70,7 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(me_display_message::create(castMessage->channel,castMessage->contents,castMessage->nick));
+			p.write(display_message::create(ME,castMessage->channel,castMessage->contents,castMessage->nick));
 		}
 		else if (m.type=="local_notify")
 		{
@@ -80,7 +80,7 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(notify_display_message::create(castMessage->channel,castMessage->contents));
+			p.write(display_message::create(NOTIFY,castMessage->channel,castMessage->contents,""));
 		}
 		else if (m.type=="received_notify")
 		{
@@ -90,7 +90,7 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(notify_display_message::create(castMessage->channel,castMessage->contents));
+			p.write(display_message::create(NOTIFY,castMessage->channel,castMessage->contents,""));
 		}
 
 		//what is this doing here? take it back, i don't want it.

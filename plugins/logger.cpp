@@ -51,36 +51,21 @@ void run(plugin_pipe pipe, std::string name)
 					openLog(channelname,open_files);
 				string nick(internals->nick.toUtf8().data());
 				string contents(internals->contents.toUtf8().data());
-				string output = "<"+nick+"> "+contents+"\n";
-				open_files[channelname]->write(output.c_str(), output.size());
-			}
-		}
-		else if (front.type == "me_display")
-		{
-			me_display_message * internals = dynamic_cast<me_display_message *>(front.getdata());
-			if(internals)
-			{
-				pipe.write(front.decrement_priority());
-				QString channelname = internals->channel;
-				if(!open_files.count(channelname))
-					openLog(channelname,open_files);
-				string nick(internals->nick.toUtf8().data());
-				string contents(internals->contents.toUtf8().data());
-				string output = "* "+nick+" "+contents+"\n";
-				open_files[channelname]->write(output.c_str(), output.size());
-			}
-		}
-		else if (front.type == "notify_display")
-		{
-			notify_display_message * internals = dynamic_cast<notify_display_message *>(front.getdata());
-			if(internals)
-			{
-				pipe.write(front.decrement_priority());
-				QString channelname = internals->channel;
-				if(!open_files.count(channelname))
-					openLog(channelname,open_files);
-				string contents(internals->contents.toUtf8().data());
-				string output = "#"+contents+"\n";
+				display_message_subtype subtype=internals->subtype;
+
+				string output ="";
+				if(subtype==NORMAL)
+				{
+					output = "<"+nick+"> "+contents+"\n";
+				}
+				else if(subtype==ME)
+				{
+					output = "* "+nick+" "+contents+"\n";
+				}
+				else if(subtype==NOTIFY)
+				{
+					string output = "#"+contents+"\n";
+				}
 				open_files[channelname]->write(output.c_str(), output.size());
 			}
 		}
