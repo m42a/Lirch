@@ -48,11 +48,11 @@ void run(plugin_pipe p, string name)
 			string nick=s->nick.toLocal8Bit().constData();
 			string contents=s->contents.toLocal8Bit().constData();
 
-			if(s->subtype==NORMAL)
+			if(s->subtype==display_message_subtype::NORMAL)
 				cout << channel << ": <" << nick << "> " << contents << endl;
-			if(s->subtype==ME)
+			if(s->subtype==display_message_subtype::ME)
 				cout << channel << ": *" << nick << " " << contents << endl;
-			if(s->subtype==NOTIFY)
+			if(s->subtype==display_message_subtype::NOTIFY)
 				cout << channel << "‼‽" << contents << endl;
 		}
 		else

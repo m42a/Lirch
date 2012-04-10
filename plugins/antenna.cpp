@@ -52,13 +52,13 @@ namespace std
 message sendBlock(QString str, QString)
 {
 	if (str.startsWith("/block "))
-		return block_message::create(ADD,QHostAddress(str.section(' ',1)));
+		return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
 }
 
 message sendUnblock(QString str, QString)
 {
 	if (str.startsWith("/unblock "))
-		return block_message::create(REMOVE,QHostAddress(str.section(' ',1)));
+		return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
 }
 
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents);
@@ -75,10 +75,6 @@ void run(plugin_pipe p, string name)
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
-
-
-
-
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
@@ -140,9 +136,9 @@ void run(plugin_pipe p, string name)
 				//this contains the IP that /block or /unblock was called on
 				auto toModify=castMessage->ip;
 
-				if(castMessage->subtype==ADD)
+				if(castMessage->subtype==block_message_subtype::ADD)
 					blocklist.insert(toModify);
-				if(castMessage->subtype==REMOVE)
+				if(castMessage->subtype==block_message_subtype::REMOVE)
 					blocklist.erase(toModify);
 			}			
 			else if(m.type=="edict")
@@ -157,24 +153,12 @@ void run(plugin_pipe p, string name)
 				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
-				QByteArray message = formatMessage("edct",channel,nick,contents);
-
-				//change to use write() function when we have time
-				if(message.length()>0)
-					udpSocket.writeDatagram(message,groupAddress,port);
-			}
-			else if(m.type=="me_edict")
-			{
-				auto castMessage=dynamic_cast<me_edict_message *>(m.getdata());
-
-				//if it's not actually a medict message, ignore it and move on
-				if (!castMessage)
-					continue;
-
-				QString nick=settings.value("nick","spartacus").value<QString>();
-				QString channel=castMessage->channel;
-				QString contents=castMessage->contents;
-				QByteArray message = formatMessage("mdct",channel,nick,contents);
+				QString type;
+				if(castMessage->subtype==edict_message_subtype::NORMAL)
+					type="edct";
+				else if(castMessage->subtype==edict_message_subtype::ME)
+					type="mdct";
+				QByteArray message = formatMessage(type,channel,nick,contents);
 
 				//change to use write() function when we have time
 				if(message.length()>0)

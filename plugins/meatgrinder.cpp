@@ -43,7 +43,7 @@ message handle_me(QString text, QString channel)
 	if (text=="/me")
 		return empty_message::create();
 	//Remove the leading "/me "
-	return me_edict_message::create(text.remove(0,4), channel);
+	return edict_message::create(edict_message_subtype::ME, text.remove(0,4), channel);
 }
 
 message handle_quit(QString, QString)
@@ -55,7 +55,7 @@ message handle_normal(QString text, QString channel)
 {
 	if (text.startsWith("/say"))
 		text.remove(0,5);
-	return edict_message::create(text, channel);
+	return edict_message::create(edict_message_subtype::NORMAL, text, channel);
 }
 
 void run(plugin_pipe p, string name)
@@ -137,7 +137,7 @@ void run(plugin_pipe p, string name)
 				//We should be using tr here since this is a
 				//message to be displayed, but I'm not sure
 				//which tr to use.
-				p.write(display_message::create(NOTIFY,e->channel, QString("Unknown message type \"%1\"").arg(pre),""));
+				p.write(display_message::create(display_message_subtype::NOTIFY,e->channel, QString("Unknown message type \"%1\"").arg(pre),""));
 			else
 				p.write(handlers[pre](str, e->channel));
 		}
