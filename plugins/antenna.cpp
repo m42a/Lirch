@@ -5,7 +5,7 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
@@ -32,6 +32,7 @@
 #include "lirch_plugin.h"
 #include "lirch_constants.h"
 #include "grinder_messages.h"
+#include "notify_messages.h"
 
 using namespace std;
 
@@ -164,6 +165,25 @@ void run(plugin_pipe p, string name)
 				if(message.length()>0)
 					udpSocket.writeDatagram(message,groupAddress,port);
 			}
+			else if(m.type=="sendable_notify")
+			{
+				auto castMessage=dynamic_cast<sendable_notify_message *>(m.getdata());
+
+				//if it's not actually an edict message, ignore it and move on
+				if (!castMessage)
+					continue;
+
+				QString nick=settings.value("nick","spartacus").value<QString>();
+				QString channel=castMessage->channel;
+				QString contents=castMessage->contents;
+				QString type="ntfy";
+
+				QByteArray message = formatMessage(type,channel,nick,contents);
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+					udpSocket.writeDatagram(message,groupAddress,port);
+			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
 			{
@@ -188,11 +208,15 @@ void run(plugin_pipe p, string name)
 			string type(broadcast,4);
 			if (type=="edct")
 			{
-				p.write(received_message::create(destinationChannel,senderNick,sentContents,senderIP));
+				p.write(received_message::create(received_message_subtype::NORMAL,destinationChannel,senderNick,sentContents,senderIP));
 			}
 			else if (type=="mdct")
 			{
-				p.write(received_me_message::create(destinationChannel,senderNick,sentContents,senderIP));
+				p.write(received_message::create(received_message_subtype::ME,destinationChannel,senderNick,sentContents,senderIP));
+			}
+			else if (type=="ntfy")
+			{
+				p.write(received_message::create(received_message_subtype::NOTIFY,destinationChannel,senderNick,sentContents,senderIP));
 			}
 			else
 			{

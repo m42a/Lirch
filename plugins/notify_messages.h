@@ -1,8 +1,9 @@
 /*
  *
  * The different flavors of notify messages are for human feedback of module actions.
- * Standard Notify are things that will be displayed in the UI.  This should be used for both local messages and things received from the network.
+ * Standard Notify are things that will be displayed in the UI.  This should be used for local messages.
  * Sendable Notify are things that you do that other users should see, such as changing your nick, and do get sent over the network.
+ * Received notifies should be stored as a received_message of type NOTIFY.  See received_messages.h
  */
 
 

@@ -60,17 +60,12 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(display_message::create(display_message_subtype::NORMAL,castMessage->channel,castMessage->contents,castMessage->nick));
-		}
-		else if (m.type=="received_me")
-		{
-			auto castMessage=dynamic_cast<received_me_message *>(m.getdata());
-
-			//if it's not actually a received me message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->contents,castMessage->nick));
+			if(castMessage->subtype==received_message_subtype::NORMAL)
+				p.write(display_message::create(display_message_subtype::NORMAL,castMessage->channel,castMessage->contents,castMessage->nick));
+			else if(castMessage->subtype==received_message_subtype::ME)
+				p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->contents,castMessage->nick));
+			else if(castMessage->subtype==received_message_subtype::NOTIFY)
+				p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->contents,castMessage->nick));
 		}
 		else if (m.type=="notify")
 		{
