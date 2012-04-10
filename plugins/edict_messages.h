@@ -8,7 +8,7 @@
 #ifndef EDICT_MESSAGES_H_
 #define EDICT_MESSAGES_H_
 
-#include <QtCore/QString>
+#include <QString>
 
 #include "core/message.h"
 

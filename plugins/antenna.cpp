@@ -19,8 +19,8 @@
 
 #include <thread>
 #include <iostream>
-#include <QtCore/QByteArray>
-#include <QtCore/QString>
+#include <QByteArray>
+#include <QString>
 #include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
@@ -141,9 +141,15 @@ void run(plugin_pipe p, string name)
 				auto toModify=castMessage->ip;
 
 				if(castMessage->subtype==block_message_subtype::ADD)
+				{
 					blocklist.insert(toModify);
+					p.write(notify_message::create("default",toModify.toString()+" is now blocked."));
+				}
 				if(castMessage->subtype==block_message_subtype::REMOVE)
+				{
 					blocklist.erase(toModify);
+					p.write(notify_message::create("default",toModify.toString()+" is now unblocked."));
+				}
 			}			
 			else if(m.type=="edict")
 			{

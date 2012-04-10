@@ -61,11 +61,11 @@ void run(plugin_pipe p, string name)
 				continue;
 
 			if(castMessage->subtype==received_message_subtype::NORMAL)
-				p.write(display_message::create(display_message_subtype::NORMAL,castMessage->channel,castMessage->contents,castMessage->nick));
+				p.write(display_message::create(display_message_subtype::NORMAL,castMessage->channel,castMessage->nick,castMessage->contents));
 			else if(castMessage->subtype==received_message_subtype::ME)
-				p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->contents,castMessage->nick));
+				p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->nick,castMessage->contents));
 			else if(castMessage->subtype==received_message_subtype::NOTIFY)
-				p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->contents,castMessage->nick));
+				p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->nick,castMessage->contents));
 		}
 		else if (m.type=="notify")
 		{

@@ -21,7 +21,6 @@ void run(plugin_pipe pipe, std::string name)
 {
 	bool shutdown = false;
 	pipe.write(registration_message::create(0, name, "display"));
-	pipe.write(registration_message::create(0, name, "me_display"));
 	map<QString, ofstream*> open_files;
 	while(!shutdown)
 	{
@@ -62,15 +61,15 @@ void run(plugin_pipe pipe, std::string name)
 				string output ="";
 				if(subtype==display_message_subtype::NORMAL)
 				{
-					output = "<"+nick+"> "+contents+"\n";
+					output = "<"+nick+"> "+contents;
 				}
 				else if(subtype==display_message_subtype::ME)
 				{
-					output = "* "+nick+" "+contents+"\n";
+					output = "* "+nick+" "+contents;
 				}
 				else if(subtype==display_message_subtype::NOTIFY)
 				{
-					output = "‼‽"+contents+"\n";
+					output = "‼‽"+contents;
 				}
 
 				//actually writes the message to the log file

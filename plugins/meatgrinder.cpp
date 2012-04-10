@@ -1,6 +1,6 @@
 #include <unordered_map>
 
-#include <QtCore/QString>
+#include <QString>
 
 #include "lirch_plugin.h"
 #include "edict_messages.h"
@@ -43,7 +43,7 @@ message handle_me(QString text, QString channel)
 	if (text=="/me")
 		return empty_message::create();
 	//Remove the leading "/me "
-	return edict_message::create(edict_message_subtype::ME, text.remove(0,4), channel);
+	return edict_message::create(edict_message_subtype::ME, channel, text.remove(0,4));
 }
 
 message handle_quit(QString, QString)
@@ -55,7 +55,7 @@ message handle_normal(QString text, QString channel)
 {
 	if (text.startsWith("/say"))
 		text.remove(0,5);
-	return edict_message::create(edict_message_subtype::NORMAL, text, channel);
+	return edict_message::create(edict_message_subtype::NORMAL, channel, text);
 }
 
 void run(plugin_pipe p, string name)

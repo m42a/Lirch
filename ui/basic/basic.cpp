@@ -50,7 +50,7 @@ void run(plugin_pipe p, string name)
 			if(s->subtype==display_message_subtype::NORMAL)
 				cout << channel << ": <" << nick << "> " << contents << endl;
 			if(s->subtype==display_message_subtype::ME)
-				cout << channel << ": *" << nick << " " << contents << endl;
+				cout << channel << ": * " << nick << " " << contents << endl;
 			if(s->subtype==display_message_subtype::NOTIFY)
 				cout << channel << "‼‽" << contents << endl;
 		}
