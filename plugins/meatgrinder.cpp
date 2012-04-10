@@ -49,7 +49,7 @@ message handle_me(QString text, QString channel)
 
 message handle_quit(QString, QString)
 {
-	return shutdown_message::create();
+	return core_quit_message::create();
 }
 
 message handle_normal(QString text, QString channel)
