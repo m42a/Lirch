@@ -23,14 +23,13 @@ void send_input(plugin_pipe p)
 
 void run(plugin_pipe p, string name)
 {
-	thread t(send_input, p);
+	thread(send_input, p).detach();
 	p.write(registration_message::create(-32000, name, "display"));
 	while (true)
 	{
 		message m=p.blocking_read();
 		if (m.type=="shutdown")
 		{
-			t.join();
 			return;
 		}
 		else if (m.type=="registration_status")

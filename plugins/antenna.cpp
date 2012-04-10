@@ -82,7 +82,9 @@ void run(plugin_pipe p, string name)
 	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
 	quint16 port = LIRCH_DEFAULT_PORT;
 
-	if (!udpSocket.bind(groupAddress,port))
+
+	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
+	if (!udpSocket.bind(groupAddress,port,QUdpSocket::ShareAddress))
 	{
 		cout <<"failed to bind"<<endl;
 		return;
@@ -92,6 +94,8 @@ void run(plugin_pipe p, string name)
 		cout<<"failed to join multicast"<<endl;
 		return;
 	}
+
+
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
 	settings.beginGroup("UserData");
