@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 #include <iostream>
+#include <csignal>
 
 #include "message.h"
 #include "message_pipe.h"
@@ -18,6 +19,16 @@ static unordered_map<string, registry> message_registrations;
 static message_pipe in_pipe;
 
 static bool verbose;
+
+void handle_sigint(int)
+{
+	//Quit nicely when we get a ctrl-c, but not if we get it twice.  We
+	//need to unregister before we write because we don't want to lock the
+	//mutex twice.  This should only be a problem under heavy load (which
+	//is exactly when we don't want to block SIGINT).
+	signal(SIGINT, SIG_DFL);
+	in_pipe.write(core_quit_message::create());
+}
 
 ostream &operator<<(ostream &out, const message &m)
 {
@@ -154,6 +165,7 @@ static void run_core(const vector<message> &vm)
 int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL,"");
+	signal(SIGINT, handle_sigint);
 	vector<message> vm;
 	for (int i=1; i<argc-1; i+=2)
 	{
