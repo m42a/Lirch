@@ -17,10 +17,10 @@ public:
 
 	display_message(const display_message_subtype sub, const QString &chan, const QString &cont, const QString &nik) : subtype(sub), channel(chan), contents(cont), nick(nik)  {}
 
+	display_message_subtype subtype;
 	QString channel;
 	QString contents;
 	QString nick;
-	display_message_subtype subtype;
 };
 
 #endif // DISPLAY_MESSAGES_H
