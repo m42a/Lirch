@@ -47,7 +47,7 @@ message handle_me(QString text, QString channel)
 
 message handle_quit(QString, QString)
 {
-	shutdown_message::create();
+	return shutdown_message::create();
 }
 
 message handle_normal(QString text, QString channel)
