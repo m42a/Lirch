@@ -64,7 +64,7 @@ void run(plugin_pipe pipe, std::string name)
 				}
 				else if(subtype==display_message_subtype::NOTIFY)
 				{
-					string output = "#"+contents+"\n";
+					output = "‼‽"+contents+"\n";
 				}
 				open_files[channelname]->write(output.c_str(), output.size());
 			}
@@ -81,7 +81,8 @@ void openLog(QString channel, map<QString, unique_ptr<ofstream>> &open_files)
 {
 	string filename(channel.toUtf8().data());
 	filename += ".txt";
-	open_files[channel] = unique_ptr<ofstream>(new ofstream());
-	open_files[channel]->open(filename.c_str(), fstream::app);
-	open_files[channel]->write("~~~~~~~~\n", 9);
+	unique_ptr<ofstream> newFile = unique_ptr<ofstream>(new ofstream());
+	newFile->open(filename.c_str(), fstream::app);
+	*newFile <<"~~~~~~~~"<<endl;
+	open_files[channel]=newFile;
 }
