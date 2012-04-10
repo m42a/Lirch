@@ -47,7 +47,7 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_message(*this));}
 	static message create(const QString &ch, const QString &c, const QString &nik) {return message_create("display", new display_message(ch, c, nik));}
 
-	display_message(const QString &ch, const QString &c, const QString &nik) : contents(c), channel(ch), nick(nik)  {}
+	display_message(const QString &ch, const QString &c, const QString &nik) : channel(ch), contents(c), nick(nik)  {}
 
 	QString channel;
 	QString contents;
@@ -60,7 +60,7 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new me_display_message(*this));}
 	static message create(const QString &ch, const QString &c, const QString &nik) {return message_create("me_display", new me_display_message(ch, c, nik));}
 
-	me_display_message(const QString &ch, const QString &c, const QString &nik) : contents(c), channel(ch), nick(nik)  {}
+	me_display_message(const QString &ch, const QString &c, const QString &nik) : channel(ch), contents(c), nick(nik)  {}
 
 	QString channel;
 	QString contents;
@@ -73,7 +73,7 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new information_display_message(*this));}
 	static message create(const QString &ch, const QString &c) {return message_create("information_display", new information_display_message(ch, c));}
 
-	information_display_message(const QString &ch, const QString &c) : contents(c), channel(ch)  {}
+	information_display_message(const QString &ch, const QString &c) : channel(ch), contents(c)  {}
 
 	QString channel;
 	QString contents;

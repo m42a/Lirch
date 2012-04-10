@@ -51,12 +51,14 @@ message sendBlock(QString str, QString)
 {
 	if (str.startsWith("/block "))
 		return block_message::create(QHostAddress(str.section(' ',1)));
+	return empty_message::create();
 }
 
 message sendUnblock(QString str, QString)
 {
 	if (str.startsWith("/unblock "))
 		return unblock_message::create(QHostAddress(str.section(' ',1)));
+	return empty_message::create();
 }
 
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents);
