@@ -72,26 +72,17 @@ void run(plugin_pipe p, string name)
 
 			p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->contents,castMessage->nick));
 		}
-		else if (m.type=="local_notify")
+		else if (m.type=="notify")
 		{
-			auto castMessage=dynamic_cast<local_notify_message *>(m.getdata());
+			auto castMessage=dynamic_cast<notify_message *>(m.getdata());
 
-			//if it's not actually a local notify me message, ignore it and move on
+			//if it's not actually a notify me message, ignore it and move on
 			if (!castMessage)
 				continue;
 
 			p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->contents,""));
 		}
-		else if (m.type=="received_notify")
-		{
-			auto castMessage=dynamic_cast<received_notify_message *>(m.getdata());
 
-			//if it's not actually a received notify me message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->contents,""));
-		}
 
 		//what is this doing here? take it back, i don't want it.
 		else
