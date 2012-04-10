@@ -52,13 +52,13 @@ namespace std
 message sendBlock(QString str, QString)
 {
 	if (str.startsWith("/block "))
-		return block_message::create(QHostAddress(str.section(' ',1)));
+		return block_message::create(ADD,QHostAddress(str.section(' ',1)));
 }
 
 message sendUnblock(QString str, QString)
 {
 	if (str.startsWith("/unblock "))
-		return unblock_message::create(QHostAddress(str.section(' ',1)));
+		return block_message::create(REMOVE,QHostAddress(str.section(' ',1)));
 }
 
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents);
@@ -69,7 +69,6 @@ void run(plugin_pipe p, string name)
 
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
-	p.write(registration_message::create(0, name, "unblock"));
 	p.write(registration_message::create(100, name, "edict"));
 	p.write(registration_message::create(100, name, "me_edict"));
 	p.write(registration_message::create(0, name, "handler_ready"));
@@ -138,26 +137,14 @@ void run(plugin_pipe p, string name)
 				if (!castMessage)
 					continue;
 
-				auto toBlock=castMessage->ip;
+				//this contains the IP that /block or /unblock was called on
+				auto toModify=castMessage->ip;
 
-				//adds the ip from m to the blocklist
-				//if it is already there, it does nothing.
-				blocklist.insert(toBlock);
-			}
-			else if(m.type=="unblock")
-			{
-				auto castMessage=dynamic_cast<unblock_message *>(m.getdata());
-
-				//if it's not actually an unblock message, ignore it and move on
-				if (!castMessage)
-					continue;
-
-				auto toUnblock=castMessage->ip;
-
-				//removes the ip in castMessage from the blocklist
-				//if it is not there, it does nothing.
-				blocklist.erase(toUnblock);
-			}
+				if(castMessage->subtype==ADD)
+					blocklist.insert(toModify);
+				if(castMessage->subtype==REMOVE)
+					blocklist.erase(toModify);
+			}			
 			else if(m.type=="edict")
 			{
 				auto castMessage=dynamic_cast<edict_message *>(m.getdata());

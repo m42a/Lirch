@@ -137,7 +137,7 @@ void run(plugin_pipe p, string name)
 				//We should be using tr here since this is a
 				//message to be displayed, but I'm not sure
 				//which tr to use.
-				p.write(notify_display_message::create(e->channel, QString("Unknown message type \"%1\"").arg(pre)));
+				p.write(display_message::create(NOTIFY,e->channel, QString("Unknown message type \"%1\"").arg(pre),""));
 			else
 				p.write(handlers[pre](str, e->channel));
 		}
