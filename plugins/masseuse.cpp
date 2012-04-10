@@ -60,38 +60,24 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(display_message::create(NORMAL,castMessage->channel,castMessage->contents,castMessage->nick));
+			if(castMessage->subtype==received_message_subtype::NORMAL)
+				p.write(display_message::create(display_message_subtype::NORMAL,castMessage->channel,castMessage->nick,castMessage->contents));
+			else if(castMessage->subtype==received_message_subtype::ME)
+				p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->nick,castMessage->contents));
+			else if(castMessage->subtype==received_message_subtype::NOTIFY)
+				p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->nick,castMessage->contents));
 		}
-		else if (m.type=="received_me")
+		else if (m.type=="notify")
 		{
-			auto castMessage=dynamic_cast<received_me_message *>(m.getdata());
+			auto castMessage=dynamic_cast<notify_message *>(m.getdata());
 
-			//if it's not actually a received me message, ignore it and move on
+			//if it's not actually a notify me message, ignore it and move on
 			if (!castMessage)
 				continue;
 
-			p.write(display_message::create(ME,castMessage->channel,castMessage->contents,castMessage->nick));
+			p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->contents,""));
 		}
-		else if (m.type=="local_notify")
-		{
-			auto castMessage=dynamic_cast<local_notify_message *>(m.getdata());
 
-			//if it's not actually a local notify me message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			p.write(display_message::create(NOTIFY,castMessage->channel,castMessage->contents,""));
-		}
-		else if (m.type=="received_notify")
-		{
-			auto castMessage=dynamic_cast<received_notify_message *>(m.getdata());
-
-			//if it's not actually a received notify me message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			p.write(display_message::create(NOTIFY,castMessage->channel,castMessage->contents,""));
-		}
 
 		//what is this doing here? take it back, i don't want it.
 		else

@@ -77,17 +77,6 @@ void run(plugin_pipe p, string name)
 			statuses[s->nick].ip=s->ipAddress;
 			statuses[s->nick].lastseen=time(NULL);
 		}
-		else if (m.type=="received_me")
-		{
-			auto s=dynamic_cast<received_me_message *>(m.getdata());
-			if (!s)
-				continue;
-			p.write(m.decrement_priority());
-			statuses[s->nick].nick=s->nick;
-			statuses[s->nick].channels.insert(s->channel);
-			statuses[s->nick].ip=s->ipAddress;
-			statuses[s->nick].lastseen=time(NULL);
-		}
 		else
 			p.write(m.decrement_priority());
 	}

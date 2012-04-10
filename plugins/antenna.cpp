@@ -5,7 +5,7 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
@@ -19,8 +19,8 @@
 
 #include <thread>
 #include <iostream>
-#include <QtCore/QByteArray>
-#include <QtCore/QString>
+#include <QByteArray>
+#include <QString>
 #include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
@@ -32,6 +32,7 @@
 #include "lirch_plugin.h"
 #include "lirch_constants.h"
 #include "grinder_messages.h"
+#include "notify_messages.h"
 
 using namespace std;
 
@@ -52,14 +53,14 @@ namespace std
 message sendBlock(QString str, QString)
 {
 	if (str.startsWith("/block "))
-		return block_message::create(QHostAddress(str.section(' ',1)));
+		return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
 	return empty_message::create();
 }
 
 message sendUnblock(QString str, QString)
 {
 	if (str.startsWith("/unblock "))
-		return unblock_message::create(QHostAddress(str.section(' ',1)));
+		return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
 	return empty_message::create();
 }
 
@@ -71,22 +72,17 @@ void run(plugin_pipe p, string name)
 
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
-	p.write(registration_message::create(0, name, "unblock"));
-	p.write(registration_message::create(100, name, "edict"));
-	p.write(registration_message::create(100, name, "me_edict"));
+	p.write(registration_message::create(0, name, "edict"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
 
-
-
-
-
 	//connect to multicast group
 	QUdpSocket udpSocket;
-	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
-	quint16 port = LIRCH_DEFAULT_PORT;
+	QHostAddress groupAddress("224.0.0.224");
+	quint16 port = 45454;
+
 
 	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
 	if (!udpSocket.bind(groupAddress,port,QUdpSocket::ShareAddress))
@@ -99,6 +95,8 @@ void run(plugin_pipe p, string name)
 		cout<<"failed to join multicast"<<endl;
 		return;
 	}
+
+
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
 	settings.beginGroup("UserData");
@@ -141,26 +139,20 @@ void run(plugin_pipe p, string name)
 				if (!castMessage)
 					continue;
 
-				auto toBlock=castMessage->ip;
+				//this contains the IP that /block or /unblock was called on
+				auto toModify=castMessage->ip;
 
-				//adds the ip from m to the blocklist
-				//if it is already there, it does nothing.
-				blocklist.insert(toBlock);
-			}
-			else if(m.type=="unblock")
-			{
-				auto castMessage=dynamic_cast<unblock_message *>(m.getdata());
-
-				//if it's not actually an unblock message, ignore it and move on
-				if (!castMessage)
-					continue;
-
-				auto toUnblock=castMessage->ip;
-
-				//removes the ip in castMessage from the blocklist
-				//if it is not there, it does nothing.
-				blocklist.erase(toUnblock);
-			}
+				if(castMessage->subtype==block_message_subtype::ADD)
+				{
+					blocklist.insert(toModify);
+					p.write(notify_message::create("default",toModify.toString()+" is now blocked."));
+				}
+				if(castMessage->subtype==block_message_subtype::REMOVE)
+				{
+					blocklist.erase(toModify);
+					p.write(notify_message::create("default",toModify.toString()+" is now unblocked."));
+				}
+			}			
 			else if(m.type=="edict")
 			{
 				auto castMessage=dynamic_cast<edict_message *>(m.getdata());
@@ -173,24 +165,31 @@ void run(plugin_pipe p, string name)
 				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
-				QByteArray message = formatMessage("edct",channel,nick,contents);
+				QString type;
+				if(castMessage->subtype==edict_message_subtype::NORMAL)
+					type="edct";
+				else if(castMessage->subtype==edict_message_subtype::ME)
+					type="mdct";
+				QByteArray message = formatMessage(type,channel,nick,contents);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
 					udpSocket.writeDatagram(message,groupAddress,port);
 			}
-			else if(m.type=="me_edict")
+			else if(m.type=="sendable_notify")
 			{
-				auto castMessage=dynamic_cast<me_edict_message *>(m.getdata());
+				auto castMessage=dynamic_cast<sendable_notify_message *>(m.getdata());
 
-				//if it's not actually a medict message, ignore it and move on
+				//if it's not actually an edict message, ignore it and move on
 				if (!castMessage)
 					continue;
 
 				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
-				QByteArray message = formatMessage("mdct",channel,nick,contents);
+				QString type="ntfy";
+
+				QByteArray message = formatMessage(type,channel,nick,contents);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -220,11 +219,15 @@ void run(plugin_pipe p, string name)
 			string type(broadcast,4);
 			if (type=="edct")
 			{
-				p.write(received_message::create(destinationChannel,senderNick,sentContents,senderIP));
+				p.write(received_message::create(received_message_subtype::NORMAL,destinationChannel,senderNick,sentContents,senderIP));
 			}
 			else if (type=="mdct")
 			{
-				p.write(received_me_message::create(destinationChannel,senderNick,sentContents,senderIP));
+				p.write(received_message::create(received_message_subtype::ME,destinationChannel,senderNick,sentContents,senderIP));
+			}
+			else if (type=="ntfy")
+			{
+				p.write(received_message::create(received_message_subtype::NOTIFY,destinationChannel,senderNick,sentContents,senderIP));
 			}
 			else
 			{

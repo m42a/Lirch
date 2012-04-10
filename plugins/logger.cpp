@@ -15,14 +15,13 @@
 
 using namespace std;
 
-void openLog(QString channel, map<QString, unique_ptr<ofstream>> &open_files);
+void openLog(QString channel, map<QString, ofstream*> &open_files);
 
 void run(plugin_pipe pipe, std::string name)
 {
 	bool shutdown = false;
 	pipe.write(registration_message::create(0, name, "display"));
-	pipe.write(registration_message::create(0, name, "me_display"));
-	map<QString, unique_ptr<ofstream>> open_files;
+	map<QString, ofstream*> open_files;
 	while(!shutdown)
 	{
 		message front = pipe.blocking_read();
@@ -40,33 +39,41 @@ void run(plugin_pipe pipe, std::string name)
 					pipe.write(registration_message::create(internals->priority-1, name, internals->type));
 			}
 		}
+
+		//logs the display messages
 		else if (front.type == "display")
 		{
 			display_message * internals = dynamic_cast<display_message *>(front.getdata());
+			//if this is truly a display message, then we can use it
 			if(internals)
 			{
 				pipe.write(front.decrement_priority());
+
+				//convert the message contents into something logable
 				QString channelname = internals->channel;
 				if(!open_files.count(channelname))
 					openLog(channelname,open_files);
 				string nick(internals->nick.toUtf8().data());
 				string contents(internals->contents.toUtf8().data());
-				display_message_subtype subtype=internals->subtype;
+				display_message_subtype::Enum subtype=internals->subtype;
 
+				//log the message contents in a manner which matches the message type
 				string output ="";
-				if(subtype==NORMAL)
+				if(subtype==display_message_subtype::NORMAL)
 				{
-					output = "<"+nick+"> "+contents+"\n";
+					output = "<"+nick+"> "+contents;
 				}
-				else if(subtype==ME)
+				else if(subtype==display_message_subtype::ME)
 				{
-					output = "* "+nick+" "+contents+"\n";
+					output = "* "+nick+" "+contents;
 				}
-				else if(subtype==NOTIFY)
+				else if(subtype==display_message_subtype::NOTIFY)
 				{
-					string output = "#"+contents+"\n";
+					output = "‼‽"+contents;
 				}
-				open_files[channelname]->write(output.c_str(), output.size());
+
+				//actually writes the message to the log file
+				*open_files[channelname]<<output<<endl;
 			}
 		}
 		else
@@ -77,11 +84,14 @@ void run(plugin_pipe pipe, std::string name)
 	//done_message::create(name);
 }
 
-void openLog(QString channel, map<QString, unique_ptr<ofstream>> &open_files)
+
+//opens a file and adds it to the open_files map.  also adds 8 tilde to demarkate the beginning of a session
+void openLog(QString channel, map<QString, ofstream*> &open_files)
 {
 	string filename(channel.toUtf8().data());
 	filename += ".txt";
-	open_files[channel] = unique_ptr<ofstream>(new ofstream());
-	open_files[channel]->open(filename.c_str(), fstream::app);
-	open_files[channel]->write("~~~~~~~~\n", 9);
+	ofstream * newFile = new ofstream();
+	newFile->open(filename.c_str(), fstream::app);
+	*newFile <<"~~~~~~~~"<<endl;
+	open_files[channel]=newFile;
 }
