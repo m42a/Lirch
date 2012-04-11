@@ -1,8 +1,3 @@
-#include "lirch_qt_interface.h"
-#include "ui_lirch_qt_interface.h"
-
-#include "lirch_qlineedit_dialog.h"
-
 // TODO (not in order of importance)
 // 1) Ugh, fix the layout somehow?
 // 2) Setup Wizard
@@ -17,46 +12,43 @@
 //    a) Channel creation
 //    b) Polling for participants
 
+#include "lirch_constants.h"
+#include "ui/qt/lirch_qt_interface.h"
+#include "ui/qt/ui_lirch_qt_interface.h"
+#include "ui/qt/lirch_qlineedit_dialog.h"
 #include "plugins/lirch_plugin.h"
-#include "plugins/edict_messages.h"
+
+// Plugin main
 
 void run(plugin_pipe p, std::string name) {
-    // Register for the messages that the GUI is concerned with
+    // Register for the messages that pertain to the GUI
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "display"));
-    p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "me_display"));
 
-    // Init the GUI (core makes QApp)
-    LirchQtInterface w(p);
-
-    // Run the GUI in a QThread
-    QThread gui_thread;
-    w.moveToThread(&gui_thread);
-    // When the thread is started, show the UI
-    QObject::connect(&gui_thread, SIGNAL(started()), &w, SLOT(show()));
-    // When the UI closes, quit the thread
-    QObject::connect(&w, SIGNAL(shutdown()), &gui_thread, SLOT(quit()));
-
-    // Kick things off
-    gui_thread.start();
-    while (true) {
-        // Fetch a message from the pipe
+    // The interconnect will act as a courier to the GUI
+    while (interconnect->ready()) {
+        // Fetch a message from the pipe whenever it arrives
         message m = p.blocking_read();
         // Determine what type of message it is
         if (m.type == LIRCH_MSG_TYPE_SHUTDOWN) {
+            interconnect->close("core shutdown");
             break;
         } else if (m.type == LIRCH_MSG_TYPE_REG_STAT) {
             // Recieved a registration status message
             auto reg = dynamic_cast<registration_status *>(m.getdata());
-            // Or not...
+            // Or not... in which case, continue reading
             if (!reg) {
                 continue;
             }
-            if (!reg->status) {
+            if (reg->status) {
+                // We have now registered, begin processing
+                interconnect->open(p, QString::fromStdString(name));
+            } else {
                 // Try again to register, if necessary
                 if (reg->priority > LIRCH_MSG_PRI_REG_MIN) {
                   // FIXME??? reg->decrement_priority(); instead of -1
                   p.write(registration_message::create(reg->priority - 1, name, reg->type));
                 } else {
+                  interconnect->close("failed to register with core");
                   break;
                 }
             }
@@ -64,25 +56,25 @@ void run(plugin_pipe p, std::string name) {
             auto data = dynamic_cast<display_message *>(m.getdata());
             if (data) {
                 // FIXME what about invalid display messages?
-                w.display_message(data->channel, data->contents);
+                interconnect->display(*data);
             }
         } else {
             // By default, echo the message with decremented priority
             p.write(m.decrement_priority());
         }
     }
-    w.fatal_error(LirchQtInterface::tr("%1 received shutdown message.").arg(QString::fromStdString(name)));
+
+    // We only get here through anomalous behavior
+    interconnect->close();
 }
 
 // QT UI
 
-LirchQtInterface::LirchQtInterface(plugin_pipe &pipe, QWidget *parent) :
+LirchQtInterface::LirchQtInterface(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::LirchQtInterface),
     settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME)
 {
-    // When the UI closes, shutdown everything
-
     // Initialize the UI
     ui->setupUi(this);
     // Add a variety of UI enhancements (select on focus and quit action)
@@ -90,14 +82,7 @@ LirchQtInterface::LirchQtInterface(plugin_pipe &pipe, QWidget *parent) :
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
 
     // client_pipe facilitates communication with the core
-    client_pipe = &pipe;
-    // When the client_pipe is done, quit the thread
-    //connect(client_pipe, SIGNAL(shutdown(QString)), core_processor, SLOT(quit()));
-    // The first of these is required for cleanup, second can be done otherwise
-    //connect(client_pipe, SIGNAL(shutdown(QString)), client_pipe, SLOT(deleteLater()));
-    //connect(client_pipe, SIGNAL(shutdown(QString)), core_processor, SLOT(deleteLater()));
-    // Kill the UI if core_processor receives shutdown (TODO should reconnect?)
-    //connect(client_pipe, SIGNAL(stop(QString)), this, SLOT(fatal_error(QString)));
+    client_pipe = nullptr;
 
     // Load up the settings and kick things off
     loadSettings();
@@ -191,8 +176,7 @@ void LirchQtInterface::on_msgSendButton_clicked()
     }
 
     // The core will pass this raw edict to the meatgrinder
-    message edict = raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL);
-    client_pipe->write(edict);
+    client_pipe->send(raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL));
 
     // TODO here is the failure condition, when does this happen?
     // QMessageBox::warning(this,
@@ -335,8 +319,10 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
+	// TODO display a more correct prompt to the user
 	LirchQLineEditDialog close_dialog;
 	bool status = close_dialog.exec();
+	// Cancel the close if undesired
 	if (status) {
 		e->accept();
 	} else {
@@ -344,25 +330,37 @@ void LirchQtInterface::closeEvent(QCloseEvent *e)
 	}
 }
 
-void LirchQtInterface::alert_user(QString msg)
+void LirchQtInterface::alert_user(const QString &msg)
 {
 	// Empty alerts trigger fatal errors to encourage proper alerts
 	if (msg.isEmpty()) {
-		fatal_error(tr("Empty user alert message."));
+		die(tr("Empty user alert message."));
 	} else {
 		QMessageBox::information(this, tr("Alert"), msg);
 	}
 }
 
-void LirchQtInterface::fatal_error(QString msg)
+void LirchQtInterface::use(LirchClientPipe *pipe)
+{
+    if (pipe->ready()) {
+        client_pipe = pipe;
+        this->show();
+    } else {
+        QMessageBox::information(this,
+                                 tr("Error"),
+                                 tr("Client pipe failed to connect."));
+    }
+}
+
+void LirchQtInterface::die(const QString &msg)
 {
     QMessageBox::information(this,
                              tr("Fatal Error"),
                              tr("Details: '%1'").arg(msg));
-    close();
+    this->close();
 }
 
-void LirchQtInterface::display_message(QString channel, QString contents) {
+void LirchQtInterface::display(const QString &channel, const QString &contents) {
     QString timestamp = QTime::currentTime().toString();
     // TODO handle messages in general
     if (channel.isEmpty()) {
@@ -385,7 +383,7 @@ void LirchQtInterface::display_message(QString channel, QString contents) {
     ui->chatViewArea->append(prefix + contents);
 }
 
-void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
+void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)
 {
     nick = new_nick;
     if (permanent) {
@@ -394,7 +392,7 @@ void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
     display_message("internal", "/nick " + nick);
 }
 
-void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
+void LirchQtInterface::ignore_changed(const QString &new_ignore, bool block)
 {
     // TODO delegate to core (antenna will block/ignore)
     if (block) {
