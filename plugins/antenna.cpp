@@ -233,9 +233,13 @@ void run(plugin_pipe p, string name)
 				continue;
 			}
 
+			//takes the components out of the broadcast and crops them apropriately, just in case
 			QString destinationChannel=QString::fromUtf8(broadcast+4);
+			destinationChannel.truncate(64);
 			QString senderNick=QString::fromUtf8(broadcast+68);
+			senderNick.truncate(64);
 			QString sentContents=QString::fromUtf8(broadcast+132);
+			sentContents.truncate(256);
 
 			if (type=="edct")
 			{
@@ -253,7 +257,6 @@ void run(plugin_pipe p, string name)
 			{
 				continue;
 			}
-
 		}
 
 
@@ -269,17 +272,11 @@ void run(plugin_pipe p, string name)
 			udpSocket.writeDatagram(message,groupAddress,port);
 			lastSent=time(NULL);
 		}
-
 		this_thread::sleep_for(chrono::milliseconds(50));
-
-
 	}
-
-
-
 };
 
-//if components are too long, the cropped version might not have a \0 to terminate it.  might need fixing later.
+//stores type in he first 4 bytes, channel in the 64 after that, then 64 for nick, and up to 256 for the contents of the message
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents)
 {
 	QByteArray output;
