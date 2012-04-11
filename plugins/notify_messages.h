@@ -19,7 +19,7 @@ public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new notify_message(*this));}
 
 	//notify messages have only one conent, string to be displayed
-	static message create(const QString &chan, const QString &con) {return message_create("local_notify", new notify_message(chan,con));}
+	static message create(const QString &chan, const QString &con) {return message_create("notify", new notify_message(chan,con));}
 
 	notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
 

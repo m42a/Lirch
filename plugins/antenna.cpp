@@ -85,15 +85,14 @@ void run(plugin_pipe p, string name)
 	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
 	if (!udpSocket.bind(groupAddress,port,QUdpSocket::ShareAddress))
 	{
-		cout <<"failed to bind"<<endl;
+		p.write(notify_message::create("default","Failed to bind."));
 		return;
 	}
 	if(!udpSocket.joinMulticastGroup(groupAddress))
 	{
-		cout<<"failed to join multicast"<<endl;
+		p.write(notify_message::create("default","Failed to join Multicast Group."));
 		return;
 	}
-
 
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
@@ -116,7 +115,7 @@ void run(plugin_pipe p, string name)
 				auto s=dynamic_cast<registration_status *>(m.getdata());
 				if (!s)
 					continue;
-				//Retry 1900 or 2000 times until we succeed
+				//Retry 2000 times until we succeed
 				if (!s->status)
 				{
 					if (s->priority<2000)
@@ -233,6 +232,9 @@ void run(plugin_pipe p, string name)
 			}
 
 		}
+
+
+		//add in the timer to send the "still here" message
 
 		this_thread::sleep_for(chrono::milliseconds(50));
 

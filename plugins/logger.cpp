@@ -69,7 +69,7 @@ void run(plugin_pipe pipe, std::string name)
 				}
 				else if(subtype==display_message_subtype::NOTIFY)
 				{
-					output = "‼‽"+contents;
+					output = "‼‽ "+contents;
 				}
 
 				//actually writes the message to the log file

@@ -24,9 +24,7 @@ void run(plugin_pipe p, string name)
 {
 	//register for the message types the display adapter can handle
 	p.write(registration_message::create(-30000, name, "received"));
-	p.write(registration_message::create(-30000, name, "received_me"));
-	p.write(registration_message::create(-30000, name, "local_notify"));
-	p.write(registration_message::create(-30000, name, "received_notify"));
+	p.write(registration_message::create(-30000, name, "notify"));
 
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
@@ -75,7 +73,7 @@ void run(plugin_pipe p, string name)
 			if (!castMessage)
 				continue;
 
-			p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->contents,""));
+			p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,"",castMessage->contents));
 		}
 
 
