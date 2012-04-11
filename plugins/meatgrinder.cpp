@@ -9,6 +9,7 @@
 #include "core/core_messages.h"
 #include "blocker_messages.h"
 #include "notify_messages.h"
+#include "channel_messages.h"
 
 using namespace std;
 
@@ -54,9 +55,16 @@ message handle_quit(QString, QString)
 
 message handle_normal(QString text, QString channel)
 {
-	if (text.startsWith("/say"))
+	if (text.startsWith("/say "))
 		text.remove(0,5);
 	return edict_message::create(edict_message_subtype::NORMAL, channel, text);
+}
+
+message handle_channel_change(QString text, QString)
+{
+	if (!text.startsWith("/channel "))
+		return empty_message::create();
+	return set_channel::create(text.remove(0, 9));
 }
 
 void run(plugin_pipe p, string name)
@@ -94,6 +102,7 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/me", handle_me));
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
+					p.write(register_handler::create("/channel", handle_channel_change));
 					p.write(handler_ready::create());
 				}
 				else if (s->type=="register_replacer")

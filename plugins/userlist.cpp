@@ -73,7 +73,8 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 			statuses[s->nick].nick=s->nick;
-			statuses[s->nick].channels.insert(s->channel);
+			if (s->subtype==received_message_subtype::NORMAL || s->subtype==received_message_subtype::ME || s->subtype==received_message_subtype::NOTIFY)
+				statuses[s->nick].channels.insert(s->channel);
 			statuses[s->nick].ip=s->ipAddress;
 			statuses[s->nick].lastseen=time(NULL);
 		}

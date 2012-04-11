@@ -10,6 +10,9 @@
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
  *
+ * a periodic broadcast of type "here" is sent out every minute; it's format is
+ * [type][nick]
+ * type is the standard 4 byte string, and nick is a max 64 byte
  *
  * To Do:
  * make sure the nick/channel/message length being broadcast is short enough
@@ -222,11 +225,18 @@ void run(plugin_pipe p, string name)
 			if(blocklist.end()!=blocklist.find(senderIP))
 				continue;
 
+			string type(broadcast,4);
+
+			if (type=="here")
+			{
+				p.write(received_message::create(received_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),"",senderIP));
+				continue;
+			}
+
 			QString destinationChannel=QString::fromUtf8(broadcast+4);
 			QString senderNick=QString::fromUtf8(broadcast+68);
 			QString sentContents=QString::fromUtf8(broadcast+132);
 
-			string type(broadcast,4);
 			if (type=="edct")
 			{
 				p.write(received_message::create(received_message_subtype::NORMAL,destinationChannel,senderNick,sentContents,senderIP));
@@ -247,13 +257,18 @@ void run(plugin_pipe p, string name)
 		}
 
 
-
+		//sends out a "still here" message every minute
 		if(time(NULL)-lastSent>60)
 		{
-			udpSocket.writeDatagram(QByteArray("here"),groupAddress,port);
+			QString nick=settings.value("nick","spartacus").value<QString>();
+			QString type="here";
+
+			QByteArray message = type.toUtf8()+nick.toUtf8();
+			message.truncate(68);
+
+			udpSocket.writeDatagram(message,groupAddress,port);
 			lastSent=time(NULL);
 		}
-		//add in the timer to send the "still here" message
 
 		this_thread::sleep_for(chrono::milliseconds(50));
 
