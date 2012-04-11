@@ -10,10 +10,15 @@
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
  *
+ * a periodic broadcast of type "here" is sent out every minute; it's format is
+ * [type][nick]
+ * type is the standard 4 byte string, and nick is a max 64 byte
  *
  * To Do:
  * make sure the nick/channel/message length being broadcast is short enough
  * toss a notify to the UI if ^ fails
+ *
+ * add the timed "still here" messages
  */
 
 
@@ -24,6 +29,7 @@
 #include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
+#include <ctime>
 
 #include "lirch_constants.h"
 #include "blocker_messages.h"
@@ -70,6 +76,8 @@ void run(plugin_pipe p, string name)
 {
 	unordered_set<QHostAddress> blocklist;
 
+	time_t lastSent=time(NULL);
+
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
 	p.write(registration_message::create(0, name, "edict"));
@@ -80,8 +88,8 @@ void run(plugin_pipe p, string name)
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
-	QHostAddress groupAddress("224.0.0.224");
-	quint16 port = 45454;
+	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
+	quint16 port = LIRCH_DEFAULT_PORT;
 
 
 	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
@@ -173,7 +181,10 @@ void run(plugin_pipe p, string name)
 
 				//change to use write() function when we have time
 				if(message.length()>0)
+				{
 					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
 			}
 			else if(m.type=="sendable_notify")
 			{
@@ -192,7 +203,10 @@ void run(plugin_pipe p, string name)
 
 				//change to use write() function when we have time
 				if(message.length()>0)
+				{
 					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
@@ -211,11 +225,18 @@ void run(plugin_pipe p, string name)
 			if(blocklist.end()!=blocklist.find(senderIP))
 				continue;
 
+			string type(broadcast,4);
+
+			if (type=="here")
+			{
+				p.write(received_message::create(received_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),"",senderIP));
+				continue;
+			}
+
 			QString destinationChannel=QString::fromUtf8(broadcast+4);
 			QString senderNick=QString::fromUtf8(broadcast+68);
 			QString sentContents=QString::fromUtf8(broadcast+132);
 
-			string type(broadcast,4);
 			if (type=="edct")
 			{
 				p.write(received_message::create(received_message_subtype::NORMAL,destinationChannel,senderNick,sentContents,senderIP));
@@ -236,7 +257,18 @@ void run(plugin_pipe p, string name)
 		}
 
 
-		//add in the timer to send the "still here" message
+		//sends out a "still here" message every minute
+		if(time(NULL)-lastSent>60)
+		{
+			QString nick=settings.value("nick","spartacus").value<QString>();
+			QString type="here";
+
+			QByteArray message = type.toUtf8()+nick.toUtf8();
+			message.truncate(68);
+
+			udpSocket.writeDatagram(message,groupAddress,port);
+			lastSent=time(NULL);
+		}
 
 		this_thread::sleep_for(chrono::milliseconds(50));
 
