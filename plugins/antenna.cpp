@@ -14,6 +14,8 @@
  * To Do:
  * make sure the nick/channel/message length being broadcast is short enough
  * toss a notify to the UI if ^ fails
+ *
+ * add the timed "still here" messages
  */
 
 
@@ -24,6 +26,7 @@
 #include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
+#include <ctime>
 
 #include "lirch_constants.h"
 #include "blocker_messages.h"
@@ -70,6 +73,8 @@ void run(plugin_pipe p, string name)
 {
 	unordered_set<QHostAddress> blocklist;
 
+	time_t lastSent=time(NULL);
+
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
 	p.write(registration_message::create(0, name, "edict"));
@@ -80,8 +85,8 @@ void run(plugin_pipe p, string name)
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
-	QHostAddress groupAddress("224.0.0.224");
-	quint16 port = 45454;
+	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
+	quint16 port = LIRCH_DEFAULT_PORT;
 
 
 	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
@@ -173,7 +178,10 @@ void run(plugin_pipe p, string name)
 
 				//change to use write() function when we have time
 				if(message.length()>0)
+				{
 					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
 			}
 			else if(m.type=="sendable_notify")
 			{
@@ -192,7 +200,10 @@ void run(plugin_pipe p, string name)
 
 				//change to use write() function when we have time
 				if(message.length()>0)
+				{
 					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
@@ -236,6 +247,12 @@ void run(plugin_pipe p, string name)
 		}
 
 
+
+		if(time(NULL)-lastSent>60)
+		{
+			udpSocket.writeDatagram(QByteArray("here"),groupAddress,port);
+			lastSent=time(NULL);
+		}
 		//add in the timer to send the "still here" message
 
 		this_thread::sleep_for(chrono::milliseconds(50));
