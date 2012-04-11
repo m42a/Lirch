@@ -23,11 +23,11 @@ public:
 
 	received_message(received_message_subtype::Enum sub, const QString &chan, const QString &nik, const QString &conent, const QHostAddress &ip) : subtype(sub), channel(chan), nick(nik), contents(conent), ipAddress(ip) {}
 
+	received_message_subtype::Enum subtype;
 	QString channel;
 	QString nick;
 	QString contents;
 	QHostAddress ipAddress;
-	received_message_subtype::Enum subtype;
 };
 
 #endif // RECEIVED_MESSAGES_H

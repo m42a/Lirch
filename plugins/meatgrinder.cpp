@@ -4,6 +4,7 @@
 
 #include "lirch_plugin.h"
 #include "edict_messages.h"
+#include "notify_messages.h"
 #include "grinder_messages.h"
 #include "core/core_messages.h"
 #include "blocker_messages.h"
@@ -48,7 +49,7 @@ message handle_me(QString text, QString channel)
 
 message handle_quit(QString, QString)
 {
-	shutdown_message::create();
+	return core_quit_message::create();
 }
 
 message handle_normal(QString text, QString channel)

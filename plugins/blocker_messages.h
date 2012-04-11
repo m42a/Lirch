@@ -26,8 +26,8 @@ public:
 
 	block_message(block_message_subtype::Enum sub, const QHostAddress &blockip) : subtype(sub), ip(blockip) {}
 
-	QHostAddress ip;
 	block_message_subtype::Enum subtype;
+	QHostAddress ip;
 };
 
 #endif // BLOCKER_MESSAGES_H

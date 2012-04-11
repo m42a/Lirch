@@ -40,9 +40,9 @@ public:
 
 	edict_message(edict_message_subtype::Enum sub, const QString &chan, const QString &cont) : subtype(sub), channel(chan), contents(cont) {}
 
-	QString contents;
-	QString channel;
 	edict_message_subtype::Enum subtype;
+	QString channel;
+	QString contents;
 };
 
 #endif

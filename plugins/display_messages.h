@@ -28,10 +28,10 @@ public:
 
 	display_message(const display_message_subtype::Enum sub, const QString &chan, const QString &nik, const QString &cont) : subtype(sub), channel(chan), contents(cont), nick(nik)  {}
 
+	display_message_subtype::Enum subtype;
 	QString channel;
 	QString contents;
 	QString nick;
-	display_message_subtype::Enum subtype;
 };
 
 #endif // DISPLAY_MESSAGES_H

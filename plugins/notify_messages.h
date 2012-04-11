@@ -23,8 +23,8 @@ public:
 
 	notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
 
-	QString contents;
 	QString channel;
+	QString contents;
 };
 
 class sendable_notify_message : public message_data
@@ -37,8 +37,8 @@ public:
 
 	sendable_notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
 
-	QString contents;
 	QString channel;
+	QString contents;
 };
 
 #endif // NOTIFY_MESSAGES_H
