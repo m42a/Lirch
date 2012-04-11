@@ -64,6 +64,8 @@ void run(plugin_pipe p, string name)
 				p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->nick,castMessage->contents));
 			else if(castMessage->subtype==received_message_subtype::NOTIFY)
 				p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->nick,castMessage->contents));
+			else
+				p.write(m.decrement_priority());
 		}
 		else if (m.type=="notify")
 		{
