@@ -92,11 +92,11 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/me", handle_me));
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
-					p.write(replacer_ready::create());
+					p.write(handler_ready::create());
 				}
 				else if (s->type=="register_replacer")
 				{
-					p.write(handler_ready::create());
+					p.write(replacer_ready::create());
 				}
 			}
 		}
