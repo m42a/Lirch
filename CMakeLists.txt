@@ -92,7 +92,9 @@ if(QT_COMPONENTS)
 endif(QT_COMPONENTS)
 
 # At some point maybe we'll consider supporting compilers that aren't gcc
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+if(CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wextra")
+endif()
 # TODO when does this become unnecessary?
 add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
 # Find the libraries we'll be needing (for core)

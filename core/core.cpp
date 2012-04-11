@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 #include <iostream>
+#include <csignal>
 
 #ifdef LIRCH_CORE_USE_QT
 #include <QApplication>
@@ -27,6 +28,16 @@ static unordered_map<string, registry> message_registrations;
 static message_pipe in_pipe;
 
 static bool verbose;
+
+void handle_sigint(int)
+{
+	//Quit nicely when we get a ctrl-c, but not if we get it twice.  We
+	//need to unregister before we write because we don't want to lock the
+	//mutex twice.  This should only be a problem under heavy load (which
+	//is exactly when we don't want to block SIGINT).
+	signal(SIGINT, SIG_DFL);
+	in_pipe.write(core_quit_message::create());
+}
 
 ostream &operator<<(ostream &out, const message &m)
 {
@@ -126,6 +137,8 @@ static void target_plugin(const message &m)
 
 static void initiate_shutdown()
 {
+	if (verbose)
+		cerr << " initiated a shutdown" << endl;
 	for (auto &i : out_pipes)
 		i.second.write(shutdown_message::create());
 }
@@ -178,6 +191,7 @@ int main(int argc, char *argv[])
 	// TODO can we parse the args with QApplication?
 	#else
 	setlocale(LC_ALL,"");
+	signal(SIGINT, handle_sigint);
 	#endif
 
 	vector<message> vm;

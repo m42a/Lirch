@@ -55,4 +55,11 @@ public:
 
 static message message_create(const std::string &s, message_data *d) {return message(s, message::initial_priority, std::unique_ptr<message_data>(d));}
 
+class empty_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(nullptr);}
+	static message create() {return message_create("", nullptr);}
+};
+
 #endif

@@ -58,8 +58,12 @@ message message_pipe::blocking_read()
 
 void message_pipe::write(const message &m)
 {
-	mutex_lock_guard l(messages->mutex);
-	locked_write(m);
+	{
+		mutex_lock_guard l(messages->mutex);
+		locked_write(m);
+	}
+	//Signal that there's a message after we've unlocked the mutex to avoid
+	//useless contention.
 	messages->cond.notify_one();
 }
 

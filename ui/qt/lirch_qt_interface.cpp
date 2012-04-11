@@ -16,6 +16,7 @@
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
 #include "ui/qt/lirch_qlineedit_dialog.h"
+#include "ui/qt/ui_lirch_qlineedit_dialog.h"
 #include "plugins/lirch_plugin.h"
 
 // Plugin main
