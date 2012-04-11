@@ -9,8 +9,8 @@
 # Build a shared library that practically everything uses
 add_library(envelope SHARED message.cpp)
 
-set(CORE_LIBRARIES envelope ; dl ; pthread)
-
+# Prepare to build the core executable
+set(CORE_LIBRARIES envelope)
 if(BUILD_QT_CLIENT)
   # Use QtCore and QtGui
   set(QT_DONT_USE_QTCORE FALSE)
@@ -21,6 +21,10 @@ if(BUILD_QT_CLIENT)
   include_directories(${QT_INCLUDE_DIR})
   add_definitions(-DLIRCH_CORE_USE_QT)
   list(APPEND CORE_LIBRARIES ${QT_LIBRARIES})
+  list(APPEND CORE_LIBRARIES lirch-qt)
+else(BUILD_QT_CLIENT)
+  list(APPEND CORE_LIBRARIES dl)
+  list(APPEND CORE_LIBRARIES pthread)
 endif(BUILD_QT_CLIENT)
 
 # Build the core executable
