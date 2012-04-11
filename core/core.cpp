@@ -168,13 +168,12 @@ int main(int argc, char *argv[])
 	// The window is constructed here, show()'n later (see plugin header)
 	LirchQtInterface main_window;
         // A small, static interconnect object is used to mediate
-        extern LirchClientPipe *interconnect;
-        interconnect = new LirchClientPipe();
-        QObject::connect(interconnect, SIGNAL(show(const QString &, const QString &)),
+        extern LirchClientPipe interconnect;
+        QObject::connect(&interconnect, SIGNAL(show(const QString &, const QString &)),
                          &main_window,   SLOT(display(const QString &, const QString &)));
-        QObject::connect(interconnect, SIGNAL(shutdown(const QString &)),
+        QObject::connect(&interconnect, SIGNAL(shutdown(const QString &)),
                          &main_window,   SLOT(die(const QString &)));
-        QObject::connect(interconnect, SIGNAL(run(LirchClientPipe *)),
+        QObject::connect(&interconnect, SIGNAL(run(LirchClientPipe *)),
                          &main_window,   SLOT(use(LirchClientPipe *)));
 	// TODO can we parse the args with QApplication?
 	#else

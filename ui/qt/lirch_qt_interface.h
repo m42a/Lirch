@@ -24,11 +24,14 @@
 class LirchClientPipe : public QObject {
     Q_OBJECT
 public:
-    explicit LirchClientPipe() { client_pipe = nullptr; }
-    bool ready() const { return client_pipe != nullptr; }
+    enum State { BEFORE, DURING, AFTER };
+    explicit LirchClientPipe() : client_state(State::BEFORE) { };
+    bool ready() const {
+        return client_state == State::DURING;
+    }
     void send(const message &m) {
         if (ready()) {
-            client_pipe->write(m);
+            client_pipe.write(m);
         }
     }
     void display(const display_message &m) {
@@ -36,25 +39,27 @@ public:
     }
     void open(plugin_pipe &pipe, const QString &name) {
         client_name = name;
-        client_pipe = &pipe;
+        client_pipe = pipe;
+        client_state = State::DURING;
         emit run(this);
     }
     void close(const QString &reason = "unknown reason") {
         QString label = client_name;
         client_name.clear();
-        client_pipe = nullptr;
+        client_state = State::AFTER;
         emit shutdown(tr("%1 was closed for %2").arg(label, reason));
     }
 private:
+    State client_state;
     QString client_name;
-    plugin_pipe *client_pipe;
+    plugin_pipe client_pipe;
 signals:
     void run(LirchClientPipe *);
     void shutdown(const QString &);
     void show(const QString &, const QString &);
 };
 
-static LirchClientPipe *interconnect;
+static LirchClientPipe interconnect;
 
 namespace Ui {
     class LirchQtInterface;
