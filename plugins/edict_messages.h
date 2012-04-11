@@ -12,13 +12,11 @@
 
 #include "core/message.h"
 
-namespace edict_message_subtype
+
+enum class edict_message_subtype
 {
-	enum Enum
-	{
-		NORMAL,ME
-	};
-}
+	NORMAL,ME
+};
 
 class raw_edict_message : public message_data
 {
@@ -36,11 +34,11 @@ class edict_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new edict_message(*this));}
-	static message create(edict_message_subtype::Enum sub, const QString &chan, const QString &cont) {return message_create("edict", new edict_message(sub,chan,cont));}
+	static message create(edict_message_subtype sub, const QString &chan, const QString &cont) {return message_create("edict", new edict_message(sub,chan,cont));}
 
-	edict_message(edict_message_subtype::Enum sub, const QString &chan, const QString &cont) : subtype(sub), channel(chan), contents(cont) {}
+	edict_message(edict_message_subtype sub, const QString &chan, const QString &cont) : subtype(sub), channel(chan), contents(cont) {}
 
-	edict_message_subtype::Enum subtype;
+	edict_message_subtype subtype;
 	QString channel;
 	QString contents;
 };

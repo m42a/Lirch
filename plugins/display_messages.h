@@ -11,24 +11,22 @@
 #include <QString>
 #include "core/message.h"
 
-namespace display_message_subtype
+
+enum class display_message_subtype
 {
-	enum Enum
-	{
-		NORMAL,ME,NOTIFY
-	};
-}
+	NORMAL,ME,NOTIFY
+};
 
 
 class display_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_message(*this));}
-	static message create(const display_message_subtype::Enum sub, const QString &chan, const QString &nik, const QString &cont) {return message_create("display", new display_message(sub, chan, nik, cont));}
+	static message create(const display_message_subtype sub, const QString &chan, const QString &nik, const QString &cont) {return message_create("display", new display_message(sub, chan, nik, cont));}
 
-	display_message(const display_message_subtype::Enum sub, const QString &chan, const QString &nik, const QString &cont) : subtype(sub), channel(chan), contents(cont), nick(nik)  {}
+	display_message(const display_message_subtype sub, const QString &chan, const QString &nik, const QString &cont) : subtype(sub), channel(chan), contents(cont), nick(nik)  {}
 
-	display_message_subtype::Enum subtype;
+	display_message_subtype subtype;
 	QString channel;
 	QString contents;
 	QString nick;

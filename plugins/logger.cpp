@@ -55,7 +55,7 @@ void run(plugin_pipe pipe, std::string name)
 					openLog(channelname,open_files);
 				string nick(internals->nick.toUtf8().data());
 				string contents(internals->contents.toUtf8().data());
-				display_message_subtype::Enum subtype=internals->subtype;
+				display_message_subtype subtype=internals->subtype;
 
 				//log the message contents in a manner which matches the message type
 				string output ="";
