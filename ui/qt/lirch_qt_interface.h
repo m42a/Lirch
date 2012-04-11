@@ -24,8 +24,8 @@
 
 class LirchClientPipe : public QObject {
     Q_OBJECT
+    enum class State { BEFORE, DURING, AFTER };
 public:
-    enum State { BEFORE, DURING, AFTER };
     explicit LirchClientPipe() : client_state(State::BEFORE) { };
     bool ready() const {
         return client_state == State::DURING;
