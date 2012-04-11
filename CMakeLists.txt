@@ -94,9 +94,11 @@ endif(QT_COMPONENTS)
 # At some point maybe we'll consider supporting compilers that aren't gcc
 if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wextra")
-endif()
-# TODO when does this become unnecessary?
-add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
+  # TODO when does this become unnecessary?
+  add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
+else(CMAKE_COMPILER_IS_GNUCXX)
+  message(WARNING "You need to use gcc 4.6.0+ to compile lirch.")
+endif(CMAKE_COMPILER_IS_GNUCXX)
 # Find the libraries we'll be needing (for core)
 find_library(PTHREAD_LIBRARY_PATH pthread REQUIRED)
 if(UNIX)

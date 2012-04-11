@@ -20,6 +20,7 @@
 #include "lirch_constants.h"
 #include "core/message_view.h"
 #include "plugins/edict_messages.h"
+#include "plugins/display_messages.h"
 
 class LirchClientPipe : public QObject {
     Q_OBJECT

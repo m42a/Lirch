@@ -388,15 +388,16 @@ void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)
     if (permanent) {
         default_nick = new_nick;
     }
-    display_message("internal", "/nick " + nick);
+    display(tr("internal"), tr("/nick %1").arg(nick));
 }
 
 void LirchQtInterface::ignore_changed(const QString &new_ignore, bool block)
 {
+    QString status = "dummy";
     // TODO delegate to core (antenna will block/ignore)
     if (block) {
         
     }
-    display_message("internal", "/ignore " + new_ignore);
+    display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));
 }
 
