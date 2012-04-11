@@ -40,19 +40,12 @@
 
 #define LIRCH_NUM_PRELOADS @LIRCH_NUM_PRELOADS@
 
-#define LIRCH_ANTENNA_NAME     "antenna_@LIRCH_VERSION_STRING@"
-#define LIRCH_LOGGER_NAME      "logger_@LIRCH_VERSION_STRING@"
-#define LIRCH_MEATGRINDER_NAME "meatgrinder_@LIRCH_VERSION_STRING@"
-#define LIRCH_UI_BASIC_NAME    "ui_basic_v@LIRCH_VERSION_STRING@"
-#define LIRCH_UI_NCURSES_NAME  "ui_ncurses_v@LIRCH_VERSION_STRING@"
-#define LIRCH_UI_QT_NAME       "ui_qt_v@LIRCH_VERSION_STRING@"
-
 struct preload_data {
 	const char *name, *filename; 
 };
 
 static const preload_data preloads[LIRCH_NUM_PRELOADS] = {
-	
+	@LIRCH_PRELOADS@{ nullptr, nullptr }
 };
 
 #endif // LIRCH_CONSTANTS_H

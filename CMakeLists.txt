@@ -8,6 +8,9 @@ set(CMAKE_BUILD_TYPES "(None|Debug|Release|RelWithDebInfo|MinSizeRel)")
 if(NOT CMAKE_BUILD_TYPE MATCHES "${CMAKE_BUILD_TYPES}")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "${CMAKE_BUILD_TYPES}" FORCE)
 endif(NOT CMAKE_BUILD_TYPE MATCHES "${CMAKE_BUILD_TYPES}")
+# Specify some default directories
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
+set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
 
 # Version info
 set(LIRCH_VERSION_MAJOR 0)
@@ -34,27 +37,35 @@ option(BUILD_QT_CLIENT      "Build the Qt4 interface"         ON)
 option(BUILD_PLUGINS        "Build the standard plugin suite" ON)
 
 # Preload options (advanced)
-option(PRELOAD_BASIC_CLIENT   "Preload the basic UI plugin"     OFF)
-option(PRELOAD_NCURSES_CLIENT "Preload the ncurses UI plugin"   OFF)
-option(PRELOAD_QT_CLIENT      "Preload the Qt UI plugin"        OFF)
-option(PRELOAD_ANTENNA        "Preload the antenna plugin"      OFF)
-option(PRELOAD_LOGGER         "Preload the logger plugin"       OFF)
-option(PRELOAD_MEATGRINDER    "Preload the meatgrinder plugin"  OFF)
-mark_as_advanced(
-  PRELOAD_BASIC_CLIENT
-  PRELOAD_QT_CLIENT
-  PRELOAD_NCURSES_CLIENT
-  PRELOAD_ANTENNA
-  PRELOAD_LOGGER
-  PRELOAD_MEATGRINDER
-)
+set(LIRCH_NUM_PRELOADS 1)
+macro(add_plugin NAME)
+  string(TOUPPER "PRELOAD_${NAME}" OPTION_NAME)
+  option(${OPTION_NAME} "Preload the ${NAME} plugin" OFF)
+  mark_as_advanced(${OPTION_NAME} FORCE)
+  if(${OPTION_NAME})
+    list(APPEND PRELOADS "{ \"${NAME}\", \"${LIBRARY_OUTPUT_PATH}/lib${NAME}.so\" },")
+    math(EXPR LIRCH_NUM_PRELOADS "${LIRCH_NUM_PRELOADS} + 1")
+  endif(${OPTION_NAME})
+endmacro(add_plugin)
 # TODO disable preloads when corresponding build is disabled?
-set(LIRCH_NUM_PRELOADS 0)
+add_plugin("antenna")
+add_plugin("lirch-basic")
+add_plugin("lirch-ncurses")
+add_plugin("lirch-qt")
+add_plugin("logger")
+add_plugin("meatgrinder")
+if(PRELOADS)
+  foreach(PRELOAD IN LISTS PRELOADS)
+    set(LIRCH_PRELOADS "${PRELOAD}
+	${LIRCH_PRELOADS}")
+  endforeach(PRELOAD IN PRELOADS)
+endif(PRELOADS)
 
-# Configure some string literals and include build dir
+# Configure some string literals and include build/source dir
 file(WRITE "${CMAKE_BINARY_DIR}/log/default.log" "" MAKE_DIRECTORY)
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
 include_directories("${CMAKE_BINARY_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}")
 
 ## LIBRARIES
 
@@ -92,11 +103,6 @@ if(UNIX)
 endif(UNIX)
 
 ## COMPILATION
-
-# Specify some default directories
-include_directories("${CMAKE_SOURCE_DIR}")
-set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
 
 # Always build the core
 add_subdirectory(core)
