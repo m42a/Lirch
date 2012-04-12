@@ -165,7 +165,8 @@ static void run_core(const vector<message> &vm)
 int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL,"");
-	signal(SIGINT, handle_sigint);
+	if (signal(SIGINT, handle_sigint)==SIG_IGN)
+		signal(SIGINT, SIG_IGN);
 	vector<message> vm;
 	for (int i=1; i<argc-1; i+=2)
 	{
