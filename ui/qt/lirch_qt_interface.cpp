@@ -21,6 +21,8 @@
 
 // Plugin main
 
+LirchClientPipe interconnect;
+
 void run(plugin_pipe p, std::string name) {
     // Register for the messages that pertain to the GUI
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "display"));
@@ -318,11 +320,13 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
-	// TODO display a more correct prompt to the user
-	LirchQLineEditDialog close_dialog;
-	bool status = close_dialog.exec();
-	// Cancel the close if undesired
-	if (status) {
+	// Confirm the close
+	if (QMessageBox::question(this,
+			tr("Close Prompt"),
+			tr("Are you sure you want to quit %1?").arg(LIRCH_PRODUCT_NAME),
+			QMessageBox::Yes,
+			QMessageBox::No,
+			QMessageBox::NoButton) == QMessageBox::Yes) {
 		e->accept();
 	} else {
 		e->ignore();

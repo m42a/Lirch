@@ -196,26 +196,33 @@ int main(int argc, char *argv[])
 
 	vector<message> vm;
 	// Preload a variety of plugins specified in build (see lirch_constants.h)
-	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
-	for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+	for (auto &preload : preloads)
 	{
 		vm.push_back(
 			plugin_adder::create(
-				string(preloads[i - 1].name),
-				string(preloads[i - 1].filename)
+				string(preload.name),
+				string(preload.filename)
 			)
 		);
 	}
 	// Load plugins specified on command line
-	for (int i=1; i<argc-1; i+=2)
-	{
-		if (argv[i]==string("-v") || argv[i]==string("--verbose"))
+	if (argc > 1) {
+		int i = 1;
+		// The first argument might specify verbose mode
+		if (argv[i] == string("-v") || argv[i] == string("--verbose"))
 		{
-			verbose=true;
-			--i;
+			verbose = true;
+			++i;
 		}
-		else
-			vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
+		// The rest are plugin (name, filename) pairs
+		while (i + 1 < argc)
+		{
+			string name = argv[i];
+			++i;
+			string filename = argv[i];
+			++i;
+			vm.push_back(plugin_adder::create(name, filename));
+		}
 	}
 
 	// Loop until core shutdown

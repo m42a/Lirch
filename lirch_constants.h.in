@@ -40,14 +40,11 @@
 
 // PRELOADS
 
-#define LIRCH_NUM_PRELOADS @LIRCH_NUM_PRELOADS@
-
 struct preload_data {
 	const char *name, *filename; 
 };
 
-static const preload_data preloads[LIRCH_NUM_PRELOADS] = {
-	@LIRCH_PRELOADS@{ nullptr, nullptr }
-};
+static const preload_data preloads[] = {
+	@LIRCH_PRELOADS@ };
 
 #endif // LIRCH_CONSTANTS_H

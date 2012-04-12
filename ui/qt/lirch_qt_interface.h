@@ -60,7 +60,7 @@ signals:
     void show(const QString &, const QString &);
 };
 
-static LirchClientPipe interconnect;
+extern LirchClientPipe interconnect;
 
 namespace Ui {
     class LirchQtInterface;
