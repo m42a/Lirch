@@ -29,6 +29,7 @@ void run(plugin_pipe pipe, std::string name)
 	
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
 	//settings.beginGroup("Logger");
+	//settings.setValue("Logger/root_directory", "/home/danieo2/Lirch/logs/");
 	
 	while(!shutdown)
 	{
@@ -105,7 +106,8 @@ void run(plugin_pipe pipe, std::string name)
 //opens a file and adds it to the open_files map.  also adds 8 tilde to demarkate the beginning of a session
 void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &settings)
 {
-	string root(settings.value("Logger/root_directory", "./").toString().toUtf8().data());
+	string root(settings.value("Logger/root_directory", LIRCH_DEFAULT_LOG_DIR).toString().toUtf8().data());
+	root += "/";
 	string filename(channel.toUtf8().data());
 	filename += ".txt";
 	filename = root.append(filename);
