@@ -1,1 +1,5 @@
-<RCC/>
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/images">
+    <file alias="shortcut-icon">images/lirch.ico</file>
+</qresource>
+</RCC>
