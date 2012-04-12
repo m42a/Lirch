@@ -9,8 +9,6 @@
 # Build a shared library that practically everything uses
 add_library(envelope SHARED message.cpp)
 
-# Prepare to build the core executable
-set(CORE_LIBRARIES envelope)
 if(BUILD_QT_CLIENT)
   # Use QtCore and QtGui
   set(QT_DONT_USE_QTCORE FALSE)
@@ -19,17 +17,13 @@ if(BUILD_QT_CLIENT)
   set(QT_USE_QTTEST FALSE)
   include(${QT_USE_FILE})
   include_directories(${QT_INCLUDE_DIR})
-  add_definitions(-DLIRCH_CORE_USE_QT)
-  list(APPEND CORE_LIBRARIES ${QT_LIBRARIES})
-  list(APPEND CORE_LIBRARIES lirch-qt)
-  add_executable(lirch-qt lirch_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(lirch-qt ${CORE_LIBRARIES})
+  # Build the core executable with Qt GUI
+  add_executable(qlirch lirch_qt.cpp core.cpp plugin_loader.cpp)
+  target_link_libraries(qlirch envelope lirch-qt ${QT_LIBRARIES})
 endif(BUILD_QT_CLIENT)
-if(BUILD_NON_QT_CLIENT)
-  list(APPEND CORE_LIBRARIES dl)
-  list(APPEND CORE_LIBRARIES pthread)
-  add_executable(lirch lirch_non_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(lirch ${CORE_LIBRARIES})
-endif(BUILD_NON_QT_CLIENT)
 
-# Build the core executable
+if(BUILD_NON_QT_CLIENT)
+  # Build the core executable
+  add_executable(lirch lirch_non_qt.cpp core.cpp plugin_loader.cpp)
+  target_link_libraries(lirch envelope dl pthread)
+endif(BUILD_NON_QT_CLIENT)

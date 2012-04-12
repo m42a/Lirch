@@ -1,9 +1,18 @@
+#include <string>
+#include <thread>
+#include <vector>
+using namespace std;
+
 #include <QApplication>
 #include <QObject>
-#include "ui/qt/lirch_qt_interface.h"
+
 #include "lirch_constants.h"
+#include "core/core_messages.h"
+#include "ui/qt/lirch_qt_interface.h"
 
 void run_core(const vector<message> &vm);
+
+extern bool verbose;
 
 int main(int argc, char *argv[])
 {
