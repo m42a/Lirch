@@ -245,7 +245,7 @@ void run(plugin_pipe p, string name)
 
 
 
-};
+}
 
 //if components are too long, the cropped version might not have a \0 to terminate it.  might need fixing later.
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents)
@@ -262,4 +262,4 @@ QByteArray formatMessage(QString type, QString channel, QString nick, QString co
 	output += holder;
 	output += '\0';
 	return output;
-};
+}
