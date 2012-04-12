@@ -1,4 +1,4 @@
-#include "lirch_qt_tab_widget.h"
+#include "ui/qt/lirch_qt_tab_widget.h"
 
 LirchQtTabWidget::LirchQtTabWidget(QWidget *parent) :
     QTabWidget(parent)

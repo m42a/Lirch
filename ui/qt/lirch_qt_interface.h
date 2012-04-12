@@ -3,6 +3,7 @@
 
 #include <Qt>
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QEvent>
 #include <QFileDialog>
 #include <QLineEdit>
@@ -18,21 +19,48 @@
 
 #include "lirch_constants.h"
 #include "core/message_view.h"
+#include "plugins/edict_messages.h"
+#include "plugins/display_messages.h"
 
 class LirchClientPipe : public QObject {
     Q_OBJECT
-    friend class LirchQtInterface;
 public:
-    explicit LirchClientPipe();
-    ~LirchClientPipe();
+    enum State { BEFORE, DURING, AFTER };
+    explicit LirchClientPipe() : client_state(State::BEFORE) { };
+    bool ready() const {
+        return client_state == State::DURING;
+    }
+    void send(const message &m) {
+        if (ready()) {
+            client_pipe.write(m);
+        }
+    }
+    void display(const display_message &m) {
+        emit show(m.channel, m.contents);
+    }
+    void open(plugin_pipe &pipe, const QString &name) {
+        client_name = name;
+        client_pipe = pipe;
+        client_state = State::DURING;
+        emit run(this);
+    }
+    void close(const QString &reason = "unknown reason") {
+        QString label = client_name;
+        client_name.clear();
+        client_state = State::AFTER;
+        emit shutdown(tr("%1 was closed for %2").arg(label, reason));
+    }
 private:
-    plugin_pipe * hole;
-public slots:
-    void start();
+    State client_state;
+    QString client_name;
+    plugin_pipe client_pipe;
 signals:
-    void stop(QString);
-    void display_message(QString, QString);
+    void run(LirchClientPipe *);
+    void shutdown(const QString &);
+    void show(const QString &, const QString &);
 };
+
+static LirchClientPipe interconnect;
 
 namespace Ui {
     class LirchQtInterface;
@@ -40,23 +68,25 @@ namespace Ui {
 
 class LirchQtInterface : public QMainWindow {
     Q_OBJECT
+    friend class LirchClientPipe;
 public:
     explicit LirchQtInterface(QWidget *parent = 0);
-    ~LirchQtInterface();
+    virtual ~LirchQtInterface();
     bool eventFilter(QObject *object, QEvent *event);
 
 protected:
     void changeEvent(QEvent *e);
 
 private:
+    // Utility functions (for settings)
     void loadSettings();
     void saveSettings();
+    // Internals
     Ui::LirchQtInterface *ui;
     LirchClientPipe *client_pipe;
     // Application settings
     QSettings settings;
-    QString nick;
-    // QString default_save_path;
+    QString nick, default_nick;
     bool show_message_timestamps;
     bool show_ignored_messages;
 
@@ -82,6 +112,14 @@ private:
     // chatArea floats timestamps to the right?
     // chatArea draws (alternating) -----/_____ b/t messages?
 
+public slots:
+    void die(const QString &msg = "unknown error");
+    void display(const QString &channel, const QString &contents);
+    void use(LirchClientPipe *pipe);
+
+protected slots:
+    void closeEvent(QCloseEvent *);
+
 private slots:
     void on_actionEditIgnored_triggered();
     void on_actionEditNick_triggered();
@@ -100,13 +138,10 @@ private slots:
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
 
-    void nick_changed(QString, bool);    
-    void ignore_changed(QString, bool);
-    void display_message(QString, QString);
-    void fatal_error(QString);
-
-signals:
-    void startup_hooks(bool);
+    void alert_user(const QString &);
+    // TODO these need to query the antenna
+    void ignore_changed(const QString &, bool);
+    void nick_changed(const QString &, bool);
 };
 
 #endif // LIRCH_QT_INTERFACE_H
