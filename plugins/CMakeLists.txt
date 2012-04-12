@@ -30,3 +30,7 @@ target_link_libraries(timer envelope)
 # Userlist
 add_library(userlist SHARED userlist.cpp)
 target_link_libraries(userlist envelope ${QT_LIBRARIES})
+
+# Tester
+add_library(linuxtester SHARED linuxtester.cpp)
+target_link_libraries(linuxtester envelope ${QT_LIBRARIES})
