@@ -42,6 +42,7 @@ macro(add_plugin NAME)
   option(${OPTION_NAME} "Preload the ${NAME} plugin" OFF)
   mark_as_advanced(${OPTION_NAME} FORCE)
   if(${OPTION_NAME})
+    # TODO make this portable
     list(APPEND PRELOADS "{ \"${NAME}\", \"${LIBRARY_OUTPUT_PATH}/lib${NAME}.so\" },")
   endif(${OPTION_NAME})
 endmacro(add_plugin)
@@ -56,9 +57,9 @@ add_plugin("meatgrinder")
 add_plugin("userlist")
 if(PRELOADS)
   foreach(PRELOAD IN LISTS PRELOADS)
-    set(LIRCH_PRELOADS "${PRELOAD}
-	${LIRCH_PRELOADS}")
-  endforeach(PRELOAD IN PRELOADS)
+    set(LIRCH_PRELOADS "${LIRCH_PRELOADS}
+	${PRELOAD}")
+  endforeach(PRELOAD IN LISTS PRELOADS)
 endif(PRELOADS)
 
 # Configure some string literals and include build/source dir
