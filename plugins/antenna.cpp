@@ -238,9 +238,9 @@ void run(plugin_pipe p, string name)
 			}
 
 			//takes the components out of the broadcast and crops them apropriately, just in case
-			QString destinationChannel=QString::fromUtf8(broadcast+4,64);
-			QString senderNick=QString::fromUtf8(broadcast+68,64);
-			QString sentContents=QString::fromUtf8(broadcast+132,256);
+			QString destinationChannel=QString::fromUtf8(broadcast+4,64).section(QChar('\0'),0,0);
+			QString senderNick=QString::fromUtf8(broadcast+68,64).section(QChar('\0'),0,0);
+			QString sentContents=QString::fromUtf8(broadcast+132,256).section(QChar('\0'),0,0);
 
 			if (type=="edct")
 			{
