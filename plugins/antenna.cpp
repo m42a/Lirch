@@ -185,6 +185,8 @@ void run(plugin_pipe p, string name)
 					udpSocket.writeDatagram(message,groupAddress,port);
 					lastSent=time(NULL);
 				}
+				else
+					p.write(notify_message::create(channel,"Message too long."));
 			}
 			else if(m.type=="sendable_notify")
 			{
@@ -207,6 +209,8 @@ void run(plugin_pipe p, string name)
 					udpSocket.writeDatagram(message,groupAddress,port);
 					lastSent=time(NULL);
 				}
+				else
+					p.write(notify_message::create(channel,"Notify message too long. No idea how you did that."));
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
@@ -234,12 +238,9 @@ void run(plugin_pipe p, string name)
 			}
 
 			//takes the components out of the broadcast and crops them apropriately, just in case
-			QString destinationChannel=QString::fromUtf8(broadcast+4);
-			destinationChannel.truncate(64);
-			QString senderNick=QString::fromUtf8(broadcast+68);
-			senderNick.truncate(64);
-			QString sentContents=QString::fromUtf8(broadcast+132);
-			sentContents.truncate(256);
+			QString destinationChannel=QString::fromUtf8(broadcast+4,64);
+			QString senderNick=QString::fromUtf8(broadcast+68,64);
+			QString sentContents=QString::fromUtf8(broadcast+132,256);
 
 			if (type=="edct")
 			{
@@ -284,10 +285,10 @@ QByteArray formatMessage(QString type, QString channel, QString nick, QString co
 	output += channel.toUtf8().leftJustified(64,'\0',true);
 	output += nick.toUtf8().leftJustified(64,'\0',true);
 	QByteArray holder =contents.toUtf8();
+
 	if (holder.length()>256)
-	{
 		return QByteArray();
-	}
+
 	output += holder;
 	output += '\0';
 	return output;
