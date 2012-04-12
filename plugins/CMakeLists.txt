@@ -1,32 +1,34 @@
-# Use only QtCore and QtNetwork
-set(QT_DONT_USE_QTGUI TRUE)
-set(QT_USE_QTNETWORK TRUE)
-include(${QT_USE_FILE})
-include_directories(
-  ${QT_INCLUDE_DIR}
-  ${QT_QTNETWORK_INCLUDE_DIR}
-)
+# Timer plugin
+add_library(timer SHARED timer.cpp)
+target_link_libraries(timer envelope)
 
-# Antenna plugin
- add_library(antenna SHARED antenna.cpp)
- target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
+# These plugins use QtCore only:
+set(QT_DONT_USE_QTCORE FALSE)
+set(QT_DONT_USE_QTGUI TRUE)
+set(QT_USE_QTNETWORK FALSE)
+set(QT_USE_QTTEST FALSE)
+include(${QT_USE_FILE})
+include_directories(${QT_INCLUDE_DIR})
 
 # Logger plugin
- add_library(logger SHARED logger.cpp)
- target_link_libraries(logger envelope ${QT_LIBRARIES})
+add_library(logger SHARED logger.cpp)
+target_link_libraries(logger envelope ${QT_LIBRARIES})
  
 # Masseuse plugin
- add_library(masseuse SHARED masseuse.cpp)
- target_link_libraries(masseuse envelope ${QT_LIBRARIES})
+add_library(masseuse SHARED masseuse.cpp)
+target_link_libraries(masseuse envelope ${QT_LIBRARIES})
 
 # Meatgrinder plugin
 add_library(meatgrinder SHARED meatgrinder.cpp)
 target_link_libraries(meatgrinder envelope ${QT_LIBRARIES})
 
-# Timer plugin
-add_library(timer SHARED timer.cpp)
-target_link_libraries(timer envelope)
-
-# Userlist
+# Userlist plugin
 add_library(userlist SHARED userlist.cpp)
 target_link_libraries(userlist envelope ${QT_LIBRARIES})
+
+# Antenna plugin uses QtNetwork
+set(QT_USE_QTNETWORK TRUE)
+include(${QT_USE_FILE})
+include_directories(${QT_QTNETWORK_INCLUDE_DIR})
+add_library(antenna SHARED antenna.cpp)
+target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})

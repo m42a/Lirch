@@ -1,5 +1,5 @@
-#include "lirch_qlineedit_dialog.h"
-#include "ui_lirch_qlineedit_dialog.h"
+#include "ui/qt/lirch_qlineedit_dialog.h"
+#include "ui/qt/ui_lirch_qlineedit_dialog.h"
 
 LirchQLineEditDialog::LirchQLineEditDialog(QWidget *parent) :
     QDialog(parent),

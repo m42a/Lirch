@@ -10,35 +10,44 @@
 #define LIRCH_PRODUCT_NAME   "LIRCH"
 #define LIRCH_COPYRIGHT_YEAR "2012"
 
-#define LIRCH_MSG_MAX_PRI     32766
-#define LIRCH_MSG_MIN_PRI    -32766
-
-// UI
-
-#define LIRCH_DEFAULT_CHANNEL_ID "default"
-#define LIRCH_QT_INTERFACE_ID    "qt_ui_v@LIRCH_VERSION_STRING@"
-
 // MESSAGES
 
-#define LIRCH_MSG_TYPE_SHUTDOWN  "shutdown"
+#define LIRCH_MSG_MIN_PRI        -32766
+#define LIRCH_MSG_MAX_PRI         32766
 
-// Edict messages
-#define LIRCH_MSG_TYPE_EDICT     "edict"
-#define LIRCH_MSG_TYPE_RAW_EDICT "raw_edict"
-#define LIRCH_MSG_TYPE_ME_EDICT  "me_edict"
+#define LIRCH_MSG_PRI_REG_MIN     9000
+#define LIRCH_MSG_PRI_REG_MAX     32766
 
-#define LIRCH_MSG_TYPE_REG_STAT "registration_status"
-#define LIRCH_MSG_PRI_REG_STAT  32000
+#define LIRCH_MSG_TYPE_SHUTDOWN   "shutdown"
 
-// TODO constants for different message types the UI receives
+#define LIRCH_MSG_TYPE_EDICT      "edict"
+#define LIRCH_MSG_TYPE_RAW_EDICT  "raw_edict"
+#define LIRCH_MSG_TYPE_ME_EDICT   "me_edict"
 
-// ANTENNA
+#define LIRCH_MSG_TYPE_DISPLAY    "display"
+#define LIRCH_MSG_TYPE_ME_DISPLAY "me_display"
+
+#define LIRCH_MSG_TYPE_REG_STAT   "registration_status"
+
+// DEFAULTS
 
 #define LIRCH_DEFAULT_ADDR "234.0.0.234"
 #define LIRCH_DEFAULT_PORT 45454
 
-// LOGGER
-
 #define LIRCH_DEFAULT_LOG_DIR "@CMAKE_BINARY_DIR@/log"
+
+#define LIRCH_DEFAULT_CHANNEL "default"
+
+// PRELOADS
+
+#define LIRCH_NUM_PRELOADS @LIRCH_NUM_PRELOADS@
+
+struct preload_data {
+	const char *name, *filename; 
+};
+
+static const preload_data preloads[LIRCH_NUM_PRELOADS] = {
+	@LIRCH_PRELOADS@{ nullptr, nullptr }
+};
 
 #endif // LIRCH_CONSTANTS_H

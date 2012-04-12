@@ -1,7 +1,3 @@
-#include "lirch_qt_interface.h"
-#include "ui_lirch_qt_interface.h"
-#include "lirch_qlineedit_dialog.h"
-
 // TODO (not in order of importance)
 // 1) Ugh, fix the layout somehow?
 // 2) Setup Wizard
@@ -16,79 +12,62 @@
 //    a) Channel creation
 //    b) Polling for participants
 
-// changed lines 51-55 in order to make it compile.  no idea what was going on in there.  ~Jeff
-
+#include "lirch_constants.h"
+#include "ui/qt/lirch_qt_interface.h"
+#include "ui/qt/ui_lirch_qt_interface.h"
+#include "ui/qt/lirch_qlineedit_dialog.h"
+#include "ui/qt/ui_lirch_qlineedit_dialog.h"
 #include "plugins/lirch_plugin.h"
-#include "plugins/edict_messages.h"
-#include "plugins/display_messages.h"
+
+// Plugin main
 
 void run(plugin_pipe p, std::string name) {
-    p.write(registration_message::create(LIRCH_MSG_PRI_REG_STAT, name, "display"));
-    // TODO register for recieved messages
-    while (true) {
-        // Fetch a message from the pipe
+    // Register for the messages that pertain to the GUI
+    p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "display"));
+    interconnect.open(p, QString::fromStdString(name));
+
+    // The interconnect will act as a courier to the GUI
+    while (interconnect.ready()) {
+        // Fetch a message from the pipe whenever it arrives
         message m = p.blocking_read();
         // Determine what type of message it is
         if (m.type == LIRCH_MSG_TYPE_SHUTDOWN) {
-            return;
+            interconnect.close("core shutdown");
+            break;
         } else if (m.type == LIRCH_MSG_TYPE_REG_STAT) {
             // Recieved a registration status message
             auto reg = dynamic_cast<registration_status *>(m.getdata());
-            // Or not...
+            // Or not... in which case, continue reading
             if (!reg) {
                 continue;
             }
-            // Try again on failure
             if (!reg->status) {
-                if (reg->priority > 30000) {
+                // Try again to register, if necessary
+                if (reg->priority > LIRCH_MSG_PRI_REG_MIN) {
                   // FIXME??? reg->decrement_priority(); instead of -1
                   p.write(registration_message::create(reg->priority - 1, name, reg->type));
                 } else {
-                  return;
+                  interconnect.close("failed to register with core");
+                  break;
                 }
             }
-        } else if (m.type == "display") {
+        } else if (m.type == LIRCH_MSG_TYPE_DISPLAY || m.type == LIRCH_MSG_TYPE_ME_DISPLAY) {
             auto data = dynamic_cast<display_message *>(m.getdata());
-            if (!data) {
-				//emit display_message("", "");
-            } else {
-				emit *data;
+            if (data) {
+                // FIXME what about invalid display messages?
+                interconnect.display(*data);
             }
         } else {
             // By default, echo the message with decremented priority
             p.write(m.decrement_priority());
         }
     }
-};
 
-LirchClientPipe::LirchClientPipe()
-{
-    // FIXME is has_connection necessary?
-    static bool has_connection = false;
-    hole = nullptr;
-    if (!has_connection) {
-        has_connection = true;
-        hole = new plugin_pipe();
-    }
+    // We only get here through anomalous behavior
+    interconnect.close();
 }
 
-LirchClientPipe::~LirchClientPipe()
-{
-    if (hole != nullptr) {
-        delete hole;
-    }
-}
-
-void LirchClientPipe::start()
-{
-    run(*hole, LIRCH_QT_INTERFACE_ID);
-    emit stop("core_processor");
-}
-
-// TODO for Tor (by priority)
-// Get QTUI to interact with Core (message display)
-// Get QTUI to interact with Core (nick requests, blocking and polling)
-// Write Wizard/nickchange widgets
+// QT UI
 
 LirchQtInterface::LirchQtInterface(QWidget *parent) :
     QMainWindow(parent),
@@ -100,60 +79,33 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // Add a variety of UI enhancements (select on focus and quit action)
     ui->msgTextBox->installEventFilter(this);
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
-    connect(this, SIGNAL(startup_hooks(bool)), this, SLOT(on_actionConnect_triggered(bool)));
 
     // client_pipe facilitates communication with the core
-    client_pipe = new LirchClientPipe();
-    if (client_pipe->hole == nullptr) {
-        emit fatal_error("client_pipe");
-    } else {
-        // Setup core_processor to run client_pipe
-        QThread *core_processor = new QThread();
-        client_pipe->moveToThread(core_processor);
-        connect(core_processor, SIGNAL(started()), client_pipe, SLOT(start()));
-        // When the client_pipe is done, quit the thread
-        connect(client_pipe, SIGNAL(stop(QString)), core_processor, SLOT(quit()));
-        // The first of these is required for cleanup, second can be done otherwise
-        connect(client_pipe, SIGNAL(stop(QString)), client_pipe, SLOT(deleteLater()));
-        connect(client_pipe, SIGNAL(stop(QString)), core_processor, SLOT(deleteLater()));
-        // Kill the UI if core_processor receives shutdown (TODO should reconnect?)
-        connect(client_pipe, SIGNAL(stop(QString)), this, SLOT(fatal_error(QString)));
-        connect(client_pipe, SIGNAL(display_message(QString, QString)), this, SLOT(display_message(QString, QString)));
+    client_pipe = nullptr;
 
-        // Load up the settings and kick things off
-        loadSettings();
-        core_processor->start();
-    }
+    // Load up the settings and kick things off
+    loadSettings();
+    // TODO first-time QWizard to determine if these happen:
+    // The first tab is always the default channel
+    ui->actionViewDefault->trigger();
+    // Connect to it
+    ui->actionConnect->setChecked(true);
 }
 
 LirchQtInterface::~LirchQtInterface()
 {
-    // Save settings on destruction, right? Right.
+    // Save settings on destruction
     saveSettings();
-
-    // TODO free the client_pipe? Think this is handled above.
-    // delete client_pipe;
-
     delete ui;
 }
 
-void LirchQtInterface::changeEvent(QEvent *e)
-{
-    QMainWindow::changeEvent(e);
-    switch (e->type()) {
-    case QEvent::LanguageChange:
-        ui->retranslateUi(this);
-        break;
-    default:
-        break;
-    }
-}
+// settings-related (IMPORTANT: always edit these functions as a pair)
 
 void LirchQtInterface::loadSettings()
 {
+    // Make sure to document any changes in the settings schema (change below and on wiki)
     settings.beginGroup("UserData");
-    // TODO mitigate need for default nick
-    nick = settings.value("nick", "").value<QString>();
+    nick = settings.value("nick", default_nick).value<QString>();
     settings.endGroup();
     settings.beginGroup("QtMainWindow");
     resize(settings.value("size", QSize(640, 480)).toSize());
@@ -165,22 +117,13 @@ void LirchQtInterface::loadSettings()
     show_message_timestamps = settings.value("show_message_timestamps", true).value<bool>();
     settings.endGroup();
     settings.endGroup();
-
-    // Some defaults
-
-    // The first tab is always the default channel
-    int index = ui->chatTabWidget->indexOf(ui->defaultChannelTab);
-    if (index != -1) {
-        ui->chatTabWidget->setCurrentIndex(index);
-    }
-    emit startup_hooks(true);
 }
 
 void LirchQtInterface::saveSettings()
 {
-    // TODO document schema for settings
+    // Make sure to document any changes in the settings schema (change above and on wiki)
     settings.beginGroup("UserData");
-    settings.setValue("nick", nick);
+    settings.setValue("nick", default_nick);
     settings.endGroup();
     settings.beginGroup("QtMainWindow");
     settings.setValue("size", size());
@@ -194,22 +137,27 @@ void LirchQtInterface::saveSettings()
     settings.endGroup();
 }
 
-void LirchQtInterface::on_actionConnect_triggered(bool checked)
+// event-related
+
+void LirchQtInterface::changeEvent(QEvent *e)
 {
-    // TODO actual delegation to core (core forwards to antenna)
-    if (checked) {
-        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /join'd #default");
-    } else {
-        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /part'd #default");
+    QMainWindow::changeEvent(e);
+    switch (e->type()) {
+    case QEvent::LanguageChange:
+        ui->retranslateUi(this);
+        break;
+    default:
+        break;
     }
 }
+
 
 bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 {
     // Filter FocusIn events on the text box to select all text therein
     if (event->type() == QEvent::FocusIn) {
         if (object == ui->msgTextBox) {
-            // TODO there has to be a better way to do this
+            // FIXME there has to be a better way to do this
             QTimer::singleShot(0, object, SLOT(selectAll()));
             return false;
         }
@@ -227,10 +175,9 @@ void LirchQtInterface::on_msgSendButton_clicked()
     }
 
     // The core will pass this raw edict to the meatgrinder
-    message edict = raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL_ID);
-    client_pipe->hole->write(edict);
+    client_pipe->send(raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL));
 
-    // FIXME here is the failure condition
+    // TODO here is the failure condition, when does this happen?
     // QMessageBox::warning(this,
     //                     tr("Unimplemented Feature"),
     //                     tr("'%1' could not be sent.").arg(text),
@@ -240,17 +187,69 @@ void LirchQtInterface::on_msgSendButton_clicked()
     ui->msgTextBox->clear();
 }
 
-void LirchQtInterface::on_actionAbout_triggered()
+// FILE MENU
+
+void LirchQtInterface::on_actionConnect_triggered(bool checked)
 {
-    // TODO does this need to be its own widget?
-    QMessageBox::information(this,
-                             tr("About Lirch %1").arg(LIRCH_VERSION_STRING),
-                             tr("Lirch %1 (%2) is Copyright (c) %3, %4 (see README)").arg(
-                                     LIRCH_VERSION_STRING,
-                                     LIRCH_BUILD_HASH,
-                                     LIRCH_COPYRIGHT_YEAR,
-                                     LIRCH_COMPANY_NAME));
+    // TODO actual delegation to core (core forwards to antenna)
+    QString timestamp = QTime::currentTime().toString();
+    if (checked) {
+        ui->chatViewArea->append("At [" + timestamp + "]: /join'd #default");
+    } else {
+        ui->chatViewArea->append("At [" + timestamp + "]: /part'd #default");
+    }
 }
+
+// new-related
+
+void LirchQtInterface::on_actionNewChannel_triggered()
+{
+    alert_user(tr("The %1 feature is forthcoming.").arg("New > Private Channel"));
+}
+
+void LirchQtInterface::on_actionNewTransfer_triggered()
+{
+    alert_user(tr("The %1 feature is forthcoming.").arg("New > File Transfer"));
+}
+
+// log-related
+
+void LirchQtInterface::on_actionSaveLog_triggered()
+{
+    QMessageBox::information(this,
+                             tr("Confirmation"),
+                             tr("Log saved: %1/default.log").arg(LIRCH_DEFAULT_LOG_DIR));
+}
+
+void LirchQtInterface::on_actionOpenLog_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
+    // FIXME for now, just load the log into the tab
+    ui->chatLogArea->clear();
+    ui->chatLogArea->append(filename);
+    int index = ui->chatTabWidget->indexOf(ui->logChannelTab);
+    if (index != -1) {
+        ui->chatTabWidget->setCurrentIndex(index);
+    }
+}
+
+// EDIT MENU
+
+void LirchQtInterface::on_actionEditNick_triggered()
+{
+    LirchQLineEditDialog nick_dialog;
+    connect(&nick_dialog, SIGNAL(submit(QString, bool)), this, SLOT(nick_changed(QString, bool)));
+    nick_dialog.exec();
+}
+
+void LirchQtInterface::on_actionEditIgnored_triggered()
+{
+    LirchQLineEditDialog ignore_dialog;
+    connect(&ignore_dialog, SIGNAL(submit(QString, bool)), this, SLOT(ignore_changed(QString, bool)));
+    ignore_dialog.exec();
+}
+
+// VIEW MENU
 
 // TODO is there some built-in stuff for things like these?
 
@@ -282,27 +281,7 @@ void LirchQtInterface::on_actionViewIgnored_toggled(bool checked)
     show_ignored_messages = checked;
 }
 
-void LirchQtInterface::fatal_error(QString msg)
-{
-    QMessageBox::information(this,
-                             tr("Fatal Error"),
-                             tr("Details: '%1'").arg(msg));
-    emit close();
-}
-
-void LirchQtInterface::on_actionNewChannel_triggered()
-{
-    QMessageBox::information(this,
-                             tr("Unimplemented Feature"),
-                             tr("The %1 feature is forthcoming.").arg("New > Private Channel"));
-}
-
-void LirchQtInterface::on_actionNewTransfer_triggered()
-{
-    QMessageBox::information(this,
-                             tr("Unimplemented Feature"),
-                             tr("The %1 feature is forthcoming.").arg("New > File Tranfer"));
-}
+// tab-related
 
 void LirchQtInterface::on_actionViewDefault_triggered()
 {
@@ -314,79 +293,111 @@ void LirchQtInterface::on_actionViewDefault_triggered()
 
 void LirchQtInterface::on_actionViewTransfers_triggered()
 {
-    QMessageBox::information(this,
-                             tr("Unimplemented Feature"),
-                             tr("The %1 feature is forthcoming.").arg("View > File Tranfers"));
+	alert_user(tr("The %1 feature is forthcoming.").arg("View > File Tranfers"));
 }
+
+// ABOUT MENU
 
 void LirchQtInterface::on_actionWizard_triggered()
 {
-    QMessageBox::information(this,
-                             tr("Unimplemented Feature"),
-                             tr("The %1 feature is forthcoming.").arg("Help > Setup Wizard"));
+	alert_user(tr("The %1 feature is forthcoming.").arg("Help > Setup Wizard"));
 }
 
-void LirchQtInterface::on_actionSaveLog_triggered()
+void LirchQtInterface::on_actionAbout_triggered()
 {
     QMessageBox::information(this,
-                             tr("Confirmation"),
-                             tr("Log saved: %1/default.log").arg(LIRCH_DEFAULT_LOG_DIR));
+                             tr("About Lirch %1").arg(LIRCH_VERSION_STRING),
+                             tr("Lirch %1 (%2) is Copyright (c) %3, %4 (see README)").arg(
+                                     LIRCH_VERSION_STRING,
+                                     LIRCH_BUILD_HASH,
+                                     LIRCH_COPYRIGHT_YEAR,
+                                     LIRCH_COMPANY_NAME));
 }
 
-void LirchQtInterface::on_actionOpenLog_triggered()
+// INTERNAL SLOTS
+
+void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
-    ui->chatLogArea->clear();
-    ui->chatLogArea->append(filename);
-    int index = ui->chatTabWidget->indexOf(ui->logChannelTab);
-    if (index != -1) {
-        ui->chatTabWidget->setCurrentIndex(index);
+	// TODO display a more correct prompt to the user
+	LirchQLineEditDialog close_dialog;
+	bool status = close_dialog.exec();
+	// Cancel the close if undesired
+	if (status) {
+		e->accept();
+	} else {
+		e->ignore();
+	}
+}
+
+void LirchQtInterface::alert_user(const QString &msg)
+{
+	// Empty alerts trigger fatal errors to encourage proper alerts
+	if (msg.isEmpty()) {
+		die(tr("Empty user alert message."));
+	} else {
+		QMessageBox::information(this, tr("Alert"), msg);
+	}
+}
+
+void LirchQtInterface::use(LirchClientPipe *pipe)
+{
+    if (pipe->ready()) {
+        client_pipe = pipe;
+        this->show();
+    } else {
+        QMessageBox::information(this,
+                                 tr("Error"),
+                                 tr("Client pipe failed to connect."));
     }
 }
 
-void LirchQtInterface::display_message(QString channel, QString contents) {
-    if (channel == "") {
-        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /recv'd mangled message");
+void LirchQtInterface::die(const QString &msg)
+{
+    QMessageBox::information(this,
+                             tr("Fatal Error"),
+                             tr("Details: '%1'").arg(msg));
+    this->close();
+}
+
+void LirchQtInterface::display(const QString &channel, const QString &contents) {
+    QString timestamp = QTime::currentTime().toString();
+    // TODO handle messages in general
+    if (channel.isEmpty()) {
+        ui->chatViewArea->append("At [" + timestamp + "]: /recv'd mangled message");
         return;
     }
-    if (channel != "default") {
-        ui->chatViewArea->append("At [" + QTime::currentTime().toString() + "]: /recv'd message on channel: " + channel);
+    if (channel != tr(LIRCH_DEFAULT_CHANNEL)) {
+        ui->chatViewArea->append("At [" + timestamp + "]: /recv'd message on channel: " + channel);
     }
+
+    // TODO discern when prefix is necessary (elsewhere)
     // All text is prefixed with the nick
     QString prefix = "<" + nick + "> ";
     // And potentially a timestamp
     if (show_message_timestamps) {
-        prefix += "[" + QTime::currentTime().toString() + "] ";
+        prefix += "[" + timestamp + "] ";
     }
+
     // Show the message in the view
     ui->chatViewArea->append(prefix + contents);
 }
 
-void LirchQtInterface::on_actionEditNick_triggered()
-{
-    LirchQLineEditDialog nick_dialog;
-    connect(&nick_dialog, SIGNAL(submit(QString, bool)), this, SLOT(nick_changed(QString, bool)));
-    nick_dialog.exec();
-}
-
-void LirchQtInterface::on_actionEditIgnored_triggered()
-{
-    LirchQLineEditDialog ignore_dialog;
-    connect(&ignore_dialog, SIGNAL(submit(QString, bool)), this, SLOT(ignore_changed(QString, bool)));
-    ignore_dialog.exec();
-}
-
-void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
+void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)
 {
     nick = new_nick;
     if (permanent) {
-        saveSettings();
+        default_nick = new_nick;
     }
-    emit display_message("internal", "/nick " + nick);
+    display(tr("internal"), tr("/nick %1").arg(nick));
 }
 
-void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
+void LirchQtInterface::ignore_changed(const QString &new_ignore, bool block)
 {
-    // TODO actual block and ignore list
-    emit display_message("internal", "/ignore " + new_ignore);
+    QString status = "dummy";
+    // TODO delegate to core (antenna will block/ignore)
+    if (block) {
+        
+    }
+    display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));
 }
+

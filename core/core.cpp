@@ -5,6 +5,13 @@
 #include <iostream>
 #include <csignal>
 
+#ifdef LIRCH_CORE_USE_QT
+#include <QApplication>
+#include <QObject>
+#include "ui/qt/lirch_qt_interface.h"
+#endif
+
+#include "lirch_constants.h"
 #include "message.h"
 #include "message_pipe.h"
 #include "registry.h"
@@ -13,6 +20,8 @@
 #include "core_messages.h"
 
 using namespace std;
+
+// TODO lirch (core) namespace?
 
 static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
@@ -164,9 +173,40 @@ static void run_core(const vector<message> &vm)
 
 int main(int argc, char *argv[])
 {
+	#ifdef LIRCH_CORE_USE_QT
+	// TODO review QtCore's QtApplication documentation
+	QApplication lirch(argc, argv);
+	// TODO sometimes being necessary to avoid string conversion issues?
+	setlocale(LC_NUMERIC, "C");
+	// The window is constructed here, show()'n later (see plugin header)
+	LirchQtInterface main_window;
+        // A small, static interconnect object is used to mediate
+        extern LirchClientPipe interconnect;
+        QObject::connect(&interconnect, SIGNAL(show(const QString &, const QString &)),
+                         &main_window,   SLOT(display(const QString &, const QString &)));
+        QObject::connect(&interconnect, SIGNAL(shutdown(const QString &)),
+                         &main_window,   SLOT(die(const QString &)));
+        QObject::connect(&interconnect, SIGNAL(run(LirchClientPipe *)),
+                         &main_window,   SLOT(use(LirchClientPipe *)));
+	// TODO can we parse the args with QApplication?
+	#else
 	setlocale(LC_ALL,"");
 	signal(SIGINT, handle_sigint);
+	#endif
+
 	vector<message> vm;
+	// Preload a variety of plugins specified in build (see lirch_constants.h)
+	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
+	for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+	{
+		vm.push_back(
+			plugin_adder::create(
+				string(preloads[i - 1].name),
+				string(preloads[i - 1].filename)
+			)
+		);
+	}
+	// Load plugins specified on command line
 	for (int i=1; i<argc-1; i+=2)
 	{
 		if (argv[i]==string("-v") || argv[i]==string("--verbose"))
@@ -177,5 +217,14 @@ int main(int argc, char *argv[])
 		else
 			vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
 	}
+
+	// Loop until core shutdown
+	#ifdef LIRCH_CORE_USE_QT
+	thread core_thread(run_core, vm);
+	core_thread.detach();
+	return lirch.exec();
+	#else
 	run_core(vm);
+	return 0;
+	#endif
 }
