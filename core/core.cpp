@@ -191,7 +191,8 @@ int main(int argc, char *argv[])
 	// TODO can we parse the args with QApplication?
 	#else
 	setlocale(LC_ALL,"");
-	signal(SIGINT, handle_sigint);
+	if (signal(SIGINT, handle_sigint)==SIG_IGN)
+		signal(SIGINT, SIG_IGN);
 	#endif
 
 	vector<message> vm;
