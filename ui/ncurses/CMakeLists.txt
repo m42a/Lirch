@@ -12,3 +12,4 @@ find_library(NCURSES_LIBRARY_PATH ncurses REQUIRED)
 
 add_library(lirch-ncurses SHARED lirch_ncurses_interface.cpp)
 target_link_libraries(lirch-ncurses envelope ncurses ${QT_LIBRARIES})
+install(TARGETS lirch-ncurses DESTINATION lirch)

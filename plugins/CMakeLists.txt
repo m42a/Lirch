@@ -32,3 +32,6 @@ include(${QT_USE_FILE})
 include_directories(${QT_QTNETWORK_INCLUDE_DIR})
 add_library(antenna SHARED antenna.cpp)
 target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
+
+# For install (packaging)
+install(TARGETS antenna logger masseuse meatgrinder timer userlist DESTINATION lirch)

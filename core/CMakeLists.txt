@@ -8,6 +8,7 @@ set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 
 # Build a shared library that practically everything uses
 #add_library(envelope SHARED message.cpp)
+install(TARGETS envelope DESTINATION lirch)
 
 # Prepare to build the core executable
 set(CORE_LIBRARIES envelope)
@@ -30,3 +31,4 @@ endif(BUILD_QT_CLIENT)
 # Build the core executable
 add_executable(lirch core.cpp plugin_loader.cpp)
 target_link_libraries(lirch ${CORE_LIBRARIES})
+install(TARGETS lirch DESTINATION lirch)
