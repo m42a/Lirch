@@ -19,7 +19,7 @@ if(BUILD_QT_CLIENT)
   include_directories(${QT_INCLUDE_DIR})
   # Build the core executable with Qt GUI
   add_executable(qlirch lirch_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(qlirch envelope lirch-qt ${QT_LIBRARIES})
+  target_link_libraries(qlirch envelope dl pthread lirch-qt ${QT_LIBRARIES})
 endif(BUILD_QT_CLIENT)
 
 if(BUILD_NON_QT_CLIENT)
