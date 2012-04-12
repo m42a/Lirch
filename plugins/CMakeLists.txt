@@ -5,7 +5,7 @@ target_link_libraries(timer envelope)
 # These plugins use QtCore only:
 set(QT_DONT_USE_QTCORE FALSE)
 set(QT_DONT_USE_QTGUI TRUE)
-set(QT_USE_QTNETWORK FALSE)
+set(QT_USE_QTNETWORK TRUE)
 set(QT_USE_QTTEST FALSE)
 include(${QT_USE_FILE})
 include_directories(${QT_INCLUDE_DIR})
