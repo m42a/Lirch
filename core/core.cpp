@@ -191,9 +191,9 @@ int main(int argc, char *argv[])
 	// TODO can we parse the args with QApplication?
 	#else
 	setlocale(LC_ALL,"");
-	signal(SIGINT, handle_sigint);
+	if (signal(SIGINT, handle_sigint)==SIG_IGN)
+		signal(SIGINT, SIG_IGN);
 	#endif
-
 	vector<message> vm;
 	// Preload a variety of plugins specified in build (see lirch_constants.h)
 	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
