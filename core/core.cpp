@@ -3,15 +3,7 @@
 #include <string>
 #include <thread>
 #include <iostream>
-#include <csignal>
 
-#ifdef LIRCH_CORE_USE_QT
-#include <QApplication>
-#include <QObject>
-#include "ui/qt/lirch_qt_interface.h"
-#endif
-
-#include "lirch_constants.h"
 #include "message.h"
 #include "message_pipe.h"
 #include "registry.h"
@@ -25,19 +17,9 @@ using namespace std;
 
 static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
-static message_pipe in_pipe;
+message_pipe in_pipe;
 
-static bool verbose;
-
-void handle_sigint(int)
-{
-	//Quit nicely when we get a ctrl-c, but not if we get it twice.  We
-	//need to unregister before we write because we don't want to lock the
-	//mutex twice.  This should only be a problem under heavy load (which
-	//is exactly when we don't want to block SIGINT).
-	signal(SIGINT, SIG_DFL);
-	in_pipe.write(core_quit_message::create());
-}
+bool verbose;
 
 ostream &operator<<(ostream &out, const message &m)
 {
@@ -161,7 +143,7 @@ static void process(const message &m)
 		to_plugin(m);
 }
 
-static void run_core(const vector<message> &vm)
+void run_core(const vector<message> &vm)
 {
 	for (auto m : vm)
 		process(m);
@@ -169,62 +151,4 @@ static void run_core(const vector<message> &vm)
 	{
 		process(in_pipe.blocking_read());
 	}
-}
-
-int main(int argc, char *argv[])
-{
-	#ifdef LIRCH_CORE_USE_QT
-	// TODO review QtCore's QtApplication documentation
-	QApplication lirch(argc, argv);
-	// TODO sometimes being necessary to avoid string conversion issues?
-	setlocale(LC_NUMERIC, "C");
-	// The window is constructed here, show()'n later (see plugin header)
-	LirchQtInterface main_window;
-        // A small, static interconnect object is used to mediate
-        extern LirchClientPipe interconnect;
-        QObject::connect(&interconnect, SIGNAL(show(const QString &, const QString &)),
-                         &main_window,   SLOT(display(const QString &, const QString &)));
-        QObject::connect(&interconnect, SIGNAL(shutdown(const QString &)),
-                         &main_window,   SLOT(die(const QString &)));
-        QObject::connect(&interconnect, SIGNAL(run(LirchClientPipe *)),
-                         &main_window,   SLOT(use(LirchClientPipe *)));
-	// TODO can we parse the args with QApplication?
-	#else
-	setlocale(LC_ALL,"");
-	if (signal(SIGINT, handle_sigint)==SIG_IGN)
-		signal(SIGINT, SIG_IGN);
-	#endif
-	vector<message> vm;
-	// Preload a variety of plugins specified in build (see lirch_constants.h)
-	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
-	for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
-	{
-		vm.push_back(
-			plugin_adder::create(
-				string(preloads[i - 1].name),
-				string(preloads[i - 1].filename)
-			)
-		);
-	}
-	// Load plugins specified on command line
-	for (int i=1; i<argc-1; i+=2)
-	{
-		if (argv[i]==string("-v") || argv[i]==string("--verbose"))
-		{
-			verbose=true;
-			--i;
-		}
-		else
-			vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
-	}
-
-	// Loop until core shutdown
-	#ifdef LIRCH_CORE_USE_QT
-	thread core_thread(run_core, vm);
-	core_thread.detach();
-	return lirch.exec();
-	#else
-	run_core(vm);
-	return 0;
-	#endif
 }
