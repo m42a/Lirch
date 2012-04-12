@@ -3,11 +3,11 @@
 # 2) If it changes, we want plugins (shared libs) to link the new version
 # 3) We can enable PIC with the second line, so plugins will build
 # Downside is that every plugin will contain it (~MB gain overall)
-#add_library(envelope message.cpp)
-#set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
+add_library(envelope message.cpp)
+set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 
 # Build a shared library that practically everything uses
-add_library(envelope SHARED message.cpp)
+#add_library(envelope SHARED message.cpp)
 
 # Prepare to build the core executable
 set(CORE_LIBRARIES envelope)

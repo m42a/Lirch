@@ -198,29 +198,34 @@ int main(int argc, char *argv[])
 	// Preload a variety of plugins specified in build (see lirch_constants.h)
 	for (auto &preload : preloads)
 	{
-		vm.push_back(
-			plugin_adder::create(
-				string(preload.name),
-				string(preload.filename)
-			)
-		);
+		vm.push_back(plugin_adder::create(string(preload.name), string(preload.filename)));
 	}
 	// Load plugins specified on command line
 	if (argc > 1) {
-		int i = 1;
+		int i = 1, j = 0;
 		// The first argument might specify verbose mode
 		if (argv[i] == string("-v") || argv[i] == string("--verbose"))
 		{
+			cerr << "Lirch " << LIRCH_VERSION_STRING << " Core (" << LIRCH_BUILD_HASH << ")" << endl;
+			cerr << "preloads: ";
+			for (auto &p : preloads)
+			{
+				cerr << p.name << " ";
+			}
+			cerr << ";" << endl;
+			for (auto &p : preloads)
+			{
+				cerr << ++j << ") " << p.filename << endl;
+			}
 			verbose = true;
 			++i;
 		}
-		// The rest are plugin (name, filename) pairs
+		// The rest are plugin (name, filename) pairs (need two at a time)
+		string name, filename;
 		while (i + 1 < argc)
 		{
-			string name = argv[i];
-			++i;
-			string filename = argv[i];
-			++i;
+			name = argv[i++];
+			filename = argv[i++];
 			vm.push_back(plugin_adder::create(name, filename));
 		}
 	}
