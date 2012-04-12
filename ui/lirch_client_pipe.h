@@ -32,9 +32,9 @@ private:
 signals:
     // For alerting the UI when to start/stop [show()/close()]
     void run(LirchClientPipe *);
-    void shutdown(const QString &);
+    void shutdown(QString);
     // For alerting the UI of an inbound message
-    void alert(const QString &, const QString &);
+    void alert(QString, QString);
 };
 
 #endif // LIRCH_CLIENT_PIPE_H

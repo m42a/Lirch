@@ -71,8 +71,8 @@ private:
     // chatArea draws (alternating) -----/_____ b/t messages?
 
 public slots:
-    void die(const QString &msg = "unknown error");
-    void display(const QString &channel, const QString &contents);
+    void die(QString msg = "unknown error");
+    void display(QString channel, QString contents);
     void use(LirchClientPipe *pipe);
 
 protected slots:

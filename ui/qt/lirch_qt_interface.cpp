@@ -310,7 +310,7 @@ void LirchQtInterface::use(LirchClientPipe *pipe)
     }
 }
 
-void LirchQtInterface::die(const QString &msg)
+void LirchQtInterface::die(QString msg)
 {
     QMessageBox::information(this,
                              tr("Fatal Error"),
@@ -318,7 +318,7 @@ void LirchQtInterface::die(const QString &msg)
     this->close();
 }
 
-void LirchQtInterface::display(const QString &channel, const QString &contents) {
+void LirchQtInterface::display(QString channel, QString contents) {
     QString timestamp = "[" + QTime::currentTime().toString() + "]";
     // FIXME Something funny is going on here
     if (channel.isEmpty()) {
