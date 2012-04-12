@@ -274,8 +274,9 @@ void LirchQtInterface::showEvent(QShowEvent *e)
 
 void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
-	// Confirm the close
-	if (QMessageBox::question(this,
+	// Confirm the close (potentially ignore)
+	if (client_pipe == nullptr || !client_pipe->ready() ||
+		QMessageBox::question(this,
 			tr("Close Prompt"),
 			tr("Are you sure you want to quit %1?").arg(LIRCH_PRODUCT_NAME),
 			QMessageBox::Yes,
@@ -299,7 +300,7 @@ void LirchQtInterface::alert_user(const QString &msg)
 
 void LirchQtInterface::use(LirchClientPipe *pipe)
 {
-    if (pipe->ready()) {
+    if (pipe != nullptr && pipe->ready()) {
         client_pipe = pipe;
         this->show();
     } else {
@@ -318,26 +319,22 @@ void LirchQtInterface::die(const QString &msg)
 }
 
 void LirchQtInterface::display(const QString &channel, const QString &contents) {
-    QString timestamp = QTime::currentTime().toString();
-    // TODO handle messages in general
+    QString timestamp = "[" + QTime::currentTime().toString() + "]";
+    // FIXME Something funny is going on here
     if (channel.isEmpty()) {
-        ui->chatViewArea->append("At [" + timestamp + "]: /recv'd mangled message");
+        ui->chatViewArea->append("At " + timestamp + ": /recv'd mangled message");
         return;
     }
     if (channel != tr(LIRCH_DEFAULT_CHANNEL)) {
-        ui->chatViewArea->append("At [" + timestamp + "]: /recv'd message on channel: " + channel);
-    }
-
-    // TODO discern when prefix is necessary (elsewhere)
-    // All text is prefixed with the nick
-    QString prefix = "<" + nick + "> ";
-    // And potentially a timestamp
-    if (show_message_timestamps) {
-        prefix += "[" + timestamp + "] ";
+        ui->chatViewArea->append("At " + timestamp + ": /recv'd message on channel: " + channel);
     }
 
     // Show the message in the view
-    ui->chatViewArea->append(prefix + contents);
+    if (show_message_timestamps) {
+        ui->chatViewArea->append(timestamp + contents);
+    } else {
+        ui->chatViewArea->append(contents);
+    }
 }
 
 void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)

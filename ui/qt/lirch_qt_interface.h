@@ -1,7 +1,6 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
-#include <Qt>
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QEvent>
@@ -12,8 +11,8 @@
 #include <QObject>
 #include <QPushButton>
 #include <QSettings>
+#include <QShowEvent>
 #include <QString>
-#include <QThread>
 #include <QTime>
 #include <QTimer>
 
