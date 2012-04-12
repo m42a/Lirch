@@ -102,13 +102,22 @@ void run(plugin_pipe pipe, std::string name)
 	//done_message::create(name);
 }
 
+/*void sanatize(string & input)
+{
+	for(int i = 0; i<input.size(); i++)
+	{
+		if(input[i] == "/")
+			input[i] = "_";
+	}
+}*/
 
 //opens a file and adds it to the open_files map.  also adds 8 tilde to demarkate the beginning of a session
 void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &settings)
 {
 	string root(settings.value("Logger/root_directory", LIRCH_DEFAULT_LOG_DIR).toString().toUtf8().data());
 	root += "/";
-	string filename(channel.toUtf8().data());
+	string filename(QUrl::toPercentEncoding(channel, "\0").data());
+	//sanatize(filename);
 	filename += ".txt";
 	filename = root.append(filename);
 	ofstream * newFile = new ofstream();
