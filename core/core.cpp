@@ -7,7 +7,8 @@
 
 #ifdef LIRCH_CORE_USE_QT
 #include <QApplication>
-#include <QObject>
+#include "ui/lirch_client_pipe.h"
+LirchClientPipe mediator;
 #include "ui/qt/lirch_qt_interface.h"
 #endif
 
@@ -180,14 +181,13 @@ int main(int argc, char *argv[])
 	setlocale(LC_NUMERIC, "C");
 	// The window is constructed here, show()'n later (see plugin header)
 	LirchQtInterface main_window;
-        // A small, static interconnect object is used to mediate
-        extern LirchClientPipe interconnect;
-        QObject::connect(&interconnect, SIGNAL(show(const QString &, const QString &)),
-                         &main_window,   SLOT(display(const QString &, const QString &)));
-        QObject::connect(&interconnect, SIGNAL(shutdown(const QString &)),
-                         &main_window,   SLOT(die(const QString &)));
-        QObject::connect(&interconnect, SIGNAL(run(LirchClientPipe *)),
-                         &main_window,   SLOT(use(LirchClientPipe *)));
+        // A small intermediate object is used to mediate
+        QObject::connect(&mediator,    SIGNAL(alert(const QString &, const QString &)),
+                         &main_window, SLOT(display(const QString &, const QString &)));
+        QObject::connect(&mediator,    SIGNAL(shutdown(const QString &)),
+                         &main_window, SLOT(die(const QString &)));
+        QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),
+                         &main_window, SLOT(use(LirchClientPipe *)));
 	// TODO can we parse the args with QApplication?
 	#else
 	setlocale(LC_ALL,"");

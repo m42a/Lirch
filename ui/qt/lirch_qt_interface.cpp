@@ -12,62 +12,10 @@
 //    a) Channel creation
 //    b) Polling for participants
 
-#include "lirch_constants.h"
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
 #include "ui/qt/lirch_qlineedit_dialog.h"
 #include "ui/qt/ui_lirch_qlineedit_dialog.h"
-#include "plugins/lirch_plugin.h"
-
-// Plugin main
-
-LirchClientPipe interconnect;
-
-void run(plugin_pipe p, std::string name) {
-    // Register for the messages that pertain to the GUI
-    p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, "display"));
-    interconnect.open(p, QString::fromStdString(name));
-
-    // The interconnect will act as a courier to the GUI
-    while (interconnect.ready()) {
-        // Fetch a message from the pipe whenever it arrives
-        message m = p.blocking_read();
-        // Determine what type of message it is
-        if (m.type == LIRCH_MSG_TYPE_SHUTDOWN) {
-            interconnect.close("core shutdown");
-            break;
-        } else if (m.type == LIRCH_MSG_TYPE_REG_STAT) {
-            // Recieved a registration status message
-            auto reg = dynamic_cast<registration_status *>(m.getdata());
-            // Or not... in which case, continue reading
-            if (!reg) {
-                continue;
-            }
-            if (!reg->status) {
-                // Try again to register, if necessary
-                if (reg->priority > LIRCH_MSG_PRI_REG_MIN) {
-                  // FIXME??? reg->decrement_priority(); instead of -1
-                  p.write(registration_message::create(reg->priority - 1, name, reg->type));
-                } else {
-                  interconnect.close("failed to register with core");
-                  break;
-                }
-            }
-        } else if (m.type == LIRCH_MSG_TYPE_DISPLAY || m.type == LIRCH_MSG_TYPE_ME_DISPLAY) {
-            auto data = dynamic_cast<display_message *>(m.getdata());
-            if (data) {
-                // FIXME what about invalid display messages?
-                interconnect.display(*data);
-            }
-        } else {
-            // By default, echo the message with decremented priority
-            p.write(m.decrement_priority());
-        }
-    }
-
-    // We only get here through anomalous behavior
-    interconnect.close();
-}
 
 // QT UI
 
@@ -87,11 +35,6 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
 
     // Load up the settings and kick things off
     loadSettings();
-    // TODO first-time QWizard to determine if these happen:
-    // The first tab is always the default channel
-    ui->actionViewDefault->trigger();
-    // Connect to it
-    ui->actionConnect->setChecked(true);
 }
 
 LirchQtInterface::~LirchQtInterface()
@@ -318,6 +261,17 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 // INTERNAL SLOTS
 
+void LirchQtInterface::showEvent(QShowEvent *e)
+{
+	// TODO first-time QWizard to determine if these happen:
+	// The first tab is always the default channel
+	ui->actionViewDefault->trigger();
+	// Connect to it
+	ui->actionConnect->setChecked(true);
+	// Propapage
+	e->ignore();
+}
+
 void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
 	// Confirm the close
@@ -388,10 +342,12 @@ void LirchQtInterface::display(const QString &channel, const QString &contents) 
 
 void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)
 {
+    // TODO delegate to core (anetenna needs to approve)
     nick = new_nick;
     if (permanent) {
         default_nick = new_nick;
     }
+    // TODO make these actually send
     display(tr("internal"), tr("/nick %1").arg(nick));
 }
 
@@ -402,6 +358,7 @@ void LirchQtInterface::ignore_changed(const QString &new_ignore, bool block)
     if (block) {
         
     }
+    // TODO make these actually send
     display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));
 }
 

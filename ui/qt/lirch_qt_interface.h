@@ -18,49 +18,8 @@
 #include <QTimer>
 
 #include "lirch_constants.h"
-#include "core/message_view.h"
+#include "ui/lirch_client_pipe.h"
 #include "plugins/edict_messages.h"
-#include "plugins/display_messages.h"
-
-class LirchClientPipe : public QObject {
-    Q_OBJECT
-    enum class State { BEFORE, DURING, AFTER };
-public:
-    explicit LirchClientPipe() : client_state(State::BEFORE) { };
-    bool ready() const {
-        return client_state == State::DURING;
-    }
-    void send(const message &m) {
-        if (ready()) {
-            client_pipe.write(m);
-        }
-    }
-    void display(const display_message &m) {
-        emit show(m.channel, m.contents);
-    }
-    void open(plugin_pipe &pipe, const QString &name) {
-        client_name = name;
-        client_pipe = pipe;
-        client_state = State::DURING;
-        emit run(this);
-    }
-    void close(const QString &reason = "unknown reason") {
-        QString label = client_name;
-        client_name.clear();
-        client_state = State::AFTER;
-        emit shutdown(tr("%1 was closed for %2").arg(label, reason));
-    }
-private:
-    State client_state;
-    QString client_name;
-    plugin_pipe client_pipe;
-signals:
-    void run(LirchClientPipe *);
-    void shutdown(const QString &);
-    void show(const QString &, const QString &);
-};
-
-extern LirchClientPipe interconnect;
 
 namespace Ui {
     class LirchQtInterface;
@@ -119,6 +78,7 @@ public slots:
 
 protected slots:
     void closeEvent(QCloseEvent *);
+    void showEvent(QShowEvent *);
 
 private slots:
     void on_actionEditIgnored_triggered();
