@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 #include <csignal>
 #include <string>
 
@@ -30,29 +31,79 @@ int main(int argc, char *argv[])
 	if (signal(SIGINT, handle_sigint)==SIG_IGN)
 		signal(SIGINT, SIG_IGN);
 	vector<message> vm;
-	// Preload a variety of plugins specified in build (see lirch_constants.h)
+	bool preload=true;
 	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
-	for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+	char **arg=argv; //Skip the program name
+	if (argc!=0)
 	{
-		vm.push_back(
-			plugin_adder::create(
-				string(preloads[i - 1].name),
-				string(preloads[i - 1].filename)
-			)
-		);
-	}
-	// Load plugins specified on command line
-	for (int i=1; i<argc-1; i+=2)
-	{
-		if (argv[i]==string("-v") || argv[i]==string("--verbose"))
+		for (arg=argv+1; *arg; ++arg)
 		{
-			verbose=true;
-			--i;
+			if (*arg==string("-h") || *arg==string("--help"))
+			{
+				cout << "Usage: " << argv[0] << " [options] [-- [plugins]]\n"
+				        " -h --help         Print help and exit\n"
+				        " -l --list-preload List the preloaded plugins and exit\n"
+				        " -n --no-preload   Don't load the preloaded plugins\n"
+				        " -v --verbose      Make the core generate debug output\n"
+				        "                   Otherwise, the next 2 arguments are recognized as\n"
+				        "                   a 'plugin name' 'filename' pair\n";
+				return 1;
+			}
+			else if (*arg==string("-l") || *arg==string("--list-preload"))
+			{
+				for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+				{
+					cout << preloads[i - 1].name << ": " << preloads[i - 1].filename << endl;
+				}
+				return 2;
+			}
+			else if (*arg==string("-v") || *arg==string("--verbose"))
+				verbose=true;
+			else if (*arg==string("-n") || *arg==string("--no-preload"))
+				preload=false;
+			else if (*arg==string("--"))
+			{
+				++arg;
+				break;
+			}
+			else if (**arg=='-')
+			{
+				cout << "Unrecognized option: " << *arg << endl;
+				return 3;
+			}
+			else
+			{
+				if (arg[1])
+				{
+					vm.push_back(plugin_adder::create(arg[0],arg[1]));
+					++arg;
+				}
+			}
 		}
-		else
-			vm.push_back(plugin_adder::create(argv[i],argv[i+1]));
+	}
+	// Preload a variety of plugins specified in build (see lirch_constants.h)
+	vector<message> pp;
+	if (preload)
+	{
+		for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+		{
+			pp.push_back(
+				plugin_adder::create(
+					string(preloads[i - 1].name),
+					string(preloads[i - 1].filename)
+				)
+			);
+		}
+		//Append the command-line plugins to the preloaded plugins
+	}
+	pp.insert(pp.end(), vm.begin(), vm.end());
+	// Load the rest of the plugins specified on command line
+	while (arg[0] && arg[1])
+	{
+		pp.push_back(plugin_adder::create(arg[0],arg[1]));
+		arg+=2;
 	}
 
 	// Loop until core shutdown
-	run_core(vm);
+	run_core(pp);
 }
