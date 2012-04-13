@@ -62,15 +62,25 @@ static void add_plugin(const message &m)
 		//The message wasn't a plugin_adder
 		return;
 	if (out_pipes.count(pa->name)!=0)
+	{
 		//There's already a plugin with this name
+		if (verbose)
+			cerr << " failed to load plugin " << pa->name << " from " << pa->filename << " (conflicting name)" << endl;
 		return;
+	}
 	message_pipe mp;
-	thread t1(load_plugin, pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe)));
-	t1.detach();
-	out_pipes[pa->name]=mp;
-	mp.write(hello_message::create(pa->name));
-	if (verbose)
-		cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
+	if (load_plugin(pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe))))
+	{
+		mp.write(hello_message::create(pa->name));
+		out_pipes[pa->name]=mp;
+		if (verbose)
+			cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
+	}
+	else
+	{
+		if (verbose)
+			cerr << " failed to load plugin " << pa->name << " from " << pa->filename << endl;
+	}
 }
 
 static void remove_plugin(const message &m)
@@ -145,7 +155,7 @@ static void process(const message &m)
 
 void run_core(const vector<message> &vm)
 {
-	for (auto m : vm)
+	for (auto &m : vm)
 		process(m);
 	while (!out_pipes.empty())
 	{
