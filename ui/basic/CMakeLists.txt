@@ -10,4 +10,4 @@ include_directories(
 
 add_library(lirch-basic SHARED basic.cpp)
 target_link_libraries(lirch-basic envelope ${QT_LIBRARIES})
-install(TARGETS lirch-basic DESTINATION lirch)
+install(TARGETS lirch-basic DESTINATION lib)

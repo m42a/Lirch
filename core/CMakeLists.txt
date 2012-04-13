@@ -2,13 +2,21 @@
 # 1) It's small and unlikely to grow large
 # 2) If it changes, we want plugins (shared libs) to link the new version
 # 3) We can enable PIC with the second line, so plugins will build
+# 4) Everything else we put in lib that's shared is a plugin
 # Downside is that every plugin will contain it (~MB gain overall)
 add_library(envelope message.cpp)
 set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 
 # Build a shared library that practically everything uses
 #add_library(envelope SHARED message.cpp)
-install(TARGETS envelope DESTINATION lirch)
+#install(TARGETS envelope DESTINATION lib)
+
+if(BUILD_NON_QT_CLIENT)
+  # Build the core executable
+  add_executable(lirch lirch_non_qt.cpp core.cpp plugin_loader.cpp)
+  target_link_libraries(lirch envelope dl pthread)
+  install(TARGETS lirch DESTINATION bin)
+endif(BUILD_NON_QT_CLIENT)
 
 if(BUILD_QT_CLIENT)
   # Use QtCore and QtGui
@@ -20,11 +28,6 @@ if(BUILD_QT_CLIENT)
   include_directories(${QT_INCLUDE_DIR})
   # Build the core executable with Qt GUI
   add_executable(qlirch lirch_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(qlirch envelope dl pthread lirch-qt ${QT_LIBRARIES})
+  target_link_libraries(qlirch envelope lirch-qt-interface dl pthread ${QT_LIBRARIES})
+  install(TARGETS qlirch DESTINATION bin)
 endif(BUILD_QT_CLIENT)
-
-if(BUILD_NON_QT_CLIENT)
-  # Build the core executable
-  add_executable(lirch lirch_non_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(lirch envelope dl pthread)
-endif(BUILD_NON_QT_CLIENT)

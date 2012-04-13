@@ -36,4 +36,4 @@ add_library(userlist SHARED userlist.cpp)
 target_link_libraries(userlist envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
 
 # For install (packaging)
-install(TARGETS antenna logger masseuse meatgrinder timer userlist DESTINATION lirch)
+install(TARGETS antenna logger masseuse meatgrinder timer userlist DESTINATION lib)

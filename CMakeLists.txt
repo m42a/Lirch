@@ -145,6 +145,7 @@ endif(BUILD_TESTING)
 
 # PACKAGING
 
+# TODO dependencies and such
 include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_VENDOR              "The Addams Family")

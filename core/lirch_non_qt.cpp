@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
 		signal(SIGINT, SIG_IGN);
 	vector<message> vm;
 	bool preload=true;
-	extern const preload_data preloads[LIRCH_NUM_PRELOADS];
 	char **arg=argv; //Skip the program name
 	if (argc!=0)
 	{
@@ -51,9 +50,9 @@ int main(int argc, char *argv[])
 			}
 			else if (*arg==string("-l") || *arg==string("--list-preload"))
 			{
-				for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+				for (auto &p : preloads)
 				{
-					cout << preloads[i - 1].name << ": " << preloads[i - 1].filename << endl;
+					cout << p.name << ": " << p.filename << endl;
 				}
 				return 2;
 			}
@@ -85,14 +84,9 @@ int main(int argc, char *argv[])
 	vector<message> pp;
 	if (preload)
 	{
-		for (int i = 1; i < LIRCH_NUM_PRELOADS; ++i)
+		for (auto &p : preloads)
 		{
-			pp.push_back(
-				plugin_adder::create(
-					string(preloads[i - 1].name),
-					string(preloads[i - 1].filename)
-				)
-			);
+			pp.push_back(plugin_adder::create(string(p.name), string(p.filename)));
 		}
 		//Append the command-line plugins to the preloaded plugins
 	}

@@ -18,7 +18,7 @@ set_target_properties(lirch-client PROPERTIES COMPILE_FLAGS -fPIC)
 # Build the actual plugin
 add_library(lirch-qt SHARED lirch_qt_plugin.cpp)
 target_link_libraries(lirch-qt envelope lirch-client ${QT_LIBRARIES})
-install(TARGETS lirch-qt DESTINATION lirch)
+install(TARGETS lirch-qt DESTINATION lib)
 
 # The actual GUI needs the UI files included from here:
 set(LIRCH_QT_DIR "${CMAKE_BINARY_DIR}/ui/qt")
