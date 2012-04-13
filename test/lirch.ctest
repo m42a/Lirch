@@ -1,0 +1,135 @@
+# PROJECT
+
+set(PROJECT_NAME "Lirch")
+set(JOB_REPOSITORY "git://github.com/m42a/Lirch.git")
+
+# Where to submit to
+set(JOB_DROP_SITE "onetooneandon.to")
+set(JOB_DROP_LOCATION "/CDash/submit.php?project=Lirch")
+
+# MACHINE INFO
+
+# Where to store the builds
+set(CLIENT_BASE_DIRECTORY "/var/www/CDash/builds")
+set(CLIENT_SITE "Rainbow Dash")
+
+# Some info about the machine
+set(JOB_OS_NAME "Linux")
+set(JOB_OS_VERSION "Debian")
+set(JOB_OS_BITS "i686")
+
+# BUILD INFO (w/ CACHE)
+
+# Compiler info
+set(JOB_COMPILER_NAME "gcc")
+set(JOB_COMPILER_VERSION "4.6.0")
+set(CTEST_BUILD_COMMAND "make -i -j4")
+
+# General build info
+set(JOB_BUILD_CONFIGURATION "Debug")
+set(JOB_BUILDTYPE "Experimental")
+set(JOB_CMAKE_GENERATOR "Unix Makefiles")
+
+# Configure some system settings
+# This doesn't work for some reason:
+#set(CTEST_ENVIRONMENT
+#  "PATH=/opt/gcc-4.6.0/bin:/opt/qt-4.8.1/bin:$ENV{PATH}"
+#  "LD_LIBRARY_PATH=/opt/gcc-4.6.0/lib:/opt/qt-4.8.1/lib"
+#  "CFLAGS=$ENV{CFLAGS} -fprofile-arcs -ftest-coverage"
+#  "CXXFLAGS=$ENV{CXXFLAGS} -fprofile-arcs -ftest-coverage"
+#  "LDFLAGS=$ENV{LDFLAGS} -fprofile-arcs -ftest-coverage"
+#)
+# Do this instead:
+set(ENV{PATH} "/opt/gcc-4.6.0/bin:/opt/qt-4.8.1/bin:$ENV{PATH}")
+set(ENV{LD_LIBRARY_PATH} "/opt/gcc-4.6.0/lib:/opt/qt-4.8.1/lib")
+set(ENV{CFLAGS} "$ENV{CFLAGS} -fprofile-arcs -ftest-coverage")
+set(ENV{CXXFLAGS} "$ENV{CXXFLAGS} -fprofile-arcs -ftest-coverage")
+set(ENV{LDFLAGS} "$ENV{LDFLAGS} -fprofile-arcs -ftest-coverage")
+
+# CMakeCache contents
+set(JOB_INITIAL_CACHE "
+  BUILD_BASIC_CLIENT:BOOL=ON
+  BUILD_NCURSES_CLIENT:BOOL=ON
+  BUILD_PLUGINS:BOOL=ON
+  BUILD_QT_CLIENT:BOOL=ON
+  BUILD_TESTING:BOOL=ON
+  PRELOAD_ANTENNA:BOOL=ON
+  PRELOAD_LOGGER:BOOL=ON
+  PRELOAD_MASSEUSE:BOOL=ON
+  PRELOAD_MEATGRINDER:BOOL=ON
+  PRELOAD_USERLIST:BOOL=ON
+")
+
+# DO NOT EDIT BELOW THIS LINE
+
+# Try to snag the branch name from the script arg (default to master)
+if(CTEST_SCRIPT_ARG)
+  set(JOB_BRANCH "${CTEST_SCRIPT_ARG}")
+endif(CTEST_SCRIPT_ARG)
+if(NOT JOB_BRANCH)
+  set(JOB_BRANCH "master")
+endif(NOT JOB_BRANCH)
+
+# Doubtful that this needs changing
+set(CTEST_PROJECT_NAME ${PROJECT_NAME})
+set(CTEST_NIGHTLY_START_TIME "01:00:00 UTC")
+
+# Filter some identifiers (ignore non-alphanumerics in branch)
+string(TOLOWER "${PROJECT_NAME}" JOB_MODULE)
+string(REGEX REPLACE "[^a-zA-Z0-9]" "-" JOB_TAG "${JOB_BRANCH}")
+
+# Fill in some necessary information
+set(SOURCE_NAME ${JOB_MODULE}-${JOB_TAG})
+set(CTEST_SOURCE_NAME ${SOURCE_NAME}-src)
+set(CTEST_BINARY_NAME ${SOURCE_NAME}-bin)
+set(CTEST_DASHBOARD_ROOT "${CLIENT_BASE_DIRECTORY}")
+set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
+set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
+set(CTEST_CMAKE_GENERATOR "${JOB_CMAKE_GENERATOR}")
+set(CTEST_BUILD_CONFIGURATION "${JOB_BUILD_CONFIGURATION}")
+
+# Provide information about this machine and build
+set(CTEST_SITE "${CLIENT_SITE}")
+set(CTEST_BUILD_NAME "${JOB_OS_NAME}-${JOB_OS_VERSION}-${JOB_OS_BITS}-${JOB_COMPILER_NAME}-${JOB_COMPILER_VERSION}-${JOB_TAG}")
+set(CTEST_NOTES_FILES "${CTEST_SCRIPT_DIRECTORY}/${CTEST_SCRIPT_NAME}")
+
+# Specify the target
+set(CTEST_DROP_METHOD "http")
+set(CTEST_DROP_SITE ${JOB_DROP_SITE})
+set(CTEST_DROP_LOCATION ${JOB_DROP_LOCATION})
+set(CTEST_DROP_SITE_CDASH TRUE)
+
+# Find some useful programs
+find_program(CTEST_GIT_COMMAND NAMES git)
+set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+if(JOB_BUILDTYPE STREQUAL "Nightly")
+  find_program(CTEST_COVERAGE_COMMAND NAMES gcov)
+  find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
+endif(JOB_BUILDTYPE STREQUAL "Nightly")
+
+# Ensure the source and build directories are okay
+if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}")
+  set(CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone -b ${JOB_BRANCH} ${JOB_REPOSITORY} ${CTEST_SOURCE_NAME}")
+endif(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}")
+if(EXISTS "${CTEST_BINARY_DIRECTORY}")
+  ctest_empty_binary_directory("${CTEST_BINARY_DIRECTORY}")
+endif(EXISTS "${CTEST_BINARY_DIRECTORY}")
+
+# Write in the cache
+file(WRITE "${CTEST_BINARY_DIRECTORY}/CMakeCache.txt" "${JOB_INITIAL_CACHE}")
+
+# EXE
+
+ctest_start(${JOB_BUILDTYPE})
+# Do a pull, configure, build and test
+ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
+ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
+ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}")
+ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" PARALLEL_LEVEL 4 SCHEDULE_RANDOM on)
+ctest_submit(PARTS Update Configure Build Test Notes)
+# Nightly builds run dynamic tests and coverage
+if(JOB_BUILDTYPE STREQUAL "Nightly")
+  ctest_memcheck(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND PARALLEL_LEVEL 4)
+  ctest_coverage(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND)
+  ctest_submit(PARTS Coverage MemCheck)
+endif(JOB_BUILDTYPE STREQUAL "Nightly")
