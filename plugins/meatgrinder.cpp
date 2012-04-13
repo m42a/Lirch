@@ -97,17 +97,18 @@ void run(plugin_pipe p, string name)
 			{
 				if (s->type=="register_handler")
 				{
+					p.write(handler_ready::create());
 					p.write(register_handler::create("", handle_normal));
 					p.write(register_handler::create("/say", handle_normal));
 					p.write(register_handler::create("/me", handle_me));
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
 					p.write(register_handler::create("/channel", handle_channel_change));
-					p.write(handler_ready::create());
 				}
 				else if (s->type=="register_replacer")
 				{
 					p.write(replacer_ready::create());
+					p.write(register_replacer::create("/slap", QRegExp("/slap (.*)"), "/me slaps \\1 with an optimistic biologist"));
 				}
 			}
 		}
