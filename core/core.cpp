@@ -3,16 +3,7 @@
 #include <string>
 #include <thread>
 #include <iostream>
-#include <csignal>
 
-#ifdef LIRCH_CORE_USE_QT
-#include <QApplication>
-#include "ui/lirch_client_pipe.h"
-LirchClientPipe mediator;
-#include "ui/qt/lirch_qt_interface.h"
-#endif
-
-#include "lirch_constants.h"
 #include "message.h"
 #include "message_pipe.h"
 #include "registry.h"
@@ -26,19 +17,9 @@ using namespace std;
 
 static unordered_map<string, message_pipe> out_pipes;
 static unordered_map<string, registry> message_registrations;
-static message_pipe in_pipe;
+message_pipe in_pipe;
 
-static bool verbose;
-
-void handle_sigint(int)
-{
-	//Quit nicely when we get a ctrl-c, but not if we get it twice.  We
-	//need to unregister before we write because we don't want to lock the
-	//mutex twice.  This should only be a problem under heavy load (which
-	//is exactly when we don't want to block SIGINT).
-	signal(SIGINT, SIG_DFL);
-	in_pipe.write(core_quit_message::create());
-}
+bool verbose;
 
 ostream &operator<<(ostream &out, const message &m)
 {
@@ -81,15 +62,25 @@ static void add_plugin(const message &m)
 		//The message wasn't a plugin_adder
 		return;
 	if (out_pipes.count(pa->name)!=0)
+	{
 		//There's already a plugin with this name
+		if (verbose)
+			cerr << " failed to load plugin " << pa->name << " from " << pa->filename << " (conflicting name)" << endl;
 		return;
+	}
 	message_pipe mp;
-	thread t1(load_plugin, pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe)));
-	t1.detach();
-	out_pipes[pa->name]=mp;
-	mp.write(hello_message::create(pa->name));
-	if (verbose)
-		cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
+	if (load_plugin(pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe))))
+	{
+		mp.write(hello_message::create(pa->name));
+		out_pipes[pa->name]=mp;
+		if (verbose)
+			cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
+	}
+	else
+	{
+		if (verbose)
+			cerr << " failed to load plugin " << pa->name << " from " << pa->filename << endl;
+	}
 }
 
 static void remove_plugin(const message &m)
@@ -162,82 +153,12 @@ static void process(const message &m)
 		to_plugin(m);
 }
 
-static void run_core(const vector<message> &vm)
+void run_core(const vector<message> &vm)
 {
-	for (auto m : vm)
+	for (auto &m : vm)
 		process(m);
 	while (!out_pipes.empty())
 	{
 		process(in_pipe.blocking_read());
 	}
-}
-
-int main(int argc, char *argv[])
-{
-	#ifdef LIRCH_CORE_USE_QT
-	// TODO review QtCore's QtApplication documentation
-	QApplication lirch(argc, argv);
-	// TODO sometimes being necessary to avoid string conversion issues?
-	setlocale(LC_NUMERIC, "C");
-	// The window is constructed here, show()'n later (see plugin header)
-	LirchQtInterface main_window;
-        // A small intermediate object is used to mediate
-        QObject::connect(&mediator,    SIGNAL(alert(const QString &, const QString &)),
-                         &main_window, SLOT(display(const QString &, const QString &)));
-        QObject::connect(&mediator,    SIGNAL(shutdown(const QString &)),
-                         &main_window, SLOT(die(const QString &)));
-        QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),
-                         &main_window, SLOT(use(LirchClientPipe *)));
-	// TODO can we parse the args with QApplication?
-	#else
-	setlocale(LC_ALL,"");
-	if (signal(SIGINT, handle_sigint)==SIG_IGN)
-		signal(SIGINT, SIG_IGN);
-	#endif
-
-	vector<message> vm;
-	// Preload a variety of plugins specified in build (see lirch_constants.h)
-	for (auto &preload : preloads)
-	{
-		vm.push_back(plugin_adder::create(string(preload.name), string(preload.filename)));
-	}
-	// Load plugins specified on command line
-	if (argc > 1) {
-		int i = 1, j = 0;
-		// The first argument might specify verbose mode
-		if (argv[i] == string("-v") || argv[i] == string("--verbose"))
-		{
-			cerr << "Lirch " << LIRCH_VERSION_STRING << " Core (" << LIRCH_BUILD_HASH << ")" << endl;
-			cerr << "preloads: ";
-			for (auto &p : preloads)
-			{
-				cerr << p.name << " ";
-			}
-			cerr << ";" << endl;
-			for (auto &p : preloads)
-			{
-				cerr << ++j << ") " << p.filename << endl;
-			}
-			verbose = true;
-			++i;
-		}
-		// The rest are plugin (name, filename) pairs (need two at a time)
-		string name, filename;
-		while (i + 1 < argc)
-		{
-			name = argv[i++];
-			filename = argv[i++];
-			vm.push_back(plugin_adder::create(name, filename));
-		}
-	}
-
-	// Loop until core shutdown
-	#ifdef LIRCH_CORE_USE_QT
-	thread core_thread(run_core, vm);
-	core_thread.detach();
-	return lirch.exec();
-	#else
-	run_core(vm);
-	return 0;
-	#endif
 }

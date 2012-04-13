@@ -36,6 +36,13 @@ option(BUILD_NCURSES_CLIENT "Build the ncurses interface"     OFF)
 option(BUILD_QT_CLIENT      "Build the Qt4 interface"         ON)
 option(BUILD_PLUGINS        "Build the standard plugin suite" ON)
 
+if(BUILD_BASIC_CLIENT)
+  set(BUILD_NON_QT_CLIENT ON)
+endif(BUILD_BASIC_CLIENT)
+if(BUILD_NCURSES_CLIENT)
+  set(BUILD_NON_QT_CLIENT ON)
+endif(BUILD_NCURSES_CLIENT)
+
 # Preload options (advanced)
 macro(add_plugin NAME)
   string(TOUPPER "PRELOAD_${NAME}" OPTION_NAME)
