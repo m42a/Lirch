@@ -261,6 +261,7 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 // INTERNAL SLOTS
 
+// TODO does this happen on any show? if so, don't connect
 void LirchQtInterface::showEvent(QShowEvent *e)
 {
 	// TODO first-time QWizard to determine if these happen:
@@ -268,7 +269,9 @@ void LirchQtInterface::showEvent(QShowEvent *e)
 	ui->actionViewDefault->trigger();
 	// Connect to it
 	ui->actionConnect->setChecked(true);
-	// Propapage
+	// TODO get the textbox to focus on any Show
+	// ui->msgTextBox->setFocus(true);
+	// Propagate
 	e->ignore();
 }
 
