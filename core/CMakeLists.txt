@@ -11,14 +11,18 @@ set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 #add_library(envelope SHARED message.cpp)
 #install(TARGETS envelope DESTINATION lib)
 
-if(BUILD_NON_QT_CLIENT)
-  # Build the core executable
-  add_executable(lirch lirch_non_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(lirch envelope dl pthread)
-  install(TARGETS lirch DESTINATION bin)
-endif(BUILD_NON_QT_CLIENT)
+# Build the core library
+add_library(lirch-core core.cpp plugin_loader.cpp)
+target_link_libraries(lirch-core envelope dl pthread)
 
-if(BUILD_QT_CLIENT)
+if(BUILD_CLIENT_NON_QT)
+  # Build the client executable
+  add_executable(lirch lirch_non_qt.cpp)
+  target_link_libraries(lirch lirch-core)
+  install(TARGETS lirch DESTINATION bin)
+endif(BUILD_CLIENT_NON_QT)
+
+if(BUILD_CLIENT_QT)
   # Use QtCore and QtGui
   set(QT_DONT_USE_QTCORE FALSE)
   set(QT_DONT_USE_QTGUI FALSE)
@@ -27,7 +31,7 @@ if(BUILD_QT_CLIENT)
   include(${QT_USE_FILE})
   include_directories(${QT_INCLUDE_DIR})
   # Build the core executable with Qt GUI
-  add_executable(qlirch lirch_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(qlirch envelope lirch-qt-interface dl pthread ${QT_LIBRARIES})
+  add_executable(qlirch lirch_qt.cpp)
+  target_link_libraries(qlirch lirch-core lirch-qt-interface ${QT_LIBRARIES})
   install(TARGETS qlirch DESTINATION bin)
-endif(BUILD_QT_CLIENT)
+endif(BUILD_CLIENT_QT)

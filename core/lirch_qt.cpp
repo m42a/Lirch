@@ -1,3 +1,4 @@
+// TODO use QDebug for output?
 #include <iostream>
 #include <string>
 #include <thread>
@@ -13,14 +14,14 @@ using namespace std;
 #include "ui/lirch_client_pipe.h"
 #include "ui/qt/lirch_qt_interface.h"
 
+// Necessary for communication with lirch-qt
 LirchClientPipe mediator;
 
+// Declared in core.cpp
 void run_core(const vector<message> &vm);
-
 extern bool verbose;
 
-#define USE_TCLAP
-#ifdef USE_TCLAP
+// Necessary for parsing arguments
 #include <tclap/CmdLine.h>
 
 static struct lirch_options {
@@ -36,33 +37,34 @@ void parse_args(int argc, char *argv[]) {
 						LIRCH_VERSION_STRING,
 						LIRCH_BUILD_HASH);
 		TCLAP::CmdLine options(id.toStdString(), ' ', LIRCH_VERSION_STRING);
-		// Specify switches TODO functionalize?
+		// Specify switches TODO functionalize? tr()?
 		TCLAP::SwitchArg verboseSwitch("v", "verbose",
 			"Enable loud output (all messages)", options, false);
 		TCLAP::SwitchArg noPreloadsSwitch("n", "no_preloads",
 			"Don't load the preloaded plugins", options, false);
 		TCLAP::SwitchArg listPreloadsSwitch("l", "list_preloads",
 			"List the preloaded plugins", options, false);
-		TCLAP::UnlabeledMultiArg<string> plugin_pairs("plugin_pairs",
+		// We're allowed exactly one of these:
+		TCLAP::UnlabeledMultiArg<string> plugin_pairs("plugins",
 			"Bare strings, in pairs like: antenna lib/libantenna.so", false,
 			"plugin_name plugin_file", "pair<string, string>");
                 options.add(plugin_pairs);
-		// Parse all the options
+		// Parse all the options, and fill in session
 		options.parse(argc, argv);
 		session.verbose = verboseSwitch.getValue();
 		session.no_preloads = noPreloadsSwitch.getValue();
 		session.list_preloads = listPreloadsSwitch.getValue();
 		session.plugins = plugin_pairs.getValue();
 	} catch (TCLAP::ArgException &e) {
+		// TODO better error messages?
 		cerr << e.error() << endl;
 	}
 }
-#endif // USE_TCLAP
 
 int main(int argc, char *argv[])
 {
-	// TODO review QtCore's QtApplication documentation
-	QApplication lirch(argc, argv);
+	// TODO does this need to happen right away? Guess so.
+	QApplication qlirch(argc, argv);
 	// TODO sometimes being necessary to avoid string conversion issues?
 	setlocale(LC_NUMERIC, "C");
 	// The window is constructed here, show()'n later (see plugin header)
@@ -82,22 +84,18 @@ int main(int argc, char *argv[])
 		plugins.push_back(make_pair<string, string>(p.name, p.filename));
 	}
 
-	// TODO figure out what happens to unparsed args
-	cerr << "Before parse: ";
-	for (int i = 0; i < argc; ++i) {
-		cerr << "'" << argv[i] << "' ";
-	}
-	cerr << "(end)" << endl;
+	// Get the remaining arguments from the command line
 	parse_args(argc, argv);
 	verbose = session.verbose;
-	cerr << "After parse: ";
-	for (int i = 0; i < argc; ++i) {
-		cerr << "'" << argv[i] << "' ";
-	}
-	cerr << "(end)" << endl;
+	QString error_msg;
 
 	// Handle a request to display these
 	if (session.list_preloads) {
+		error_msg = QObject::tr("Plugins configured to preload: ");
+		if (session.no_preloads) {
+			error_msg += QObject::tr("(Note: --no_preloads flag was specified.)");
+		}
+		cerr << error_msg.toStdString() << endl;
 		for (auto &p : plugins) {
 			cerr << p.first << ": " << p.second << endl;
 		}
@@ -112,9 +110,14 @@ int main(int argc, char *argv[])
 	auto pit = session.plugins.begin();
 	auto pitend = session.plugins.end();
 	pair<string, string> p;
+	error_msg = QObject::tr("[WARNING] ignoring unpaird plugin argument '%1'");
 	while (pit != pitend) {
 		p.first = *pit; ++pit;
 		if (pit == pitend) {
+			if (verbose) {
+				error_msg = error_msg.arg(QString::fromStdString(p.first));
+				cerr << error_msg.toStdString() << endl;
+			}
 			break;
 		}
 		p.second = *pit; ++pit;
@@ -129,6 +132,6 @@ int main(int argc, char *argv[])
 	thread core_thread(run_core, add_messages);
 	core_thread.detach();
 
-	// When the event loop terminates, so will we
-	return lirch.exec();
+	// When this event loop terminates, so will we
+	return qlirch.exec();
 }

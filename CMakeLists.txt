@@ -31,37 +31,44 @@ else(GIT_EXECUTABLE)
 endif(GIT_EXECUTABLE)
 
 # Basic build options
-option(BUILD_BASIC_CLIENT   "Build the basic interface"       OFF)
-option(BUILD_NCURSES_CLIENT "Build the ncurses interface"     OFF)
-option(BUILD_QT_CLIENT      "Build the Qt4 interface"         ON)
+option(BUILD_CLIENT_BASIC   "Build the basic interface"       OFF)
+option(BUILD_CLIENT_NCURSES "Build the ncurses interface"     OFF)
+option(BUILD_CLIENT_QT      "Build the Qt4 interface"         ON)
 option(BUILD_PLUGINS        "Build the standard plugin suite" ON)
 
-if(BUILD_BASIC_CLIENT)
-  set(BUILD_NON_QT_CLIENT ON)
-endif(BUILD_BASIC_CLIENT)
-if(BUILD_NCURSES_CLIENT)
-  set(BUILD_NON_QT_CLIENT ON)
-endif(BUILD_NCURSES_CLIENT)
+if(BUILD_CLIENT_BASIC OR BUILD_CLIENT_NCURSES)
+  set(BUILD_CLIENT_NON_QT ON)
+endif(BUILD_CLIENT_BASIC OR BUILD_CLIENT_NCURSES)
 
 # Preload options (advanced)
-macro(add_plugin NAME)
+macro(preload_option NAME OPTION_STATE)
   string(TOUPPER "PRELOAD_${NAME}" OPTION_NAME)
-  option(${OPTION_NAME} "Preload the ${NAME} plugin" OFF)
+  set(OPTION_DOC "Preload the ${NAME} plugin")
+  # Preload defaults to OFF
+  option(${OPTION_NAME} ${OPTION_DOC} OFF)
   mark_as_advanced(${OPTION_NAME} FORCE)
+  # Disabling the second argument triggers disabling the preload
+  if (NOT ${OPTION_STATE})
+    set(${OPTION_NAME} OFF CACHE BOOL ${OPTION_DOC} FORCE)
+  endif(NOT ${OPTION_STATE})
+  # Preloads modify the configuration of lirch_constants.h
   if(${OPTION_NAME})
-    # TODO make this portable
-    list(APPEND PRELOADS "{ \"${NAME}\", \"${LIBRARY_OUTPUT_PATH}/lib${NAME}.so\" },")
+    if(UNIX)
+      list(APPEND PRELOADS "{ \"${NAME}\", \"${LIBRARY_OUTPUT_PATH}/lib${NAME}.so\" },")
+    endif(UNIX)
+    # FIXME add WIN32 support
   endif(${OPTION_NAME})
-endmacro(add_plugin)
-# TODO disable preloads when corresponding build is disabled?
-add_plugin("antenna")
-add_plugin("lirch-basic")
-add_plugin("lirch-ncurses")
-add_plugin("lirch-qt")
-add_plugin("logger")
-add_plugin("masseuse")
-add_plugin("meatgrinder")
-add_plugin("userlist")
+endmacro(preload_option)
+# The active state of each is determined above
+preload_option("lirch-basic"   BUILD_CLIENT_BASIC)
+preload_option("lirch-ncurses" BUILD_CLIENT_NCURSES)
+preload_option("lirch-qt"      BUILD_CLIENT_QT)
+preload_option("antenna"       BUILD_PLUGINS)
+preload_option("logger"        BUILD_PLUGINS)
+preload_option("masseuse"      BUILD_PLUGINS)
+preload_option("meatgrinder"   BUILD_PLUGINS)
+preload_option("userlist"      BUILD_PLUGINS)
+# Propagate the preloads for configuration
 if(PRELOADS)
   foreach(PRELOAD IN LISTS PRELOADS)
     set(LIRCH_PRELOADS "${LIRCH_PRELOADS}
@@ -78,21 +85,21 @@ include_directories("${CMAKE_SOURCE_DIR}")
 ## LIBRARIES
 
 # Figure out which Qt components to load, if any
-if(BUILD_QT_CLIENT OR BUILD_PLUGINS)
+if(BUILD_CLIENT_QT OR BUILD_PLUGINS)
   # (Almost) everything (except core) needs QtCore
   list(APPEND QT_COMPONENTS "QtCore")
-endif(BUILD_QT_CLIENT OR BUILD_PLUGINS)
+endif(BUILD_CLIENT_QT OR BUILD_PLUGINS)
 # Only the antenna plugin strictly needs QtNetwork
 if(BUILD_PLUGINS)
   list(APPEND QT_COMPONENTS "QtNetwork")
 endif(BUILD_PLUGINS)
 # Only the Qt GUI needs QtGui (and QtTest for testing)
-if(BUILD_QT_CLIENT)
+if(BUILD_CLIENT_QT)
   list(APPEND QT_COMPONENTS "QtGui")
   if(BUILD_TESTING)
     list(APPEND QT_COMPONENTS "QtTest")
   endif(BUILD_TESTING)
-endif(BUILD_QT_CLIENT)
+endif(BUILD_CLIENT_QT)
 # Load them
 if(QT_COMPONENTS)
   set(QT_MIN_VERSION 4.8.0)
@@ -123,17 +130,17 @@ if(BUILD_PLUGINS)
   add_subdirectory(plugins)
 endif(BUILD_PLUGINS)
 
-if(BUILD_BASIC_CLIENT)
+if(BUILD_CLIENT_BASIC)
   add_subdirectory(ui/basic)
-endif(BUILD_BASIC_CLIENT)
+endif(BUILD_CLIENT_BASIC)
 
-if(BUILD_NCURSES_CLIENT)
+if(BUILD_CLIENT_NCURSES)
   add_subdirectory(ui/ncurses)
-endif(BUILD_NCURSES_CLIENT)
+endif(BUILD_CLIENT_NCURSES)
 
-if(BUILD_QT_CLIENT)
+if(BUILD_CLIENT_QT)
   add_subdirectory(ui/qt)
-endif(BUILD_QT_CLIENT)
+endif(BUILD_CLIENT_QT)
 
 # TESTING
 
