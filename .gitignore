@@ -1,3 +1,4 @@
 .gitignore
 build*/*
+tclap/*
 CMakeLists.txt.user*

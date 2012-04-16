@@ -2,10 +2,8 @@ Copyright (c) 2012 The Addams Family
 
 Lirch is Open Source Software. See ./LICENSE for details.
 
-===
-
 Lirch may leverage certain libraries, as submodules when available.
-(To fetch, from the top-level source directory: git submodule init)
+?tl;dr, to fetch: git submodule init && git submodule update
 
 tclap: http://sourceforge.net/projects/tclap/
 Included from ./tclap/COPYING:
