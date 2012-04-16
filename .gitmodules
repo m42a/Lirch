@@ -1,0 +1,3 @@
+[submodule "tclap"]
+	path = tclap
+	url = git://tclap.git.sourceforge.net/gitroot/tclap/tclap
