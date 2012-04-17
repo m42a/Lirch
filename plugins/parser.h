@@ -10,7 +10,7 @@ static QStringList parse(QString q)
 	int speciallen=0;
 	QStringList strings;
 	QString str;
-	for (unsigned int i=0; i<q.size(); ++i)
+	for (int i=0; i<q.size(); ++i)
 	{
 		if (mode==normal)
 		{
@@ -106,11 +106,11 @@ static QStringList parse(QString q)
 		{
 			specialchar*=16;
 			if ('0'<=q[i] && q[i]<='9')
-				specialchar+=q[i]-'0';
-			else if ('a'<=q[i] & q[i]<='f')
-				specialchar+=q[i]-'a'+10;
-			else if ('A'<=q[i] & q[i]<='F')
-				specialchar+=q[i]-'A'+10;
+				specialchar+=q[i].unicode()-'0';
+			else if ('a'<=q[i] && q[i]<='f')
+				specialchar+=q[i].unicode()-'a'+10;
+			else if ('A'<=q[i] && q[i]<='F')
+				specialchar+=q[i].unicode()-'A'+10;
 			else
 			{
 				specialchar/=16;

@@ -1,8 +1,10 @@
 # Test executable
 set(LIRCH_CORE_TESTER_NAME "lirch-core-tester")
 set(LIRCH_CORE_TESTER_PATH "${EXECUTABLE_OUTPUT_PATH}/${LIRCH_CORE_TESTER_NAME}")
+include(${QT_USE_FILE})
+include_directories(${QT_INCLUDE_DIR})
 add_executable(${LIRCH_CORE_TESTER_NAME} test.cpp)
-target_link_libraries(${LIRCH_CORE_TESTER_NAME} envelope pthread)
+target_link_libraries(${LIRCH_CORE_TESTER_NAME} envelope pthread ${QT_LIBRARIES})
 
 # Unit tests
 add_test(sendToPlugin              "${LIRCH_CORE_TESTER_PATH}" toplugin)
@@ -22,3 +24,5 @@ add_test(registration              "${LIRCH_CORE_TESTER_PATH}" register)
 add_test(initializingRegistration  "${LIRCH_CORE_TESTER_PATH}" registryInitList)
 add_test(registrationSize          "${LIRCH_CORE_TESTER_PATH}" registryEmpty)
 add_test(registryDuplicateHandling "${LIRCH_CORE_TESTER_PATH}" registryDups)
+add_test(parseEmptyString          "${LIRCH_CORE_TESTER_PATH}" parse1)
+add_test(parseStringWithSpace      "${LIRCH_CORE_TESTER_PATH}" parse2)
