@@ -7,6 +7,7 @@
 #define	GCC_SCANF
 
 #include <curses.h>
+#include <climits>
 
 #include <QString>
 
@@ -20,6 +21,10 @@ void runplugin(plugin_pipe &p, const string &name)
 {
 	string input;
 	QString processed_input;
+	//TODO: Check the value of ESCDELAY, and set it to 10 if it doesn't exist
+	int maxx, maxy;
+	getmaxyx(stdscr, maxy, maxx);
+	auto all_output=newpad(1000, maxx);
 	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
@@ -32,15 +37,15 @@ void runplugin(plugin_pipe &p, const string &name)
 		if (rc==OK)
 		{
 			//add_wch(key);
-			printw("%s: %x\n", QString::fromUcs4(&key, 1).toLocal8Bit().constData(), key);
+			wprintw(all_output, "%s: %x: ", QString::fromUcs4(&key, 1).toLocal8Bit().constData(), key);
 			for (auto &i : QString::fromUcs4(&key, 1).toLocal8Bit())
-				printw("%02x ", (unsigned char)i);
-			printw(": ");
+				wprintw(all_output, "%02x ", (unsigned char)i);
+			wprintw(all_output, ": ");
 			//addch(ACS_HLINE);
 			for (auto &i : QString::fromUcs4(&key, 1).toLocal8Bit())
-				addch((unsigned char)i|(A_ALTCHARSET*((unsigned char)i>0x7f)));
+				waddch(all_output, (unsigned char)i|(A_ALTCHARSET*((unsigned char)i>0x7f)));
 				//addch(i&~(/*A_ALTCHARSET|*/A_BLINK|A_BOLD/*|A_DIM|A_INVIS|A_PROTECT*/));
-			printw("\n");
+			waddch(all_output, '\n');
 		}
 		else if (rc==KEY_CODE_YES)
 		{
@@ -48,8 +53,11 @@ void runplugin(plugin_pipe &p, const string &name)
 		}
 		else
 		{
-			printw("No key pressed\n");
+			wprintw(all_output, "No key pressed\n");
 		}
+		int x,y;
+		getyx(all_output, y, x);
+		prefresh(all_output, max(y-maxy,0), 0, 0,0,maxy-1,maxx-1);
 	}
 	p.write(core_quit_message::create());
 }
