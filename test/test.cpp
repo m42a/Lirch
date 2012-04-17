@@ -302,9 +302,111 @@ int dotest(string test)
 	if (test=="parse2")
 	{
 		auto i=parse(" ");
-		if (i.size()==1 && i[0]=="")
+		if (i.size()!=1)
+			return 1;
+		if (i[0]!="")
+			return 1;
+		return 0;
+	}
+	if (test=="parse3")
+	{
+		auto i=parse(R"*(hello, is it me you\'re looking for?)*");
+		if (i.size()!=7)
+			return 1;
+		if (i[0]!="hello,")
+			return 1;
+		if (i[1]!="is")
+			return 1;
+		if (i[2]!="it")
+			return 1;
+		if (i[3]!="me")
+			return 1;
+		if (i[4]!="you\'re")
+			return 1;
+		if (i[5]!="looking")
+			return 1;
+		if (i[6]!="for?")
+			return 1;
+		return 0;
+	}
+	if (test=="parse4")
+	{
+		auto i=parse(R"*(/channel 'l33t h4xx0r5')*");
+		if (i.size()!=2)
+			return 1;
+		if (i[0]!="/channel")
+			return 1;
+		if (i[1]!="l33t h4xx0r5")
+			return 1;
+		return 0;
+	}
+	if (test=="parse5")
+	{
+		auto i=parse(R"*(\U01F438)*");
+		if (i.size()!=1)
+			return 1;
+		uint frog_face=0x1f438;
+		if (i[0]!=QString::fromUcs4(&frog_face, 1))
+			return 1;
+		return 0;
+	}
+	if (test=="parse6")
+	{
+		auto i=parse(R"*(daijoubu\n yuki?)*");
+		if (i.size()!=2)
 			return 0;
-		return 1;
+		if (i[0]!="daijoubu\n")
+			return 1;
+		if (i[1]!="yuki?")
+			return 1;
+		return 0;
+	}
+	if (test=="parse7")
+	{
+		auto i=parse(R"*(My     name     ...            is       William                 Shatner.   )*");
+		if (i.size()!=6)
+			return 0;
+		if (i[0]!="My")
+			return 1;
+		if (i[1]!="name")
+			return 1;
+		if (i[2]!="...")
+			return 1;
+		if (i[3]!="is")
+			return 1;
+		if (i[4]!="William")
+			return 1;
+		if (i[5]!="Shatner.")
+			return 1;
+		return 0;
+	}
+	if (test=="parse8")
+	{
+		auto i=parse(R"*(I want"to break"free)*");
+		if (i.size()!=2)
+			return 1;
+		if (i[0]!="I")
+			return 1;
+		if (i[1]!="wantto breakfree")
+			return 1;
+		return 0;
+	}
+	if (test=="parse9")
+	{
+		auto i=parse(R"*(from you're lies \you're so self-satis"fied I don\'t ne"ed you)*");
+		if (i.size()!=5)
+			return 1;
+		if (i[0]!="from")
+			return 1;
+		if (i[1]!="youre lies \\youre")
+			return 1;
+		if (i[2]!="so")
+			return 1;
+		if (i[3]!="self-satisfied I don't need")
+			return 1;
+		if (i[4]!="you")
+			return 1;
+		return 0;
 	}
 	return 2;
 }
