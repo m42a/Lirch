@@ -7,6 +7,8 @@
 #include "core/message_pipe.h"
 #include "core/registry.h"
 
+#include "plugins/parser.h"
+
 using namespace std;
 
 class test_message : public message_data
@@ -289,6 +291,20 @@ int dotest(string test)
 		if (r.add(0,"bar"))
 			return 1;
 		return 0;
+	}
+	if (test=="parse1")
+	{
+		auto i=parse("");
+		if (i.size()!=0)
+			return 1;
+		return 0;
+	}
+	if (test=="parse2")
+	{
+		auto i=parse(" ");
+		if (i.size()==1 && i[0]=="")
+			return 0;
+		return 1;
 	}
 	return 2;
 }
