@@ -131,7 +131,10 @@ void run(plugin_pipe p, string name)
 			auto e=dynamic_cast<raw_edict_message *>(m.getdata());
 			if (!e)
 				continue;
-			auto &str=e->contents;
+			//Ensure that characters with multiple representations
+			//are normalized so we can compare strings directly by
+			//character.
+			auto str=e->contents.normalized(QString::NormalizationForm_C);
 			if (str.isEmpty())
 				//We don't propagate empty messages (on principle)
 				continue;
