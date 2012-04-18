@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 	auto pit = session.plugins.begin();
 	auto pitend = session.plugins.end();
 	pair<string, string> p;
-	error_msg = QObject::tr("[WARNING] ignoring unpaird plugin argument '%1'");
+	error_msg = QObject::tr("[WARNING] ignoring unpaired plugin argument '%1'");
 	while (pit != pitend) {
 		p.first = *pit; ++pit;
 		if (pit == pitend) {
