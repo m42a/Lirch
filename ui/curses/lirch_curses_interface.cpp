@@ -21,10 +21,12 @@ void runplugin(plugin_pipe &p, const string &name)
 {
 	string input;
 	QString processed_input;
-	//TODO: Check the value of ESCDELAY, and set it to 10 if it doesn't exist
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
-	auto all_output=newpad(1000, maxx);
+	//10000 lines of scrollback should be enough for anyone
+	auto all_output=newpad(10000, maxx);
+	//Let the output scroll
+	scrollok(all_output, TRUE);
 	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
@@ -64,20 +66,27 @@ void runplugin(plugin_pipe &p, const string &name)
 
 void run(plugin_pipe p, string name)
 {
-	// Step one...
+	//Set the delay when hitting escape to 10 milliseconds, unless it was
+	//already set.  The ESCDELAY variable is not supported in all curses
+	//implementations, but should not cause problems in implementations
+	//that ignore it.
+	setenv("ESCDELAY", "10", 0);
+	//Initialize curses
 	initscr();
+	//Don't buffer typed characters
 	cbreak();
 	//Wain no more than a tenth of a second for input
-	//halfdelay(1);
-	cbreak();
 	timeout(100);
-	//noecho();
 	noecho();
-	scrollok(stdscr, TRUE);
+	//Makes enter return \r instead of \n
 	nonl();
+	//Flush the input buffer if an interrupt key is pressed.  This ensures
+	//we don't miss keystrokes in the event of a SIGSTOP
 	intrflush(stdscr, FALSE);
+	//Enable keycodes
 	keypad(stdscr, TRUE);
 	runplugin(p, name);
+	//Make sure to always restore the terminal to a sane configuration
 	endwin();
 	return;
 }
