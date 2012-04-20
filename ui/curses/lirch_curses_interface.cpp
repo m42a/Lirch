@@ -8,6 +8,7 @@
 
 #include <curses.h>
 #include <climits>
+#include <cstdio>
 
 #include <QString>
 
@@ -17,16 +18,35 @@
 
 using namespace std;
 
+template <class... args>
+string strprintf(const string &format, args... a)
+{
+	int size=snprintf(NULL, 0, format.c_str(), a...);
+	//Add padding for the terminating byte
+	char *s=new char[size+1];
+	//We can use sprintf instead of snprintf because we know the buffer is large enough
+	sprintf(s, format.c_str(), a...);
+	return s;
+}
+
+//Same as wprintf, but handles unicode characters properly
+template <class... args>
+wprintu(WINDOW *w, const string &format, args... a)
+{
+	string s=strprintf(format, a);
+	for (unsigned char c : s)
+		waddch(w, c|(c>0x7f ? A_ALTCHARSET : 0));
+}
+
 void runplugin(plugin_pipe &p, const string &name)
 {
-	string input;
-	QString processed_input;
+	QString input;
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
 	//10000 lines of scrollback should be enough for anyone
-	auto all_output=newpad(10000, maxx);
+	auto channel_output=newpad(10000, maxx);
 	//Let the output scroll
-	scrollok(all_output, TRUE);
+	scrollok(channel_output, TRUE);
 	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
@@ -38,16 +58,17 @@ void runplugin(plugin_pipe &p, const string &name)
 		int rc=get_wch(&key);
 		if (rc==OK)
 		{
+			input.push_back(QString::fromUcs4(&key, 1));
 			//add_wch(key);
-			wprintw(all_output, "%s: %x: ", QString::fromUcs4(&key, 1).toLocal8Bit().constData(), key);
+			wprintw(channel_output, "%s: %x: ", QString::fromUcs4(&key, 1).toLocal8Bit().constData(), key);
 			for (auto &i : QString::fromUcs4(&key, 1).toLocal8Bit())
-				wprintw(all_output, "%02x ", (unsigned char)i);
-			wprintw(all_output, ": ");
+				wprintw(channel_output, "%02x ", (unsigned char)i);
+			wprintw(channel_output, ": ");
 			//addch(ACS_HLINE);
 			for (auto &i : QString::fromUcs4(&key, 1).toLocal8Bit())
-				waddch(all_output, (unsigned char)i|(A_ALTCHARSET*((unsigned char)i>0x7f)));
+				waddch(channel_output, (unsigned char)i|(A_ALTCHARSET*((unsigned char)i>0x7f)));
 				//addch(i&~(/*A_ALTCHARSET|*/A_BLINK|A_BOLD/*|A_DIM|A_INVIS|A_PROTECT*/));
-			waddch(all_output, '\n');
+			waddch(channel_output, '\n');
 		}
 		else if (rc==KEY_CODE_YES)
 		{
@@ -55,11 +76,11 @@ void runplugin(plugin_pipe &p, const string &name)
 		}
 		else
 		{
-			wprintw(all_output, "No key pressed\n");
+			wprintw(channel_output, "No key pressed\n");
 		}
 		int x,y;
-		getyx(all_output, y, x);
-		prefresh(all_output, max(y-maxy,0), 0, 0,0,maxy-1,maxx-1);
+		getyx(channel_output, y, x);
+		prefresh(channel_output, max(y-maxy,0), 0, 0,0,maxy-2,maxx-1);
 	}
 	p.write(core_quit_message::create());
 }
