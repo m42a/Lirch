@@ -52,13 +52,26 @@ void wprintu(WINDOW *w, const string &format, args... a)
 		waddch(w, c|(c>0x7f ? A_ALTCHARSET : 0));
 }
 
+//This wraps WINDOW pointers so they're be destroyed on exit
+class WindowWrapper
+{
+public:
+	WindowWrapper(WINDOW *ww=nullptr) : w(ww, delwin) {}
+	WINDOW *get() const {return w.get();}
+	operator WINDOW*() const {return get();}
+	WINDOW& operator*() const {return *w;}
+	WINDOW* operator->() const {return get();}
+private:
+	shared_ptr<WINDOW> w;
+};
+
 void runplugin(plugin_pipe &p, const string &name)
 {
 	QString input;
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
 	//10000 lines of scrollback should be enough for anyone
-	auto channel_output=newpad(10000, maxx);
+	WindowWrapper channel_output=newpad(10000, maxx);
 	//Let the output scroll
 	scrollok(channel_output, TRUE);
 	//p.write(registration_message::create(-30000, name, "display"));
