@@ -77,10 +77,43 @@ void runplugin(plugin_pipe &p, const string &name)
 	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
-		/*while (p.has_message())
+		while (p.has_message())
 		{
 			message m=p.read();
-		}*/
+			if (m.type=="shutdown")
+			{
+				return;
+			}
+			else if (m.type=="registration_status")
+			{
+				auto s=dynamic_cast<registration_status *>(m.getdata());
+				if (!s)
+					continue;
+				if (!s->status)
+				{
+					if (s->priority>-32000)
+						p.write(registration_message::create(s->priority-1, name, s->type));
+				}
+			}
+			else if (m.type=="display")
+			{
+				auto s=dynamic_cast<display_message *>(m.getdata());
+				if (!s)
+					continue;
+				p.write(m.decrement_priority());
+
+				auto channel=s->channel.toLocal8Bit().constData();
+				auto nick=s->nick.toLocal8Bit().constData();
+				auto contents=s->contents.toLocal8Bit().constData();
+
+				if(s->subtype==display_message_subtype::NORMAL)
+					wprintu("%s: <%s> %s\n", channel, nick, contents);
+				if(s->subtype==display_message_subtype::ME)
+					wprintu("%s: * %s %s\n", channel, nick, contents);
+				if(s->subtype==display_message_subtype::NOTIFY)
+					wprintu("%s: ‼‽ %s\n", channel, contents);
+			}
+		}
 		wint_t key;
 		int rc=get_wch(&key);
 		if (rc==OK)
@@ -126,6 +159,8 @@ void runplugin(plugin_pipe &p, const string &name)
 
 void run(plugin_pipe p, string name)
 {
+	p.write(registration_message::create(-30000, name, "display"));
+	p.write(registration_message::create(-30000, name, "set_channel"));
 	//Set the delay when hitting escape to 10 milliseconds, unless it was
 	//already set.  The ESCDELAY variable is not supported in all curses
 	//implementations, but should not cause problems in implementations
