@@ -13,10 +13,19 @@
 #include <cstdio>
 
 #include <QString>
+#include <QTextBoundaryFinder>
 
 #include "lirch_constants.h"
 #include "plugins/lirch_plugin.h"
 #include "core/core_messages.h"
+
+inline char CTRL(char c)
+{
+	//Leave only the lower 5 bits, so the return value is the numeric value
+	//of CTRL+key (e.g. CTRL('c') gives you 3, which is the value you get
+	//when hitting ctrl-c)
+	return c&0x1f;
+}
 
 using namespace std;
 
@@ -63,29 +72,41 @@ void runplugin(plugin_pipe &p, const string &name)
 		int rc=get_wch(&key);
 		if (rc==OK)
 		{
-			input.push_back(QString::fromUcs4(&key, 1));
-			//add_wch(key);
-			wprintw(channel_output, "%s: %x: ", QString::fromUcs4(&key, 1).toLocal8Bit().constData(), key);
-			for (auto &i : QString::fromUcs4(&key, 1).toLocal8Bit())
-				wprintw(channel_output, "%02x ", (unsigned char)i);
-			wprintw(channel_output, ": ");
-			//addch(ACS_HLINE);
-			for (auto &i : QString::fromUcs4(&key, 1).toLocal8Bit())
-				waddch(channel_output, (unsigned char)i|(A_ALTCHARSET*((unsigned char)i>0x7f)));
-				//addch(i&~(/*A_ALTCHARSET|*/A_BLINK|A_BOLD/*|A_DIM|A_INVIS|A_PROTECT*/));
-			waddch(channel_output, '\n');
+			if (key=='\r' || key=='\n')
+			{
+				wprintu(channel_output, "Message sent!\n");
+				input="";
+			}
+			else
+				input.push_back(QString::fromUcs4(&key, 1));
+			wprintu(channel_output, "%s\n", input.toLocal8Bit().constData());
 		}
 		else if (rc==KEY_CODE_YES)
 		{
-			break;
-		}
-		else
-		{
-			wprintw(channel_output, "No key pressed\n");
+			if (key==KEY_BACKSPACE)
+			{
+				QTextBoundaryFinder bounds(QTextBoundaryFinder::Grapheme, input);
+				bounds.toEnd();
+				int pos=bounds.toPreviousBoundary();
+				if (pos!=-1)
+				{
+					input.remove(pos, INT_MAX);
+				}
+			}
+			else if (key==KEY_ENTER)
+			{
+				wprintu(channel_output, "Message sent!\n");
+				input="";
+			}
+			else
+				break;
+			wprintu(channel_output, "%s\n", input.toLocal8Bit().constData());
 		}
 		int x,y;
 		getyx(channel_output, y, x);
-		prefresh(channel_output, max(y-maxy,0), 0, 0,0,maxy-2,maxx-1);
+		pnoutrefresh(channel_output, max(y-(maxy-1),0), 0, 0,0,maxy-2,maxx-1);
+		wmove(stdscr, maxy-1,0);
+		doupdate();
 	}
 	p.write(core_quit_message::create());
 }
