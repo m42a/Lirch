@@ -2,9 +2,11 @@
 #define _XOPEN_SOURCE
 #define _XOPEN_SOURCE_EXTENDED
 
-// Enable printf and scanf argument checking
-#define GCC_PRINTF
-#define	GCC_SCANF
+#ifdef __GNUC__
+	// Enable printf and scanf argument checking
+	#define GCC_PRINTF
+	#define	GCC_SCANF
+#endif
 
 #include <curses.h>
 #include <climits>
@@ -21,19 +23,22 @@ using namespace std;
 template <class... args>
 string strprintf(const string &format, args... a)
 {
+	//Thankfully, the C++ standard grabbed the definition from POSIX
+	//instead of Windows, so I don't have to binary-search the correct
+	//string size.
 	int size=snprintf(NULL, 0, format.c_str(), a...);
 	//Add padding for the terminating byte
-	char *s=new char[size+1];
+	vector<char> s(size+1);
 	//We can use sprintf instead of snprintf because we know the buffer is large enough
-	sprintf(s, format.c_str(), a...);
-	return s;
+	sprintf(s.data(), format.c_str(), a...);
+	return s.data();
 }
 
 //Same as wprintf, but handles unicode characters properly
 template <class... args>
-wprintu(WINDOW *w, const string &format, args... a)
+void wprintu(WINDOW *w, const string &format, args... a)
 {
-	string s=strprintf(format, a);
+	string s=strprintf(format, a...);
 	for (unsigned char c : s)
 		waddch(w, c|(c>0x7f ? A_ALTCHARSET : 0));
 }
