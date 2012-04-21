@@ -60,16 +60,18 @@ bool generate_quip(plugin_pipe &pipe, generate_quip_message *possible_generate_q
 	if (fork_return_value==-1)
 		return true;
 	waitpid(fork_return_value, NULL, 0);
-	char fortune_output_buffer[256];
-	int fortune_output_buffer_offset=0;
+	char fortune_output_buffer[262]="quips\n";
+	int fortune_output_buffer_offset=6;
 	int read_return_value=12;
-	while (fortune_output_buffer_offset!=256 && read_return_value!=0 && (read_return_value!=-1 || errno==EINTR))
+	while (fortune_output_buffer_offset!=sizeof(fortune_output_buffer) && read_return_value!=0 && (read_return_value!=-1 || errno==EINTR))
 	{
-		read_return_value=read(pipe_file_descriptors[0], fortune_output_buffer+fortune_output_buffer_offset, 256-fortune_output_buffer_offset);
+		read_return_value=read(pipe_file_descriptors[0], fortune_output_buffer+fortune_output_buffer_offset, sizeof(fortune_output_buffer)-fortune_output_buffer_offset);
 		fortune_output_buffer_offset+=read_return_value*(read_return_value>0);
 	}
+	if (fortune_output_buffer_offset!=0 && fortune_output_buffer[fortune_output_buffer_offset-1]=='\n')
+		--fortune_output_buffer_offset;
 	QString quip_recieved_from_fortune=QString::fromLocal8Bit(fortune_output_buffer, fortune_output_buffer_offset);
-	pipe.write(edict_message::create(edict_message_subtype::NORMAL, possible_generate_quip_message->channel, quip_recieved_from_fortune));
+	pipe.write(edict_message::create(edict_message_subtype::ME, possible_generate_quip_message->channel, quip_recieved_from_fortune));
 	return true;
 }
 
