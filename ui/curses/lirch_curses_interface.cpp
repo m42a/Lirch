@@ -18,6 +18,7 @@
 #include "lirch_constants.h"
 #include "plugins/lirch_plugin.h"
 #include "plugins/display_messages.h"
+#include "plugins/edict_messages.h"
 #include "core/core_messages.h"
 
 inline char CTRL(char c)
@@ -73,8 +74,11 @@ void runplugin(plugin_pipe &p, const string &name)
 	getmaxyx(stdscr, maxy, maxx);
 	//10000 lines of scrollback should be enough for anyone
 	WindowWrapper channel_output=newpad(10000, maxx);
+	WindowWrapper input_display=newwin(1, maxx-1, maxy-1, 0);
 	//Let the output scroll
 	scrollok(channel_output, TRUE);
+	//Be lazy and let the input scroll too
+	scrollok(input_display, TRUE);
 	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
@@ -103,16 +107,16 @@ void runplugin(plugin_pipe &p, const string &name)
 					continue;
 				p.write(m.decrement_priority());
 
-				auto channel=s->channel.toLocal8Bit().constData();
-				auto nick=s->nick.toLocal8Bit().constData();
-				auto contents=s->contents.toLocal8Bit().constData();
+				string channel=s->channel.toLocal8Bit().constData();
+				string nick=s->nick.toLocal8Bit().constData();
+				string contents=s->contents.toLocal8Bit().constData();
 
 				if(s->subtype==display_message_subtype::NORMAL)
-					wprintu(channel_output, "%s: <%s> %s\n", channel, nick, contents);
+					wprintu(channel_output, "%s: <%s> %s\n", channel.c_str(), nick.c_str(), contents.c_str());
 				if(s->subtype==display_message_subtype::ME)
-					wprintu(channel_output, "%s: * %s %s\n", channel, nick, contents);
+					wprintu(channel_output, "%s: * %s %s\n", channel.c_str(), nick.c_str(), contents.c_str());
 				if(s->subtype==display_message_subtype::NOTIFY)
-					wprintu(channel_output, "%s: ‼‽ %s\n", channel, contents);
+					wprintu(channel_output, "%s: ‼‽ %s\n", channel.c_str(), contents.c_str());
 			}
 		}
 		wint_t key;
@@ -121,12 +125,11 @@ void runplugin(plugin_pipe &p, const string &name)
 		{
 			if (key=='\r' || key=='\n')
 			{
-				wprintu(channel_output, "Message sent!\n");
+				p.write(raw_edict_message::create(input,"default"));
 				input="";
 			}
 			else
 				input.push_back(QString::fromUcs4(&key, 1));
-			wprintu(channel_output, "%s\n", input.toLocal8Bit().constData());
 		}
 		else if (rc==KEY_CODE_YES)
 		{
@@ -142,17 +145,20 @@ void runplugin(plugin_pipe &p, const string &name)
 			}
 			else if (key==KEY_ENTER)
 			{
-				wprintu(channel_output, "Message sent!\n");
+				p.write(raw_edict_message::create(input,"default"));
 				input="";
 			}
 			else
 				break;
-			wprintu(channel_output, "%s\n", input.toLocal8Bit().constData());
 		}
 		int x,y;
 		getyx(channel_output, y, x);
 		pnoutrefresh(channel_output, max(y-(maxy-1),0), 0, 0,0,maxy-2,maxx-1);
-		wmove(stdscr, maxy-1,0);
+		wmove(input_display, 0, 0);
+		wprintu(input_display, "\n%s", input.toLocal8Bit().constData());
+		wnoutrefresh(input_display);
+		//This doesn't need to run all the time, but we should be able
+		//to cope with the screen refreshing at 10Hz
 		doupdate();
 	}
 	p.write(core_quit_message::create());
