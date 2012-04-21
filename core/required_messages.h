@@ -72,4 +72,16 @@ public:
 	std::string message_type;
 };
 
+class unregistration_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new unregistration_message(*this));}
+	static message create(const std::string &n, const std::string &m) {return message_create("unregister", new unregistration_message(n, m));}
+
+	unregistration_message(const std::string &n, const std::string &m) : plugin_name(n), message_type(m) {}
+
+	std::string plugin_name;
+	std::string message_type;
+};
+
 #endif

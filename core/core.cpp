@@ -105,14 +105,34 @@ static void add_registration(const message &m)
 	if (!r)
 		return;
 	if (out_pipes.count(r->getname())==0)
+	{
 		//We can't talk to this plugin, so ignore its request
+		if (verbose)
+			cerr << " tried to register non-existent plugin " << r->plugin_name << endl;
 		return;
+	}
 
 	bool b=message_registrations[r->getmessage()].add(r->getpriority(), r->getname());
 	//Tell the plugin whether it failed or not
 	out_pipes[r->getname()].write(registration_status::create(b, r->getpriority(), r->getmessage()));
 	if (verbose)
 		cerr << " registered " << r->message_type << " to " << r->plugin_name << endl;
+}
+
+static void remove_registration(const message &m)
+{
+	auto r=dynamic_cast<unregistration_message *>(m.getdata());
+	if (!r)
+		return;
+	if (message_registrations.count(r->message_type)==0)
+	{
+		if (verbose)
+			cerr << " tried to unregister from non-existent message type " << r->message_type << endl;
+		return;
+	}
+	message_registrations[r->message_type].removeall(r->plugin_name);
+	if (verbose)
+		cerr << " unregistered " << r->plugin_name << " from " << r->message_type << endl;
 }
 
 static void target_plugin(const message &m)
@@ -143,6 +163,8 @@ static void process(const message &m)
 		add_plugin(m);
 	else if (m.gettype()=="register")
 		add_registration(m);
+	else if (m.gettype()=="unregister")
+		remove_registration(m);
 	else if (m.type=="done")
 		remove_plugin(m);
 	else if (m.type=="target")
