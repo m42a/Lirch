@@ -104,7 +104,7 @@ static void add_registration(const message &m)
 	auto r=dynamic_cast<registration_message *>(m.getdata());
 	if (!r)
 		return;
-	if (out_pipes.count(r->getname())==0)
+	if (out_pipes.count(r->plugin_name)==0)
 	{
 		//We can't talk to this plugin, so ignore its request
 		if (verbose)
@@ -112,9 +112,9 @@ static void add_registration(const message &m)
 		return;
 	}
 
-	bool b=message_registrations[r->getmessage()].add(r->getpriority(), r->getname());
+	bool b=message_registrations[r->message_type].add(r->priority, r->plugin_name);
 	//Tell the plugin whether it failed or not
-	out_pipes[r->getname()].write(registration_status::create(b, r->getpriority(), r->getmessage()));
+	out_pipes[r->plugin_name].write(registration_status::create(b, r->priority, r->message_type));
 	if (verbose)
 		cerr << " registered " << r->message_type << " to " << r->plugin_name << endl;
 }
