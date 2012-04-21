@@ -17,6 +17,7 @@
 
 #include "lirch_constants.h"
 #include "plugins/lirch_plugin.h"
+#include "plugins/display_messages.h"
 #include "core/core_messages.h"
 
 inline char CTRL(char c)
@@ -107,11 +108,11 @@ void runplugin(plugin_pipe &p, const string &name)
 				auto contents=s->contents.toLocal8Bit().constData();
 
 				if(s->subtype==display_message_subtype::NORMAL)
-					wprintu("%s: <%s> %s\n", channel, nick, contents);
+					wprintu(channel_output, "%s: <%s> %s\n", channel, nick, contents);
 				if(s->subtype==display_message_subtype::ME)
-					wprintu("%s: * %s %s\n", channel, nick, contents);
+					wprintu(channel_output, "%s: * %s %s\n", channel, nick, contents);
 				if(s->subtype==display_message_subtype::NOTIFY)
-					wprintu("%s: ‼‽ %s\n", channel, contents);
+					wprintu(channel_output, "%s: ‼‽ %s\n", channel, contents);
 			}
 		}
 		wint_t key;
