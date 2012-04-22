@@ -25,4 +25,15 @@ public:
 	static message create() {return message_create("userlist_request", nullptr);}
 };
 
+class who_is_here_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new who_is_here_message(*this));}
+	static message create(const QString &chan) {return message_create("who is here", new who_is_here_message(chan));}
+
+	who_is_here_message(const QString &chan) : channel(chan) {}
+
+	QString channel;
+};
+
 #endif

@@ -1,4 +1,5 @@
 #include <thread>
+#include <ctime>
 
 #include "lirch_plugin.h"
 #include "userlist_messages.h"
@@ -6,6 +7,7 @@
 #include "received_messages.h"
 #include "notify_messages.h"
 #include "grinder_messages.h"
+#include "lirch_constants.h"
 
 using namespace std;
 
@@ -32,6 +34,27 @@ message sendList(QString text, QString channel)
 	return list_channels::create(text.section(QChar(' '), 1), channel);
 }
 
+//updates all of the relevent fields of out status map based on the received message
+void updateSenderStatus(received_message * message, unordered_map<QString, user_status> & statuses)
+{
+	statuses[message->nick].nick=message->nick;
+	if (message->subtype==received_message_subtype::NORMAL || message->subtype==received_message_subtype::ME || message->subtype==received_message_subtype::NOTIFY)
+		statuses[message->nick].channels.insert(message->channel);
+	statuses[message->nick].ip=message->ipAddress;
+	statuses[message->nick].lastseen=time(NULL);
+}
+
+void askForUsers(plugin_pipe p, QString channel)
+{
+	time_t start = time(NULL);
+	while (time(NULL)-start < 60)
+	{
+		p.write(who_is_here_message::create(channel));
+		this_thread::sleep_for(chrono::seconds(2));
+	}
+	return;
+}
+
 void run(plugin_pipe p, string name)
 {
 	p.write(registration_message::create(0, name, "userlist_request"));
@@ -41,6 +64,9 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "list_channels"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 	unordered_map<QString, user_status> statuses;
+
+	thread startupPopulator(askForUsers,p,LIRCH_DEFAULT_CHANNEL);
+	startupPopulator.detach();
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -100,11 +126,7 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			statuses[s->nick].nick=s->nick;
-			if (s->subtype==received_message_subtype::NORMAL || s->subtype==received_message_subtype::ME || s->subtype==received_message_subtype::NOTIFY)
-				statuses[s->nick].channels.insert(s->channel);
-			statuses[s->nick].ip=s->ipAddress;
-			statuses[s->nick].lastseen=time(NULL);
+			updateSenderStatus(s,statuses);
 		}
 		else if (m.type=="list_channels")
 		{
@@ -126,3 +148,5 @@ void run(plugin_pipe p, string name)
 			p.write(m.decrement_priority());
 	}
 }
+
+
