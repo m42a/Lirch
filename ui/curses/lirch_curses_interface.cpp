@@ -180,6 +180,14 @@ void runplugin(plugin_pipe &p, const string &name)
 				p.write(m.decrement_priority());
 				channel=i->channel;
 			}
+			else if (m.type=="leave_channel")
+			{
+				auto i=dynamic_cast<leave_channel *>(m.getdata());
+				if (!i)
+					continue;
+				p.write(m.decrement_priority());
+				channel_windows.erase(i->channel);
+			}
 			else
 				p.write(m.decrement_priority());
 		}
@@ -200,6 +208,7 @@ void run(plugin_pipe p, string name)
 {
 	p.write(registration_message::create(-30000, name, "display"));
 	p.write(registration_message::create(-30000, name, "set_channel"));
+	p.write(registration_message::create(-30000, name, "leave_channel"));
 	//Set the delay when hitting escape to 10 milliseconds, unless it was
 	//already set.  The ESCDELAY variable is not supported in all curses
 	//implementations, but should not cause problems in implementations
