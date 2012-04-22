@@ -43,19 +43,6 @@
 using namespace std;
 
 
-//this nonsense is needed in order to have our blocklist be searchable
-namespace std
-{
-	template <>
-	struct hash<QHostAddress>
-	{
-		size_t operator()(const QHostAddress& v) const
-		{
-			return std::hash<std::string>()(v.toString().toStdString());
-		}
-	};
-}
-
 message sendBlock(QString str, QString)
 {
 	if (str.startsWith("/block "))
@@ -82,6 +69,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "block"));
 	p.write(registration_message::create(0, name, "edict"));
 	p.write(registration_message::create(0, name, "handler_ready"));
+	p.write(registration_message::create(0, name, "block query"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
@@ -211,6 +199,14 @@ void run(plugin_pipe p, string name)
 				}
 				else
 					p.write(notify_message::create(channel,"Notify message too long. No idea how you did that."));
+			}
+			else if(m.type == "block query")
+			{
+				auto castMessage = dynamic_cast<block_query_message *>(m.getdata());
+				if(!castMessage)
+					continue;
+					
+				p.write(block_list_message::create(blocklist));
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
