@@ -162,12 +162,15 @@ void runplugin(plugin_pipe &p, const string &name)
 				string nick=s->nick.toLocal8Bit().constData();
 				string contents=s->contents.toLocal8Bit().constData();
 
-				if(s->subtype==display_message_subtype::NORMAL)
-					wprintu(channel_windows[message_channel], "<%s> %s\n", nick.c_str(), contents.c_str());
-				if(s->subtype==display_message_subtype::ME)
-					wprintu(channel_windows[message_channel], "* %s %s\n", nick.c_str(), contents.c_str());
-				if(s->subtype==display_message_subtype::NOTIFY)
-					wprintu(channel_windows[message_channel], "‼‽ %s\n", contents.c_str());
+				if (channel_windows.count(message_channel)!=0)
+				{
+					if(s->subtype==display_message_subtype::NORMAL)
+						wprintu(channel_windows[message_channel], "<%s> %s\n", nick.c_str(), contents.c_str());
+					if(s->subtype==display_message_subtype::ME)
+						wprintu(channel_windows[message_channel], "* %s %s\n", nick.c_str(), contents.c_str());
+					if(s->subtype==display_message_subtype::NOTIFY)
+						wprintu(channel_windows[message_channel], "‼‽ %s\n", contents.c_str());
+				}
 			}
 			else if (m.type=="set_channel")
 			{
