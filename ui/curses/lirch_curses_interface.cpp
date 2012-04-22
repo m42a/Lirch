@@ -11,6 +11,7 @@
 #include <curses.h>
 #include <climits>
 #include <cstdio>
+#include <unordered_map>
 
 #include <QString>
 #include <QTextBoundaryFinder>
@@ -21,6 +22,18 @@
 #include "plugins/edict_messages.h"
 #include "plugins/channel_messages.h"
 #include "core/core_messages.h"
+
+namespace std
+{
+	template <>
+	struct hash<QString>
+	{
+		size_t operator()(const QString& v) const
+		{
+			return std::hash<std::string>()(v.toStdString());
+		}
+	};
+}
 
 inline char CTRL(char c)
 {
@@ -59,7 +72,8 @@ void wprintu(WINDOW *w, const string &format, args... a)
 class WindowWrapper
 {
 public:
-	WindowWrapper(WINDOW *ww=nullptr) : w(ww, delwin) {}
+	WindowWrapper(WINDOW *ww) : w(ww, delwin) {}
+	WindowWrapper() {int maxx, maxy; getmaxyx(stdscr, maxy, maxx); w=shared_ptr<WINDOW>(newpad(maxy-1, maxx), delwin); scrollok(get(), TRUE);}
 	WINDOW *get() const {return w.get();}
 	operator WINDOW*() const {return get();}
 	WINDOW& operator*() const {return *w;}
@@ -75,66 +89,18 @@ void runplugin(plugin_pipe &p, const string &name)
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
 	//10000 lines of scrollback should be enough for anyone
-	WindowWrapper channel_output=newpad(10000, maxx);
-	if (channel_output==nullptr)
+	//WindowWrapper channel_output=newpad(10000, maxx);
+	unordered_map<QString, WindowWrapper> channel_windows;
+	if (channel_windows["default"]==nullptr)
 		return;
 	WindowWrapper input_display=newwin(1, maxx-1, maxy-1, 0);
 	if (input_display==nullptr)
 		return;
-	//Let the output scroll
-	scrollok(channel_output, TRUE);
-	//Be lazy and let the input scroll too
+	//Be lazy and let the input scroll
 	scrollok(input_display, TRUE);
 	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
-		while (p.has_message())
-		{
-			message m=p.read();
-			if (m.type=="shutdown")
-			{
-				return;
-			}
-			else if (m.type=="registration_status")
-			{
-				auto s=dynamic_cast<registration_status *>(m.getdata());
-				if (!s)
-					continue;
-				if (!s->status)
-				{
-					if (s->priority>-32000)
-						p.write(registration_message::create(s->priority-1, name, s->type));
-				}
-			}
-			else if (m.type=="display")
-			{
-				auto s=dynamic_cast<display_message *>(m.getdata());
-				if (!s)
-					continue;
-				p.write(m.decrement_priority());
-
-				string channel=s->channel.toLocal8Bit().constData();
-				string nick=s->nick.toLocal8Bit().constData();
-				string contents=s->contents.toLocal8Bit().constData();
-
-				if(s->subtype==display_message_subtype::NORMAL)
-					wprintu(channel_output, "%s: <%s> %s\n", channel.c_str(), nick.c_str(), contents.c_str());
-				if(s->subtype==display_message_subtype::ME)
-					wprintu(channel_output, "%s: * %s %s\n", channel.c_str(), nick.c_str(), contents.c_str());
-				if(s->subtype==display_message_subtype::NOTIFY)
-					wprintu(channel_output, "%s: ‼‽ %s\n", channel.c_str(), contents.c_str());
-			}
-			else if (m.type=="set_channel")
-			{
-				auto i=dynamic_cast<set_channel *>(m.getdata());
-				if (!i)
-					continue;
-				p.write(m.decrement_priority());
-				channel=i->channel;
-			}
-			else
-				p.write(m.decrement_priority());
-		}
 		wint_t key;
 		int rc=get_wch(&key);
 		if (rc==OK)
@@ -167,9 +133,56 @@ void runplugin(plugin_pipe &p, const string &name)
 			else
 				break;
 		}
+		while (p.has_message())
+		{
+			message m=p.read();
+			if (m.type=="shutdown")
+			{
+				return;
+			}
+			else if (m.type=="registration_status")
+			{
+				auto s=dynamic_cast<registration_status *>(m.getdata());
+				if (!s)
+					continue;
+				if (!s->status)
+				{
+					if (s->priority>-32000)
+						p.write(registration_message::create(s->priority-1, name, s->type));
+				}
+			}
+			else if (m.type=="display")
+			{
+				auto s=dynamic_cast<display_message *>(m.getdata());
+				if (!s)
+					continue;
+				p.write(m.decrement_priority());
+
+				QString message_channel=s->channel;
+				string nick=s->nick.toLocal8Bit().constData();
+				string contents=s->contents.toLocal8Bit().constData();
+
+				if(s->subtype==display_message_subtype::NORMAL)
+					wprintu(channel_windows[message_channel], "<%s> %s\n", nick.c_str(), contents.c_str());
+				if(s->subtype==display_message_subtype::ME)
+					wprintu(channel_windows[message_channel], "* %s %s\n", nick.c_str(), contents.c_str());
+				if(s->subtype==display_message_subtype::NOTIFY)
+					wprintu(channel_windows[message_channel], "‼‽ %s\n", contents.c_str());
+			}
+			else if (m.type=="set_channel")
+			{
+				auto i=dynamic_cast<set_channel *>(m.getdata());
+				if (!i)
+					continue;
+				p.write(m.decrement_priority());
+				channel=i->channel;
+			}
+			else
+				p.write(m.decrement_priority());
+		}
 		int x,y;
-		getyx(channel_output, y, x);
-		pnoutrefresh(channel_output, max(y-(maxy-1),0), 0, 0,0,maxy-2,maxx-1);
+		getyx(channel_windows[channel], y, x);
+		pnoutrefresh(channel_windows[channel], max(y-(maxy-1),0), 0, 0,0,maxy-2,maxx-1);
 		wmove(input_display, 0, 0);
 		wprintu(input_display, "\n%s", input.toLocal8Bit().constData());
 		wnoutrefresh(input_display);
