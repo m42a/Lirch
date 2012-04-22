@@ -19,6 +19,7 @@
 #include "plugins/lirch_plugin.h"
 #include "plugins/display_messages.h"
 #include "plugins/edict_messages.h"
+#include "plugins/channel_messages.h"
 #include "core/core_messages.h"
 
 inline char CTRL(char c)
@@ -70,11 +71,16 @@ private:
 void runplugin(plugin_pipe &p, const string &name)
 {
 	QString input;
+	QString channel="default";
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
 	//10000 lines of scrollback should be enough for anyone
 	WindowWrapper channel_output=newpad(10000, maxx);
+	if (channel_output==nullptr)
+		return;
 	WindowWrapper input_display=newwin(1, maxx-1, maxy-1, 0);
+	if (input_display==nullptr)
+		return;
 	//Let the output scroll
 	scrollok(channel_output, TRUE);
 	//Be lazy and let the input scroll too
@@ -118,6 +124,16 @@ void runplugin(plugin_pipe &p, const string &name)
 				if(s->subtype==display_message_subtype::NOTIFY)
 					wprintu(channel_output, "%s: ‼‽ %s\n", channel.c_str(), contents.c_str());
 			}
+			else if (m.type=="set_channel")
+			{
+				auto i=dynamic_cast<set_channel *>(m.getdata());
+				if (!i)
+					continue;
+				p.write(m.decrement_priority());
+				channel=i->channel;
+			}
+			else
+				p.write(m.decrement_priority());
 		}
 		wint_t key;
 		int rc=get_wch(&key);
@@ -125,7 +141,7 @@ void runplugin(plugin_pipe &p, const string &name)
 		{
 			if (key=='\r' || key=='\n')
 			{
-				p.write(raw_edict_message::create(input,"default"));
+				p.write(raw_edict_message::create(input,channel));
 				input="";
 			}
 			else
@@ -145,7 +161,7 @@ void runplugin(plugin_pipe &p, const string &name)
 			}
 			else if (key==KEY_ENTER)
 			{
-				p.write(raw_edict_message::create(input,"default"));
+				p.write(raw_edict_message::create(input,channel));
 				input="";
 			}
 			else
