@@ -147,6 +147,10 @@ void run(plugin_pipe p, string name)
 					blocklist.erase(toModify);
 					p.write(notify_message::create("default",toModify.toString()+" is now unblocked."));
 				}
+				if(castMessage->subtype == block_message_subtype::QUERY)
+				{
+					p.write(block_status_message::create(castMessage->ip, blocklist.count(castMessage->ip)));
+				}
 			}			
 			else if(m.type=="edict")
 			{
