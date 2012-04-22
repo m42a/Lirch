@@ -67,6 +67,13 @@ message handle_channel_change(QString text, QString)
 	return set_channel::create(text.remove(0, 9));
 }
 
+message handle_channel_leave(QString text, QString)
+{
+	if (!text.startsWith("/leave "))
+		return empty_message::create();
+	return leave_channel::create(text.remove(0, 7));
+}
+
 void run(plugin_pipe p, string name)
 {
 	p.write(registration_message::create(-30000, name, "raw_edict"));
@@ -104,6 +111,7 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
 					p.write(register_handler::create("/channel", handle_channel_change));
+					p.write(register_handler::create("/leave", handle_channel_leave));
 				}
 				else if (s->type=="register_replacer")
 				{
