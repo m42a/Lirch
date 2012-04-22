@@ -19,6 +19,7 @@
 #include "lirch_constants.h"
 #include "plugins/lirch_plugin.h"
 #include "plugins/display_messages.h"
+#include "plugins/notify_messages.h"
 #include "plugins/edict_messages.h"
 #include "plugins/channel_messages.h"
 #include "core/core_messages.h"
@@ -162,6 +163,9 @@ void runplugin(plugin_pipe &p, const string &name)
 				string nick=s->nick.toLocal8Bit().constData();
 				string contents=s->contents.toLocal8Bit().constData();
 
+				if (s->channel=="")
+					s->channel=channel;
+
 				if (channel_windows.count(message_channel)!=0)
 				{
 					if(s->subtype==display_message_subtype::NORMAL)
@@ -178,7 +182,10 @@ void runplugin(plugin_pipe &p, const string &name)
 				if (!i)
 					continue;
 				p.write(m.decrement_priority());
-				channel=i->channel;
+				if (i->channel=="")
+					p.write(notify_message::create(channel, "On channel "+channel));
+				else
+					channel=i->channel;
 			}
 			else if (m.type=="leave_channel")
 			{
