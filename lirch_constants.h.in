@@ -7,7 +7,7 @@
 #define LIRCH_BUILD_HASH     "@LIRCH_BUILD_HASH@"
 
 #define LIRCH_COMPANY_NAME   "The Addams Family"
-#define LIRCH_PRODUCT_NAME   "LIRCH"
+#define LIRCH_PRODUCT_NAME   "lirch"
 #define LIRCH_COPYRIGHT_YEAR "2012"
 
 // MESSAGES
@@ -23,6 +23,7 @@
 #define LIRCH_MSG_TYPE_RAW_EDICT  "raw_edict"
 #define LIRCH_MSG_TYPE_DISPLAY    "display"
 #define LIRCH_MSG_TYPE_REG_STAT   "registration_status"
+#define LIRCH_MSG_TYPE_LOGGING    "logging"
 
 // DEFAULTS
 
@@ -32,6 +33,7 @@
 #define LIRCH_DEFAULT_LOG_DIR "@CMAKE_BINARY_DIR@/log"
 
 #define LIRCH_DEFAULT_CHANNEL "default"
+#define LIRCH_DEFAULT_NICK    "spartacus"
 
 // PRELOADS
 

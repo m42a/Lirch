@@ -1,44 +1,36 @@
-/*
- * At some point, the logger needs to have a better default location to put the files
- * as well as being able to read a custom path from the .ini
- */
-
 #include <fstream>
-#include <string>
 #include <map>
-#include <memory>
-#include <iostream>
-#include <QSettings> 
-
-#include "core/message.h"
-#include "edict_messages.h"
-#include "display_messages.h"
-#include "lirch_plugin.h"
-#include "lirch_constants.h"
-#include "logger.h"
-
+#include <string>
 using namespace std;
 
-void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &settings);
+#include <QSettings> 
+#include <QString>
+#include <QUrl>
+
+#include "lirch_constants.h"
+#include "plugins/display_messages.h"
+#include "plugins/lirch_plugin.h"
+#include "plugins/logger_messages.h"
 
 void run(plugin_pipe pipe, std::string name)
 {
-	bool shutdown = false;
-	pipe.write(registration_message::create(0, name, "display"));
+	// Register for certain message types
+	pipe.write(registration_message::create(0, name, LIRCH_MSG_TYPE_DISPLAY));
+
+	// Maintain a record of open files (so we can close them later)
 	map<QString, ofstream*> open_files;
 	
-	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
-	//settings.beginGroup("Logger");
-	//settings.setValue("Logger/root_directory", "/home/danieo2/Lirch/logs/");
+	// Fetch the settings
+	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
+	settings.beginGroup("Logging");
 	
-	while(!shutdown)
-	{
+	while (true) {
 		message front = pipe.blocking_read();
-		if(front.type == "shutdown")
+		if(front.type == LIRCH_MSG_TYPE_SHUTDOWN)
 		{
-			shutdown = true;
+			break;
 		}
-		else if(front.type == "registration_status")
+		else if(front.type == LIRCH_MSG_TYPE_REG_STAT)
 		{
 			registration_status * internals=dynamic_cast<registration_status *>(front.getdata());
 			if (internals)
@@ -50,78 +42,87 @@ void run(plugin_pipe pipe, std::string name)
 		}
 
 		//logs the display messages
-		else if (front.type == "display")
+		else if (front.type == LIRCH_MSG_TYPE_DISPLAY)
 		{
 			display_message * internals = dynamic_cast<display_message *>(front.getdata());
 			//if this is truly a display message, then we can use it
 			if(internals)
 			{
+				//pass the message back along FIXME do this first? or last?
 				pipe.write(front.decrement_priority());
 
 				//convert the message contents into something logable
-				QString channelname = internals->channel;
-				if(!open_files.count(channelname))
-					openLog(channelname,open_files, settings);
-				string nick(internals->nick.toUtf8().data());
-				string contents(internals->contents.toUtf8().data());
-				display_message_subtype subtype=internals->subtype;
+				QString channelname = QUrl::toPercentEncoding(internals->channel);
 
+				//find the corresponding filestream
+				ofstream *filestream;
+				auto entry = open_files.find(channelname);
+				//create one if it doesn't already exist
+				if (entry == open_files.end()) {
+					// TODO can some of this be cached? That way, we won't load it every single time
+					// FIXME get the log directory to find the user's home
+					QString directory = settings.value("root_directory", LIRCH_DEFAULT_LOG_DIR).value<QString>();
+					// Open a new file in the desired directory
+					string filepath = directory.append(channelname).append(".log").toStdString();
+					// Append to any pre-existing file
+					filestream = new ofstream(filepath.c_str(), fstream::app);
+					// TODO what if open fails? or insert fails?
+					auto p = open_files.insert(make_pair(channelname, filestream));
+					if (p.second) {
+						// Obligatory eight-tilda salute
+						*filestream << "~~~~~~~~" << endl;
+					}
+				}
+
+				//actually get the representation we can log FIXME wstring?
+				string nick = internals->nick.toStdString();
+				string contents = internals->contents.toStdString();
 				//log the message contents in a manner which matches the message type
-				string output ="";
-				if(subtype==display_message_subtype::NORMAL)
-				{
-					output = "<"+nick+"> "+contents;
+				switch (internals->subtype) {
+					case display_message_subtype::NORMAL:
+					*filestream << "<" << nick << "> " << contents;
+					break;
+					case display_message_subtype::ME:
+					*filestream << "* " << nick << " " << contents;
+					break;
+					case display_message_subtype::NOTIFY:
+					// FIXME make this not raw UTF-8:
+					//*filestream << "‼‽ " + contents;
+					*filestream << "! " << contents;
+					break;
+					default:
+					*filestream << "? " << contents;
 				}
-				else if(subtype==display_message_subtype::ME)
-				{
-					output = "* "+nick+" "+contents;
-				}
-				else if(subtype==display_message_subtype::NOTIFY)
-				{
-					output = "‼‽ "+contents;
-				}
-
-				//actually writes the message to the log file
-				*open_files[channelname]<<output<<endl;
-			}
-			else if(front.type == "set logger directory")
-			{
-				set_logger_directory_message * internals = dynamic_cast<set_logger_directory_message *>(front.getdata());
-				if(internals)
-				{
-					settings.setValue("Logger/root_directory", internals->directory_root);
-				}
+				//flush the stream
+				*filestream << endl;
 			}
 		}
+
+		//change settings
+		else if(front.type == LIRCH_MSG_TYPE_LOGGING) {
+			logging_message * internals = dynamic_cast<logging_message *>(front.getdata());
+			if(internals)
+			{
+				settings.setValue("root_directory", internals->root_directory);
+			}
+		}
+
+		//pass it on
 		else
 		{
 			pipe.write(front.decrement_priority());
 		}
 	}
-	//setting.endGroup();
-	//done_message::create(name);
-}
 
-/*void sanatize(string & input)
-{
-	for(int i = 0; i<input.size(); i++)
-	{
-		if(input[i] == "/")
-			input[i] = "_";
+	// Don't forget to close open files
+	for (auto &key_pair : open_files) {
+		key_pair.second->close();
+		delete key_pair.second;
 	}
-}*/
 
-//opens a file and adds it to the open_files map.  also adds 8 tilde to demarkate the beginning of a session
-void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &settings)
-{
-	string root(settings.value("Logger/root_directory", LIRCH_DEFAULT_LOG_DIR).toString().toUtf8().data());
-	root += "/";
-	string filename(QUrl::toPercentEncoding(channel, "\0").data());
-	//sanatize(filename);
-	filename += ".txt";
-	filename = root.append(filename);
-	ofstream * newFile = new ofstream();
-	newFile->open(filename.c_str(), fstream::app);
-	*newFile <<"~~~~~~~~"<<endl;
-	open_files[channel]=newFile;
+	// FIXME is this proper usage?
+	settings.endGroup();
+
+	// TODO should the logger notify when it exits?
+	//done_message::create(name);
 }
