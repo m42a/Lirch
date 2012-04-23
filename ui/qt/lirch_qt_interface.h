@@ -97,10 +97,10 @@ private slots:
     void on_actionAbout_triggered();
     void on_msgSendButton_clicked();
 
-    void alert_user(const QString &);
-    // TODO these need to query the antenna
-    void ignore_changed(const QString &, bool);
-    void nick_changed(const QString &, bool);
+    void alert_user(QString);
+    // TODO these need to query the userlist
+    void ignore_changed(QString, bool);
+    void nick_changed(QString, bool);
 };
 
 #endif // LIRCH_QT_INTERFACE_H

@@ -292,7 +292,7 @@ void LirchQtInterface::closeEvent(QCloseEvent *e)
 	}
 }
 
-void LirchQtInterface::alert_user(const QString &msg)
+void LirchQtInterface::alert_user(QString msg)
 {
 	// Empty alerts trigger fatal errors to encourage proper alerts
 	if (msg.isEmpty()) {
@@ -341,9 +341,9 @@ void LirchQtInterface::display(QString channel, QString contents) {
     }
 }
 
-void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)
+void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
 {
-    // TODO delegate to core (anetenna needs to approve)
+    // TODO delegate to core (userlist needs to approve)
     nick = new_nick;
     if (permanent) {
         default_nick = new_nick;
@@ -352,7 +352,7 @@ void LirchQtInterface::nick_changed(const QString &new_nick, bool permanent)
     display(tr("internal"), tr("/nick %1").arg(nick));
 }
 
-void LirchQtInterface::ignore_changed(const QString &new_ignore, bool block)
+void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
 {
     QString status = "dummy";
     // TODO delegate to core (antenna will block/ignore)

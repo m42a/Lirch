@@ -3,7 +3,6 @@
 // These are rather trivial
 LirchClientPipe::LirchClientPipe() :
     client_state(State::BEFORE) { }
-// TODO any messages left in the pipe?
 LirchClientPipe::~LirchClientPipe() { }
 
 // A client pipe is ready for a duration
@@ -12,9 +11,11 @@ bool LirchClientPipe::ready() const {
 }
 
 // The client pipe writes outbound messages
-void LirchClientPipe::send(const message &m) {
+void LirchClientPipe::send(message m) {
     if (ready()) {
-        client_pipe.write(m);
+        if (m.type == LIRCH_MSG_TYPE_RAW_EDICT) {
+            client_pipe.write(m);
+        }
     }
 }
 
@@ -23,8 +24,9 @@ void LirchClientPipe::send(const message &m) {
 #endif
 
 // The client pipe alerts the client of inbound messages
-void LirchClientPipe::display(const display_message &m) {
-    QString channel, text, type;
+void LirchClientPipe::display(display_message m) {
+    // FIXME type is just for debug
+    QString text, type;
     switch (m.subtype) {
         case display_message_subtype::NORMAL:
             text = tr("<%1> %2").arg(m.nick, m.contents);
@@ -44,23 +46,21 @@ void LirchClientPipe::display(const display_message &m) {
     }
     #ifndef NDEBUG
     QString rep = tr("('%1','%2','%3')").arg(m.channel, m.nick, m.contents);
-    qDebug() << tr("Mediator for '%1' forwarded '%2' message: %3").arg(client_name, type, rep);
+    qDebug() << tr("Mediator for '%1' forwarded '%2' display message: %3").arg(client_name, type, rep);
     #endif
-    emit alert(channel, text);
+    emit alert(m.channel, text);
 }
 
 // The client pipe signals the UI when it the plugin is run
-void LirchClientPipe::open(plugin_pipe &pipe, const QString &name) {
+void LirchClientPipe::open(plugin_pipe pipe, QString name) {
     client_name = name;
-    // TODO are we sure this is kosher to copy?
-    // FIXME what about any messages in client_pipe?
     client_pipe = pipe;
     client_state = State::DURING;
     emit run(this);
 }
 
 // The client pipe signals the UI when the plugin is shutdown
-void LirchClientPipe::close(const QString &reason) {
+void LirchClientPipe::close(QString reason) {
     client_state = State::AFTER;
     emit shutdown(tr("%1 was closed for %2").arg(client_name, reason));
 }

@@ -4,8 +4,10 @@
 #include <QObject>
 #include <QString>
 
+#include "lirch_constants.h"
 #include "core/message_view.h"
 #include "plugins/display_messages.h"
+#include "plugins/edict_messages.h"
 
 class LirchClientPipe : public QObject {
     Q_OBJECT
@@ -18,11 +20,12 @@ public:
     // Used for querying the status on either end
     bool ready() const;
     // Called by the client when sending messages
-    void send(const message &);
+    void send(message);
     // A client is notified when these are called
-    void display(const display_message &);
-    void open(plugin_pipe &pipe, const QString &name);
-    void close(const QString &reason = "unknown reason");
+    void display(display_message);
+    // These each change the state
+    void open(plugin_pipe, QString);
+    void close(QString = "unknown reason");
 private:
     // All client pipes have a mode, see above
     State client_state;
