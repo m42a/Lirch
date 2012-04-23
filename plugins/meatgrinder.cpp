@@ -62,7 +62,9 @@ message handle_commands(QString text, QString channel)
 {
 	if (!text.startsWith("/commands"))
 		return empty_message::create();
-	return display_commands_message::create(channel);
+	QStringList parsed = parse(text);
+	parsed.removeFirst();
+	return display_commands_message::create(channel, parsed);
 }
 
 message handle_erase_command(QString text, QString)
@@ -217,21 +219,35 @@ void run(plugin_pipe p, string name)
 			auto internals=dynamic_cast<display_commands_message *>(m.getdata());
 			if (!internals)
 				continue;
-			QString output = "commands:";
-			for(unordered_map<QString, function<message (QString, QString)>>::iterator i = handlers.begin(); i != handlers.end(); i++)
-			{	
-				if(i->first != "")
-				{
-					output += "\n";
-					output += i->first;
+			QString output;
+			if(internals->arguments.size() == 0)
+			{
+				output = "commands:";
+				for(unordered_map<QString, function<message (QString, QString)>>::iterator i = handlers.begin(); i != handlers.end(); i++)
+				{	
+					if(i->first != "")
+					{
+						output += "\n";
+						output += i->first;
+					}
+				}
+				for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
+				{	
+					if(i->first != "")
+					{
+						output += "\n";
+						output += i->first;
+					}
 				}
 			}
-			for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
-			{	
-				if(i->first != "")
+			for(int argument = 0; argument < internals->arguments.size(); argument++)
+			{
+				if(internals->arguments[argument] == "macros")
 				{
-					output += "\n";
-					output += i->first;
+					output = "macros:";
+					for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
+						if(i->first != "")
+							output.append("\n").append(i->first).append(" \"").append(i->second.first.pattern()).append("\" \"").append(i->second.second).append("\"");
 				}
 			}
 			p.write(notify_message::create(internals->channel, output));
