@@ -8,8 +8,12 @@ include_directories(
   "${QT_INCLUDE_DIR}"
 )
 
-find_library(CURSES_LIBRARY_PATH curses REQUIRED)
+# We need to check a variety of things
+find_library(CURSES_LIBRARY_PATH ncursesw cursesw curses REQUIRED)
+
+# FIXME hack to work around Debian
+include_directories("/usr/include/ncursesw")
 
 add_library(lirch-curses SHARED lirch_curses_interface.cpp)
-target_link_libraries(lirch-curses envelope curses ${QT_LIBRARIES})
+target_link_libraries(lirch-curses envelope ${CURSES_LIBRARY_PATH} ${QT_LIBRARIES})
 install(TARGETS lirch-curses DESTINATION lib)
