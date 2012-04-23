@@ -112,9 +112,18 @@ void runplugin(plugin_pipe &p, const string &name)
 				input="";
 			}
 			else if (key==WEOF)
+			{
+				//Quit since we have no more input
 				break;
+			}
 			else
-				input.push_back(QString::fromWcharArray(&key, 1));
+			{
+				//This conversion is always valid, since key's
+				//only valid values are valid wchar_t values
+				//and WEOF, and we know it's not WEOF.
+				wchar_t tmp=key;
+				input.push_back(QString::fromWCharArray(&tmp, 1));
+			}
 		}
 		else if (rc==KEY_CODE_YES)
 		{
