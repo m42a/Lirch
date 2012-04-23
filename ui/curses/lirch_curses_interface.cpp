@@ -111,8 +111,10 @@ void runplugin(plugin_pipe &p, const string &name)
 				p.write(raw_edict_message::create(input,channel));
 				input="";
 			}
+			else if (key==WEOF)
+				break;
 			else
-				input.push_back(QString::fromUcs4(&key, 1));
+				input.push_back(QString::fromWcharArray(&key, 1));
 		}
 		else if (rc==KEY_CODE_YES)
 		{
