@@ -41,24 +41,11 @@
 #include "lirch_constants.h"
 #include "grinder_messages.h"
 #include "notify_messages.h"
+#include "QHostAddress_hash.h"
 #include "nick_messages.h"
 #include "userlist_messages.h"
 
 using namespace std;
-
-
-//this nonsense is needed in order to have our blocklist be searchable
-namespace std
-{
-	template <>
-	struct hash<QHostAddress>
-	{
-		size_t operator()(const QHostAddress& v) const
-		{
-			return std::hash<std::string>()(v.toString().toStdString());
-		}
-	};
-}
 
 message sendBlock(QString str, QString)
 {
@@ -87,6 +74,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "edict"));
 	p.write(registration_message::create(0, name, "who is here"));
 	p.write(registration_message::create(0, name, "handler_ready"));
+	p.write(registration_message::create(0, name, "block query"));
 	p.write(registration_message::create(0, name, "changed_nick"));
 	p.write(registration_message::create(0, name, "sendable_notify"));
 
@@ -164,6 +152,10 @@ void run(plugin_pipe p, string name)
 					blocklist.erase(toModify);
 					p.write(notify_message::create("default",toModify.toString()+" is now unblocked."));
 				}
+				if(castMessage->subtype == block_message_subtype::QUERY)
+				{
+					p.write(block_status_message::create(castMessage->ip, blocklist.count(castMessage->ip)));
+				}
 			}			
 			else if(m.type=="edict")
 			{
@@ -214,6 +206,14 @@ void run(plugin_pipe p, string name)
 				}
 				else
 					p.write(notify_message::create(channel,"Notify message too long. No idea how you did that."));
+			}
+			else if(m.type == "block query")
+			{
+				auto castMessage = dynamic_cast<block_query_message *>(m.getdata());
+				if(!castMessage)
+					continue;
+					
+				p.write(block_list_message::create(blocklist));
 			}
 			else if(m.type=="who is here")
 			{

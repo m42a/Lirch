@@ -47,4 +47,23 @@ public:
 	static message create() {return message_create("handler_ready", nullptr);}
 };
 
+class display_commands_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_commands_message(*this));}
+	static message create(QString Channel) {return message_create("display commands", new display_commands_message(Channel));}
+	
+	display_commands_message(QString Channel) : channel(Channel) {}
+	
+	QString channel;
+};
+
+class query_commands_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new query_commands_message(*this));}
+	static message create() {return message_create("query commands", nullptr);}
+	
+	query_commands_message() {};
+};
 #endif
