@@ -96,6 +96,12 @@ void populateDefaultChannel(plugin_pipe p, QString channel, unordered_map<QStrin
 
 	askForUsers(p,channel);
 
+	if (defaultNick.toUtf8().size() > 64)
+	{
+		p.write(notify_message::create("","Default nick too long.  You are spartacus."));
+		return;
+	}
+
 	if (setNick(p,userList,nick,defaultNick))
 		p.write(notify_message::create(channel,"Welcome to LIRCH, "+defaultNick+"."));
 	else
@@ -193,6 +199,11 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
+			if (s->nick.toUtf8().size() > 64)
+			{
+				p.write(notify_message::create("","Nick too long.  Keeping old nick."));
+				continue;
+			}
 			QString newNick=s->nick;
 			QString oldNick=currentNick;
 			if (setNick(p,userList,currentNick,newNick))
