@@ -47,12 +47,27 @@ void updateSenderStatus(received_message * message, unordered_map<QString, user_
 void askForUsers(plugin_pipe p, QString channel)
 {
 	time_t start = time(NULL);
-	while (time(NULL)-start < 60)
+	while (time(NULL)-start < 10)
 	{
 		p.write(who_is_here_message::create(channel));
 		this_thread::sleep_for(chrono::seconds(2));
 	}
-	return;
+}
+
+void populateDefaultChannel(plugin_pipe p, QString channel, unordered_map<QString, user_status> & statuses,QString & nick)
+{
+	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
+	settings.beginGroup("UserData");
+	QString defaultNick = settings.value("nick",LIRCH_DEFAULT_NICK).value<QString>();
+
+	askForUsers(p,channel);
+
+	if (defaultNick!=LIRCH_DEFAULT_NICK && statuses.count(defaultNick))
+	{
+		p.write(notify_message::create(channel,"Default nick taken.  You can assign a new one with /nick <username>"));
+	}
+	else
+		nick = defaultNick;
 }
 
 void run(plugin_pipe p, string name)
@@ -60,13 +75,16 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "userlist_request"));
 	p.write(registration_message::create(0, name, "userlist_timer"));
 	p.write(registration_message::create(30000, name, "received"));
-	p.write(registration_message::create(30000, name, "received_me"));
 	p.write(registration_message::create(0, name, "list_channels"));
 	p.write(registration_message::create(0, name, "handler_ready"));
+
+
 	unordered_map<QString, user_status> statuses;
 
-	thread startupPopulator(askForUsers,p,LIRCH_DEFAULT_CHANNEL);
-	startupPopulator.detach();
+	QString currentNick = LIRCH_DEFAULT_NICK;
+
+	populateDefaultChannel(p,LIRCH_DEFAULT_CHANNEL,statuses,currentNick);
+
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -127,6 +145,10 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 			updateSenderStatus(s,statuses);
+			if (s->subtype==received_message_subtype::WHOHERE)
+			{
+				p.write(here_message::create(s->channel));
+			}
 		}
 		else if (m.type=="list_channels")
 		{

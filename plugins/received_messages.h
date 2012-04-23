@@ -5,6 +5,7 @@
  * Me are for /me broadcasts
  * Notify are for incoming notifications
  * Here messages are for the periodic broadcasts the antenna sends when the user is inactive.  They don't need channel or contents and should not be displayed.
+ * Who Here messages are sent by other users trying to know who's in the channel.
  */
 
 
@@ -18,7 +19,7 @@
 
 enum class received_message_subtype
 {
-	NORMAL,ME,NOTIFY,HERE
+	NORMAL,ME,NOTIFY,HERE,WHOHERE
 };
 
 
