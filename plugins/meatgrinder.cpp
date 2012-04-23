@@ -65,6 +65,23 @@ message handle_commands(QString text, QString channel)
 	return display_commands_message::create(channel);
 }
 
+message handle_erase_command(QString text, QString)
+{
+	if(!text.startsWith("/macro_erase "))
+		return empty_message::create();
+	text.remove(0, 13);
+	while(text[0] == ' ')
+		text.remove(0, 1);
+	QStringList parsed = parse(text);
+	QString command = parsed.at(0);
+	command.push_front("/");
+	if(parsed.size() < 1)
+		return empty_message::create();
+	while(parsed.size() < 3)
+		parsed += "";
+	return register_replacer::create(command, QRegExp(parsed.at(1), Qt::CaseSensitive, QRegExp::RegExp2), parsed.at(2), register_replacer_subtype::REMOVE);
+}
+
 message handle_channel_leave(QString text, QString)
 {
 	if (!text.startsWith("/leave"))
@@ -74,9 +91,9 @@ message handle_channel_leave(QString text, QString)
 
 message handle_user_command(QString text, QString)
 {
-	if (!text.startsWith("/user-command "))
+	if (!text.startsWith("/macro "))
 		return empty_message::create();
-	text.remove(0, 14);
+	text.remove(0, 7);
 	while(text[0] == ' ')
 		text.remove(0, 1);
 	QStringList parsed = parse(text);
@@ -127,7 +144,8 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/channel", handle_channel_change));
 					p.write(register_handler::create("/commands", handle_commands));
 					p.write(register_handler::create("/leave", handle_channel_leave));
-					p.write(register_handler::create("/user-command", handle_user_command));
+					p.write(register_handler::create("/macro", handle_user_command));
+					p.write(register_handler::create("/macro_erase", handle_erase_command));
 				}
 				else if (s->type=="register_replacer")
 				{
@@ -141,7 +159,22 @@ void run(plugin_pipe p, string name)
 			auto i=dynamic_cast<register_replacer *>(m.getdata());
 			if (!i)
 				continue;
-			text_replacements.insert({i->command, {i->pattern, i->replacement}});
+			if(i->subtype == register_replacer_subtype::ADD)
+				text_replacements.insert({i->command, {i->pattern, i->replacement}});
+			else if(i->subtype == register_replacer_subtype::REMOVE)
+			{
+				if(i->pattern.pattern() == "")
+					text_replacements.erase(text_replacements.find(i->command));
+				else if(text_replacements.count(i->command) > 0)
+					for(unordered_multimap<QString, pair<QRegExp, QString> >::iterator iter = text_replacements.find(i->command); iter!=text_replacements.end(); iter++)
+					{
+						if(i->command == iter->first && i->pattern == iter->second.first && (i->replacement == "" || i->replacement == iter->second.second))
+						{
+							text_replacements.erase(iter);
+							break;
+						}
+					}
+			}
 		}
 		else if (m.type=="register_handler")
 		{

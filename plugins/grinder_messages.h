@@ -7,18 +7,22 @@
 #include <QtCore/QRegExp>
 
 #include "core/message.h"
-
+enum class register_replacer_subtype
+{
+	ADD,REMOVE
+};
 class register_replacer : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new register_replacer(*this));}
-	static message create(const QString &c, const QRegExp &p, const QString &r) {return message_create("register_replacer", new register_replacer(c,p,r));}
+	static message create(const QString &c, const QRegExp &p, const QString &r, register_replacer_subtype t = register_replacer_subtype::ADD) {return message_create("register_replacer", new register_replacer(c,p,r,t));}
 
-	register_replacer(const QString &c, const QRegExp &p, const QString &r) : command(c), pattern(p), replacement(r) {}
+	register_replacer(const QString &c, const QRegExp &p, const QString &r, register_replacer_subtype t = register_replacer_subtype::ADD) : command(c), pattern(p), replacement(r),subtype(t) {}
 
 	QString command;
 	QRegExp pattern;
 	QString replacement;
+	register_replacer_subtype subtype;
 };
 
 class replacer_ready : public message_data
