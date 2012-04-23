@@ -1,9 +1,9 @@
 #include <fstream>
 #include <map>
 #include <string>
-using namespace std;
+#include <memory>
 
-#include <QSettings> 
+#include <QSettings>
 #include <QString>
 #include <QUrl>
 
@@ -12,18 +12,20 @@ using namespace std;
 #include "plugins/lirch_plugin.h"
 #include "plugins/logger_messages.h"
 
+using namespace std;
+
 void run(plugin_pipe pipe, std::string name)
 {
 	// Register for certain message types
 	pipe.write(registration_message::create(0, name, LIRCH_MSG_TYPE_DISPLAY));
 
 	// Maintain a record of open files (so we can close them later)
-	map<QString, ofstream*> open_files;
-	
+	map<QString, unique_ptr<ofstream>> open_files;
+
 	// Fetch the settings
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
 	settings.beginGroup("Logging");
-	
+
 	while (true) {
 		message front = pipe.blocking_read();
 		if(front.type == LIRCH_MSG_TYPE_SHUTDOWN)
@@ -55,46 +57,40 @@ void run(plugin_pipe pipe, std::string name)
 				QString channelname = QUrl::toPercentEncoding(internals->channel);
 
 				//find the corresponding filestream
-				ofstream *filestream;
-				auto entry = open_files.find(channelname);
-				//create one if it doesn't already exist
-				if (entry == open_files.end()) {
+				if (open_files.count(channelname)!=0) {
 					// TODO can some of this be cached? That way, we won't load it every single time
 					// FIXME get the log directory to find the user's home
 					QString directory = settings.value("root_directory", LIRCH_DEFAULT_LOG_DIR).value<QString>();
 					// Open a new file in the desired directory
 					string filepath = directory.append(channelname).append(".log").toStdString();
 					// Append to any pre-existing file
-					filestream = new ofstream(filepath.c_str(), fstream::app);
+					auto filestream = new ofstream(filepath.c_str(), fstream::app);
 					// TODO what if open fails? or insert fails?
-					auto p = open_files.insert(make_pair(channelname, filestream));
+					auto p = open_files.insert(make_pair(channelname, unique_ptr<ofstream>(filestream)));
 					if (p.second) {
 						// Obligatory eight-tilda salute
 						*filestream << "~~~~~~~~" << endl;
 					}
 				}
 
-				//actually get the representation we can log FIXME wstring?
-				string nick = internals->nick.toStdString();
-				string contents = internals->contents.toStdString();
+				auto nick = internals->nick.toUtf8();
+				auto contents = internals->contents.toUtf8();
 				//log the message contents in a manner which matches the message type
 				switch (internals->subtype) {
 					case display_message_subtype::NORMAL:
-					*filestream << "<" << nick << "> " << contents;
+					*open_files[channelname] << "<" << nick.constData() << "> " << contents.constData();
 					break;
 					case display_message_subtype::ME:
-					*filestream << "* " << nick << " " << contents;
+					*open_files[channelname] << "* " << nick.constData() << " " << contents.constData();
 					break;
 					case display_message_subtype::NOTIFY:
-					// FIXME make this not raw UTF-8:
-					//*filestream << "‼‽ " + contents;
-					*filestream << "! " << contents;
+					*open_files[channelname] << QString("‼‽ ").toUtf8().constData() << contents.constData();
 					break;
 					default:
-					*filestream << "? " << contents;
+					*open_files[channelname] << "? " << contents.constData();
 				}
 				//flush the stream
-				*filestream << endl;
+				*open_files[channelname] << endl;
 			}
 		}
 
@@ -112,12 +108,6 @@ void run(plugin_pipe pipe, std::string name)
 		{
 			pipe.write(front.decrement_priority());
 		}
-	}
-
-	// Don't forget to close open files
-	for (auto &key_pair : open_files) {
-		key_pair.second->close();
-		delete key_pair.second;
 	}
 
 	// FIXME is this proper usage?
