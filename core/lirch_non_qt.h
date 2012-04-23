@@ -1,29 +1,30 @@
 #include <thread>
+#include <vector>
 
 #include <QObject>
 
-class dummy : public QObject
+//Yes, these have to go in a header file.  No, I don't know why.
+class core_waiter : public QObject
 {
 	Q_OBJECT
 
 public:
-	dummy(std::thread *tt) : t(tt) {}
+	core_waiter(std::thread &tt) : t(tt) {}
 
 public slots:
-	void willQuit() {t->join();}
+	void onQuit() {t.join();}
 
 private:
-	std::thread *t;
+	std::thread &t;
 };
 
-class dummy2 : public QObject
+class core_notifier : public QObject
 {
 	Q_OBJECT
 
 public:
-	void quit() {emit willQuit();}
+	void emitQuit() {emit quit();}
 
 signals:
-	void willQuit();
+	void quit();
 };
-

@@ -103,14 +103,14 @@ int main(int argc, char *argv[])
 		arg+=2;
 	}
 
-	// Loop until core shutdown
 	thread t([&app, pp](){
 		run_core(pp);
-		dummy2 d2;
-		QObject::connect(&d2, SIGNAL(willQuit()), &app, SLOT(quit()));
-		d2.quit();
+		core_notifier notifier;
+		QObject::connect(&notifier, SIGNAL(quit()), &app, SLOT(quit()));
+		notifier.emitQuit();
 	});
-	dummy d1(&t);
-	QObject::connect(&app, SIGNAL(aboutToQuit()), &d1, SLOT(willQuit()));
+	// Wait until core shutdown
+	core_waiter waiter(t);
+	QObject::connect(&app, SIGNAL(aboutToQuit()), &waiter, SLOT(onQuit()));
 	app.exec();
 }
