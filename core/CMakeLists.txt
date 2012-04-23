@@ -13,8 +13,12 @@ set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 
 if(BUILD_NON_QT_CLIENT)
   # Build the core executable
-  add_executable(lirch lirch_non_qt.cpp core.cpp plugin_loader.cpp)
-  target_link_libraries(lirch envelope dl pthread)
+  set(QT_DONT_USE_QTGUI TRUE)
+  include(${QT_USE_FILE})
+  include_directories(${QT_INCLUDE_DIR})
+  qt4_wrap_cpp(blah blah.h)
+  add_executable(lirch lirch_non_qt.cpp ${blah} core.cpp plugin_loader.cpp)
+  target_link_libraries(lirch envelope dl pthread ${QT_LIBRARIES})
   install(TARGETS lirch DESTINATION bin)
 endif(BUILD_NON_QT_CLIENT)
 
