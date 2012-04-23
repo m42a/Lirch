@@ -131,8 +131,6 @@ void runplugin(plugin_pipe &p, const string &name)
 				p.write(raw_edict_message::create(input,channel));
 				input="";
 			}
-			else
-				break;
 		}
 		while (p.has_message())
 		{
