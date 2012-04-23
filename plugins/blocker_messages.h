@@ -9,19 +9,10 @@
 #include <QHostAddress>
 #include <unordered_set>
 #include "core/message.h"
+#include "QHostAddress_hash.h"
 
 //this nonsense is needed in order to have our blocklist be searchable
-namespace std
-{
-	template <>
-	struct hash<QHostAddress>
-	{
-		size_t operator()(const QHostAddress& v) const
-		{
-			return std::hash<std::string>()(v.toString().toStdString());
-		}
-	};
-}
+
 
 enum class block_message_subtype
 {

@@ -176,7 +176,7 @@ void run(plugin_pipe p, string name)
 					output += i->first;
 				}
 			}
-			p.write(edict_message::create(edict_message_subtype::ME, internals->channel, output));
+			p.write(notify_message::create(internals->channel, output));
 		}
 		else if (m.type == "query commands")
 		{
