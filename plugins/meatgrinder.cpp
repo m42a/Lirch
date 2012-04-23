@@ -11,6 +11,7 @@
 #include "notify_messages.h"
 #include "channel_messages.h"
 
+
 using namespace std;
 
 namespace std
@@ -67,6 +68,13 @@ message handle_channel_change(QString text, QString)
 	return set_channel::create(text.remove(0, 9));
 }
 
+message handle_commands(QString text, QString channel)
+{
+	if (!text.startsWith("/commands"))
+		return empty_message::create();
+	return display_commands_message::create(channel);
+}
+
 message handle_channel_leave(QString text, QString)
 {
 	if (!text.startsWith("/leave "))
@@ -79,6 +87,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(-30000, name, "raw_edict"));
 	p.write(registration_message::create(-30000, name, "register_replacer"));
 	p.write(registration_message::create(-30000, name, "register_handler"));
+	p.write(registration_message::create(-30000, name, "display commands"));
 	unordered_multimap<QString, pair<QRegExp, QString>> text_replacements;
 	unordered_map<QString, function<message (QString, QString)>> handlers;
 	while (true)
@@ -111,6 +120,7 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
 					p.write(register_handler::create("/channel", handle_channel_change));
+					p.write(register_handler::create("/commands", handle_commands));
 					p.write(register_handler::create("/leave", handle_channel_leave));
 				}
 				else if (s->type=="register_replacer")
@@ -162,6 +172,26 @@ void run(plugin_pipe p, string name)
 				p.write(notify_message::create(e->channel, QString("Unknown message type \"%1\"").arg(pre)));
 			else
 				p.write(handlers[pre](str, e->channel));
+		}
+		else if (m.type == "display commands")
+		{
+			auto internals=dynamic_cast<display_commands_message *>(m.getdata());
+			if (!internals)
+				continue;
+			QString output = "commands:";
+			for(unordered_map<QString, function<message (QString, QString)>>::iterator i = handlers.begin(); i != handlers.end(); i++)
+			{	
+				if(i->first != "")
+				{
+					output += "\n";
+					output += i->first;
+				}
+			}
+			p.write(edict_message::create(edict_message_subtype::ME, internals->channel, output));
+		}
+		else if (m.type == "query commands")
+		{
+			
 		}
 		else
 		{
