@@ -39,9 +39,9 @@
 #include "lirch_constants.h"
 #include "grinder_messages.h"
 #include "notify_messages.h"
+#include "QHostAddress_hash.h"
 
 using namespace std;
-
 
 message sendBlock(QString str, QString)
 {

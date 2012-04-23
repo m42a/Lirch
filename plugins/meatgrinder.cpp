@@ -3,6 +3,7 @@
 #include <QString>
 
 #include "lirch_plugin.h"
+#include "QString_hash.h"
 #include "edict_messages.h"
 #include "notify_messages.h"
 #include "grinder_messages.h"
@@ -13,18 +14,6 @@
 
 
 using namespace std;
-
-namespace std
-{
-	template <>
-	struct hash<QString>
-	{
-		size_t operator()(const QString& v) const
-		{
-			return std::hash<std::string>()(v.toStdString());
-		}
-	};
-}
 
 QString prefix(const QString &s)
 {
