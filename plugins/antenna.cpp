@@ -5,12 +5,15 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
  *
- * a periodic broadcast of type "here" is sent out every minute; it's format is
+ * in the case of a change of nick, the old nickname is in the channel slot, since nick changes are channelless
+ * and nicks and channels take the same amount of space.
+ *
+ * a periodic broadcast of type "auto" is sent out every minute; it's format is
  * [type][nick]
  * type is the standard 4 byte string, and nick is a max 64 byte
  *
@@ -26,7 +29,6 @@
 #include <iostream>
 #include <QByteArray>
 #include <QString>
-#include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
 #include <ctime>
@@ -40,6 +42,8 @@
 #include "grinder_messages.h"
 #include "notify_messages.h"
 #include "QHostAddress_hash.h"
+#include "nick_messages.h"
+#include "userlist_messages.h"
 
 using namespace std;
 
@@ -68,8 +72,11 @@ void run(plugin_pipe p, string name)
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
 	p.write(registration_message::create(0, name, "edict"));
+	p.write(registration_message::create(0, name, "who is here"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 	p.write(registration_message::create(0, name, "block query"));
+	p.write(registration_message::create(0, name, "changed_nick"));
+	p.write(registration_message::create(0, name, "sendable_notify"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
@@ -92,9 +99,7 @@ void run(plugin_pipe p, string name)
 		return;
 	}
 
-	//needed to send nick with your messages
-	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
-	settings.beginGroup("UserData");
+	QString currentNick = LIRCH_DEFAULT_NICK;
 
 	while(true)
 	{
@@ -161,7 +166,6 @@ void run(plugin_pipe p, string name)
 					continue;
 
 
-				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
 				QString type;
@@ -169,7 +173,7 @@ void run(plugin_pipe p, string name)
 					type="edct";
 				else if(castMessage->subtype==edict_message_subtype::ME)
 					type="mdct";
-				QByteArray message = formatMessage(type,channel,nick,contents);
+				QByteArray message = formatMessage(type,channel,currentNick,contents);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -184,16 +188,15 @@ void run(plugin_pipe p, string name)
 			{
 				auto castMessage=dynamic_cast<sendable_notify_message *>(m.getdata());
 
-				//if it's not actually an edict message, ignore it and move on
+				//if it's not actually a notify message, ignore it and move on
 				if (!castMessage)
 					continue;
 
-				QString nick=settings.value("nick","spartacus").value<QString>();
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
 				QString type="ntfy";
 
-				QByteArray message = formatMessage(type,channel,nick,contents);
+				QByteArray message = formatMessage(type,channel,currentNick,contents);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -211,6 +214,68 @@ void run(plugin_pipe p, string name)
 					continue;
 					
 				p.write(block_list_message::create(blocklist));
+			}
+			else if(m.type=="who is here")
+			{
+				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
+
+				//if it's not actually a who's here message, ignore it and move on
+				if (!castMessage)
+					continue;
+
+				QString channel=castMessage->channel;
+				QString type="whhe";
+
+				QByteArray message = formatMessage(type,channel,currentNick,"");
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+			}
+			else if(m.type=="here")
+			{
+				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
+
+				//if it's not actually a here message, ignore it and move on
+				if (!castMessage)
+					continue;
+
+				QString channel=castMessage->channel;
+				QString type="here";
+
+				QByteArray message = formatMessage(type,channel,currentNick,"");
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+			}
+			else if (m.type == "changed_nick")
+			{
+				auto castMessage=dynamic_cast<changed_nick_message *>(m.getdata());
+
+				//if it's not actually a here message, ignore it and move on
+				if (!castMessage)
+					continue;
+
+
+				QString type = "nick";
+
+				QByteArray message = formatMessage(type,currentNick,castMessage->newNick,"");
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+
+				currentNick=castMessage->newNick;
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
@@ -231,7 +296,7 @@ void run(plugin_pipe p, string name)
 
 			string type(broadcast,4);
 
-			if (type=="here")
+			if (type=="auto")
 			{
 				p.write(received_message::create(received_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),"",senderIP));
 				continue;
@@ -240,6 +305,23 @@ void run(plugin_pipe p, string name)
 			//takes the components out of the broadcast and crops them apropriately, just in case
 			QString destinationChannel=QString::fromUtf8(broadcast+4,64).section(QChar('\0'),0,0);
 			QString senderNick=QString::fromUtf8(broadcast+68,64).section(QChar('\0'),0,0);
+
+			if (type=="whhe")
+			{
+				p.write(received_message::create(received_message_subtype::WHOHERE,destinationChannel,senderNick,"",senderIP));
+				continue;
+			}
+			else if (type=="here")
+			{
+				p.write(received_message::create(received_message_subtype::HERE,destinationChannel,senderNick,"",senderIP));
+				continue;
+			}
+			else if (type=="nick")
+			{
+				p.write(received_message::create(received_message_subtype::NICK,destinationChannel,senderNick,"",senderIP));
+				continue;
+			}
+
 			QString sentContents=QString::fromUtf8(broadcast+132,256).section(QChar('\0'),0,0);
 
 			if (type=="edct")
@@ -264,10 +346,9 @@ void run(plugin_pipe p, string name)
 		//sends out a "still here" message every minute
 		if(time(NULL)-lastSent>60)
 		{
-			QString nick=settings.value("nick","spartacus").value<QString>();
-			QString type="here";
+			QString type="auto";
 
-			QByteArray message = type.toUtf8()+nick.toUtf8();
+			QByteArray message = type.toUtf8()+currentNick.toUtf8();
 			message.truncate(68);
 
 			udpSocket.writeDatagram(message,groupAddress,port);
