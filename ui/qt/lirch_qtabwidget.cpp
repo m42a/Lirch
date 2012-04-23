@@ -1,11 +1,12 @@
-#include "ui/qt/lirch_qt_tab_widget.h"
+#include "ui/qt/lirch_qtabwidget.h"
 
-LirchQtTabWidget::LirchQtTabWidget(QWidget *parent) :
+LirchQTabWidget::LirchQTabWidget(QWidget *parent) :
     QTabWidget(parent)
 {
     connect(this, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
 }
 
-void LirchQtTabWidget::closeTab(int index) {
+void LirchQTabWidget::closeTab(int index) {
+    // TODO integrate this with .ui and hookup channels
     this->removeTab(index);
 }

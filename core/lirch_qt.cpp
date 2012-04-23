@@ -71,9 +71,9 @@ int main(int argc, char *argv[])
 	LirchQtInterface main_window;
         // A small intermediate object is used to mediate
         QObject::connect(&mediator,    SIGNAL(alert(QString, QString)),
-                         &main_window, SLOT(display(const QString &, const QString &)));
+                         &main_window, SLOT(display(QString, QString)));
         QObject::connect(&mediator,    SIGNAL(shutdown(QString)),
-                         &main_window, SLOT(die(const QString &)));
+                         &main_window, SLOT(die(QString)));
         QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),
                          &main_window, SLOT(use(LirchClientPipe *)));
 
@@ -107,8 +107,9 @@ int main(int argc, char *argv[])
 	}
 
 	// Add in plugins specified by the command line
-	auto pit = session.plugins.begin();
-	auto pitend = session.plugins.end();
+	vector<string>::const_iterator pit, pitend;
+	pit = session.plugins.begin();
+	pitend = session.plugins.end();
 	pair<string, string> p;
 	error_msg = QObject::tr("[WARNING] ignoring unpaired plugin argument '%1'");
 	while (pit != pitend) {
@@ -133,5 +134,6 @@ int main(int argc, char *argv[])
 	core_thread.detach();
 
 	// When this event loop terminates, so will we
+	// TODO FIXME wrap this and make it core_thread.join(); after shutdown
 	return qlirch.exec();
 }

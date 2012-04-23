@@ -1,13 +1,14 @@
-#ifndef LIRCH_QT_TAB_WIDGET_H
-#define LIRCH_QT_TAB_WIDGET_H
+#ifndef LIRCH_QTABWIDGET_H
+#define LIRCH_QTABWIDGET_H
 
 #include <QTabWidget>
 
-class LirchQtTabWidget : public QTabWidget
+class LirchQTabWidget : public QTabWidget
 {
-Q_OBJECT
+    Q_OBJECT
+
 public:
-    explicit LirchQtTabWidget(QWidget *parent = 0);
+    explicit LirchQTabWidget(QWidget *parent = 0);
 
 signals:
 
@@ -15,4 +16,4 @@ public slots:
     void closeTab(int index);
 };
 
-#endif // LIRCH_QT_TAB_WIDGET_H
+#endif // LIRCH_QTABWIDGET_H
