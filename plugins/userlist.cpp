@@ -4,15 +4,33 @@
 #include "userlist_messages.h"
 #include "user_status.h"
 #include "received_messages.h"
+#include "notify_messages.h"
+#include "grinder_messages.h"
 
 using namespace std;
 
 class userlist_timer : public message_data
 {
 public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new userlist_timer(*this));}
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(nullptr);}
 	static message create() {return message_create("userlist_timer", nullptr);}
 };
+
+class list_channels : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new list_channels(*this));}
+	static message create(const QString &fch, const QString &dch) {return message_create("list_channels", new list_channels(fch,dch));}
+	list_channels(const QString &fch, const QString &dch) : filterChannel(fch), destinationChannel(dch) {}
+
+	QString filterChannel;
+	QString destinationChannel;
+};
+
+message sendList(QString text, QString channel)
+{
+	return list_channels::create(text.section(QChar(' '), 1), channel);
+}
 
 void run(plugin_pipe p, string name)
 {
@@ -20,6 +38,8 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "userlist_timer"));
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_me"));
+	p.write(registration_message::create(0, name, "list_channels"));
+	p.write(registration_message::create(0, name, "handler_ready"));
 	unordered_map<QString, user_status> statuses;
 	while (true)
 	{
@@ -46,6 +66,10 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(userlist_timer::create());
 				}
+				else if (s->type=="list_channels")
+				{
+					p.write(register_handler::create("/list", sendList));
+				}
 			}
 		}
 		else if (m.type=="userlist_request")
@@ -66,6 +90,10 @@ void run(plugin_pipe p, string name)
 				p.write(userlist_timer::create());
 			}, p).detach();
 		}
+		else if (m.type=="handler_ready")
+		{
+			p.write(register_handler::create("/list", sendList));
+		}
 		else if (m.type=="received")
 		{
 			auto s=dynamic_cast<received_message *>(m.getdata());
@@ -77,6 +105,22 @@ void run(plugin_pipe p, string name)
 				statuses[s->nick].channels.insert(s->channel);
 			statuses[s->nick].ip=s->ipAddress;
 			statuses[s->nick].lastseen=time(NULL);
+		}
+		else if (m.type=="list_channels")
+		{
+			auto s=dynamic_cast<list_channels *>(m.getdata());
+			if (!s)
+				continue;
+			for (auto &i : statuses)
+			{
+				if (s->filterChannel=="" || i.second.channels.count(s->filterChannel)!=0)
+				{
+					QStringList channelList;
+					for (auto &c : i.second.channels)
+						channelList.append(c);
+					p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), ctime(&i.second.lastseen), channelList.join(" "))));
+				}
+			}
 		}
 		else
 			p.write(m.decrement_priority());

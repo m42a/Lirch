@@ -22,15 +22,24 @@ bool load_plugin(const string &fname, const plugin_pipe &p)
 
 	FARPROC ver_func=GetProcAddress(obj,"plugin_version");
 	if (ver_func==NULL)
+	{
+		FreeLibrary(obj);
 		return false;
+	}
 
 	int ver=(*(int __cdecl (*)())(ver_func))();
 	if (ver!=0)
+	{
+		FreeLibrary(obj);
 		return false;
+	}
 
 	FARPROC run_func=GetProcAddress(obj,"plugin_init");
 	if (run_func==NULL)
+	{
+		FreeLibrary(obj);
 		return false;
+	}
 	//FARPROC returns an int * by default, so cast it to void.  This has
 	//more parentheses than Lisp.
 	thread(*(void __cdecl (*)(plugin_pipe))(run_func), p).detach();
@@ -46,15 +55,24 @@ bool load_plugin(const string &fname, const plugin_pipe &p)
 	//but the C standard does not, so add a cast to shut up the compiler.
 	auto ver_func=(int (*)())dlsym(obj, "plugin_version");
 	if (ver_func==NULL)
+	{
+		dlclose(obj);
 		return false;
+	}
 	//Plugin had the wrong version, so we can't load it
 	int ver=(*ver_func)();
 	if (ver!=0)
+	{
+		dlclose(obj);
 		return false;
+	}
 
 	auto run_func=(void (*)(plugin_pipe))dlsym(obj, "plugin_init");
 	if (run_func==NULL)
+	{
+		dlclose(obj);
 		return false;
+	}
 	//Finally initialize the plugin
 	thread(*run_func,p).detach();
 #endif
