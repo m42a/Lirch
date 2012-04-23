@@ -13,6 +13,15 @@
 
 using namespace std;
 
+message sendNick(QString str, QString)
+{
+	if (str.startsWith("/nick "))
+	{
+		return nick_message::create(str.section(' ',1));
+	}
+	return empty_message::create();
+}
+
 class userlist_timer : public message_data
 {
 public:
@@ -110,6 +119,8 @@ void run(plugin_pipe p, string name)
 
 	populateDefaultChannel(p,LIRCH_DEFAULT_CHANNEL,userList,currentNick);
 
+	p.write(register_handler::create("/nick", sendNick));
+
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -162,6 +173,7 @@ void run(plugin_pipe p, string name)
 		else if (m.type=="handler_ready")
 		{
 			p.write(register_handler::create("/list", sendList));
+			p.write(register_handler::create("/nick", sendNick));
 		}
 		else if (m.type=="received")
 		{
@@ -177,7 +189,7 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type=="nick")
 		{
-			auto s=dynamic_cast<received_message *>(m.getdata());
+			auto s=dynamic_cast<nick_message *>(m.getdata());
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());

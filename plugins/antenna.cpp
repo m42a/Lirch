@@ -88,6 +88,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "who is here"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 	p.write(registration_message::create(0, name, "changed_nick"));
+	p.write(registration_message::create(0, name, "sendable_notify"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
