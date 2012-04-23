@@ -11,8 +11,7 @@
 #include "message_pipe.h"
 #include "core_messages.h"
 #include "lirch_constants.h"
-
-#include "blah.h"
+#include "lirch_non_qt.h"
 
 using namespace std;
 
