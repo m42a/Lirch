@@ -1,5 +1,6 @@
 #include <thread>
 #include <ctime>
+#include <QSettings>
 
 #include "lirch_plugin.h"
 #include "userlist_messages.h"
@@ -47,10 +48,10 @@ void updateSenderStatus(received_message * message, unordered_map<QString, user_
 void askForUsers(plugin_pipe p, QString channel)
 {
 	time_t start = time(NULL);
-	while (time(NULL)-start < 10)
+	while (time(NULL)-start < 1)
 	{
 		p.write(who_is_here_message::create(channel));
-		this_thread::sleep_for(chrono::seconds(2));
+		this_thread::sleep_for(chrono::milliseconds(50));
 	}
 }
 
@@ -59,15 +60,25 @@ void populateDefaultChannel(plugin_pipe p, QString channel, unordered_map<QStrin
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
 	settings.beginGroup("UserData");
 	QString defaultNick = settings.value("nick",LIRCH_DEFAULT_NICK).value<QString>();
+	settings.sync();
+	settings.endGroup();
 
 	askForUsers(p,channel);
 
-	if (defaultNick!=LIRCH_DEFAULT_NICK && statuses.count(defaultNick))
-	{
+	if (setName(statuses,defaultNick))
+		p.write(notify_message::create(channel,"Welcome to LIRCH, "+nick+"."));
+	else
 		p.write(notify_message::create(channel,"Default nick taken.  You can assign a new one with /nick <username>"));
-	}
+
+}
+
+bool setName(unordered_map<QString, user_status> & statuses,QString & nick)
+{
+	if (defaultNick!=LIRCH_DEFAULT_NICK && statuses.count(defaultNick))
+		return false;
 	else
 		nick = defaultNick;
+	return true;
 }
 
 void run(plugin_pipe p, string name)

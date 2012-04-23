@@ -26,7 +26,6 @@
 #include <iostream>
 #include <QByteArray>
 #include <QString>
-#include <QSettings>
 #include <QtNetwork>
 #include <unordered_set>
 #include <ctime>
