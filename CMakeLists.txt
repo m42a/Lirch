@@ -62,7 +62,7 @@ endmacro(preload_option)
 # The active state of each is determined above
 preload_option("lirch-basic"   BUILD_CLIENT_BASIC)
 preload_option("lirch-ncurses" BUILD_CLIENT_NCURSES)
-preload_option("lirch-qt"      BUILD_CLIENT_QT)
+preload_option("lirch-gui"     BUILD_CLIENT_QT)
 preload_option("antenna"       BUILD_PLUGINS)
 preload_option("logger"        BUILD_PLUGINS)
 preload_option("masseuse"      BUILD_PLUGINS)
