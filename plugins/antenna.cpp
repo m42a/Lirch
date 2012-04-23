@@ -39,22 +39,11 @@
 #include "lirch_constants.h"
 #include "grinder_messages.h"
 #include "notify_messages.h"
+#include "QHostAddress_hash.h"
 
 using namespace std;
 
-
 //this nonsense is needed in order to have our blocklist be searchable
-namespace std
-{
-	template <>
-	struct hash<QHostAddress>
-	{
-		size_t operator()(const QHostAddress& v) const
-		{
-			return std::hash<std::string>()(v.toString().toStdString());
-		}
-	};
-}
 
 message sendBlock(QString str, QString)
 {
