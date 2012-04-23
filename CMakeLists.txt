@@ -51,12 +51,15 @@ macro(preload_option NAME OPTION_STATE)
   if (NOT ${OPTION_STATE})
     set(${OPTION_NAME} OFF CACHE BOOL ${OPTION_DOC} FORCE)
   endif(NOT ${OPTION_STATE})
-  # Preloads modify the configuration of lirch_constants.h
+  # Preloads might modify the configuration of lirch_constants.h
   if(${OPTION_NAME})
-    if(UNIX)
-      list(APPEND PRELOADS "{ \"${NAME}\", \"${LIBRARY_OUTPUT_PATH}/lib${NAME}.so\" },")
-    endif(UNIX)
-    # FIXME add WIN32 support
+    string(TOUPPER "PREPATH_${NAME}" LIBRARY_NAME)
+    # TODO add paths to facilitate finding the correct lib
+    find_library(${LIBRARY_NAME} ${NAME} "${LIBRARY_OUTPUT_PATH}")
+    mark_as_advanced(${LIBRARY_NAME} FORCE)
+    if(${LIBRARY_NAME})
+      list(APPEND PRELOADS "{ \"${NAME}\", \"${${LIBRARY_NAME}}\" },")
+    endif(${LIBRARY_NAME})
   endif(${OPTION_NAME})
 endmacro(preload_option)
 # The active state of each is determined above
