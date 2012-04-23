@@ -37,13 +37,21 @@ message sendList(QString text, QString channel)
 }
 
 //updates all of the relevent fields of out status map based on the received message
-void updateSenderStatus(received_message * message, unordered_map<QString, user_status> & userList)
+void updateSenderStatus(plugin_pipe p, received_message * message, unordered_map<QString, user_status> & userList)
 {
 	userList[message->nick].nick=message->nick;
 	if (message->subtype==received_message_subtype::NORMAL || message->subtype==received_message_subtype::ME || message->subtype==received_message_subtype::NOTIFY)
 		userList[message->nick].channels.insert(message->channel);
+
+	//message->channel is storing the old nickname of the user in the case that it is a nick type received.
+	//if it is, remove the person of the old nickname
+	else if (message->subtype==received_message_subtype::NICK)
+		userList.erase(message->channel);
+
 	userList[message->nick].ip=message->ipAddress;
 	userList[message->nick].lastseen=time(NULL);
+
+	p.write(userlist_message::create(userList));
 }
 
 void askForUsers(plugin_pipe p, QString channel)
@@ -161,7 +169,7 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			updateSenderStatus(s,userList);
+			updateSenderStatus(p,s,userList);
 			if (s->subtype==received_message_subtype::WHOHERE)
 			{
 				p.write(here_message::create(s->channel));

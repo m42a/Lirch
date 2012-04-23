@@ -5,10 +5,13 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
+ *
+ * in the case of a change of nick, the old nickname is in the channel slot, since nick changes are channelless
+ * and nicks and channels take the same amount of space.
  *
  * a periodic broadcast of type "auto" is sent out every minute; it's format is
  * [type][nick]
@@ -38,6 +41,7 @@
 #include "lirch_constants.h"
 #include "grinder_messages.h"
 #include "notify_messages.h"
+#include "nick_messages.h"
 #include "userlist_messages.h"
 
 using namespace std;
@@ -83,6 +87,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "edict"));
 	p.write(registration_message::create(0, name, "who is here"));
 	p.write(registration_message::create(0, name, "handler_ready"));
+	p.write(registration_message::create(0, name, "changed_nick"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
@@ -249,6 +254,28 @@ void run(plugin_pipe p, string name)
 					lastSent=time(NULL);
 				}
 			}
+			else if (m.type == "changed_nick")
+			{
+				auto castMessage=dynamic_cast<changed_nick_message *>(m.getdata());
+
+				//if it's not actually a here message, ignore it and move on
+				if (!castMessage)
+					continue;
+
+
+				QString type = "nick";
+
+				QByteArray message = formatMessage(type,currentNick,castMessage->newNick,"");
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+
+				currentNick=castMessage->newNick;
+			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
 			{
@@ -286,6 +313,11 @@ void run(plugin_pipe p, string name)
 			else if (type=="here")
 			{
 				p.write(received_message::create(received_message_subtype::HERE,destinationChannel,senderNick,"",senderIP));
+				continue;
+			}
+			else if (type=="nick")
+			{
+				p.write(received_message::create(received_message_subtype::NICK,destinationChannel,senderNick,"",senderIP));
 				continue;
 			}
 

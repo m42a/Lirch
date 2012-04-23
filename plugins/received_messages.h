@@ -19,7 +19,7 @@
 
 enum class received_message_subtype
 {
-	NORMAL,ME,NOTIFY,HERE,WHOHERE
+	NORMAL,ME,NOTIFY,HERE,WHOHERE,NICK
 };
 
 
