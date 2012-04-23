@@ -1,11 +1,13 @@
+## These plugins use no Qt:
+
 # Timer plugin
 add_library(timer SHARED timer.cpp)
 target_link_libraries(timer envelope)
 
-# These plugins use QtCore only:
+## These plugins use QtCore only:
 set(QT_DONT_USE_QTCORE FALSE)
 set(QT_DONT_USE_QTGUI TRUE)
-set(QT_USE_QTNETWORK TRUE)
+set(QT_USE_QTNETWORK FALSE)
 set(QT_USE_QTTEST FALSE)
 include(${QT_USE_FILE})
 include_directories(${QT_INCLUDE_DIR})
@@ -22,22 +24,24 @@ target_link_libraries(masseuse envelope ${QT_LIBRARIES})
 add_library(meatgrinder SHARED meatgrinder.cpp)
 target_link_libraries(meatgrinder envelope ${QT_LIBRARIES})
 
-# Antenna and Userlist plugin uses QtNetwork
+## These plugins use QtNetwork, too:
 set(QT_USE_QTNETWORK TRUE)
 include(${QT_USE_FILE})
 include_directories(${QT_QTNETWORK_INCLUDE_DIR})
 
 # Antenna plugin
 add_library(antenna SHARED antenna.cpp)
-target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
+target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
 
 # Userlist plugin
 add_library(userlist SHARED userlist.cpp)
-target_link_libraries(userlist envelope ${QT_LIBRARIES} ${QT_NETWORK_LIBRARIES})
+target_link_libraries(userlist envelope ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
+
+# Tester plugin
+if(UNIX)
+  add_library(linuxtester SHARED linuxtester.cpp)
+  target_link_libraries(linuxtester envelope ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
+endif(UNIX)
 
 # For install (packaging)
-install(TARGETS antenna logger masseuse meatgrinder timer userlist DESTINATION lib)
-
-# Tester
-add_library(linuxtester SHARED linuxtester.cpp)
-target_link_libraries(linuxtester envelope ${QT_LIBRARIES})
+install(TARGETS antenna logger masseuse meatgrinder userlist DESTINATION lib)

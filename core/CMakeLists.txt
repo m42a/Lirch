@@ -9,7 +9,6 @@ set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 
 # Build a shared library that practically everything uses
 #add_library(envelope SHARED message.cpp)
-#install(TARGETS envelope DESTINATION lib)
 
 # Build the core library
 add_library(lirch-core core.cpp plugin_loader.cpp)
