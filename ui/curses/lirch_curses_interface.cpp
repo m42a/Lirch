@@ -23,6 +23,7 @@
 #include "plugins/notify_messages.h"
 #include "plugins/edict_messages.h"
 #include "plugins/channel_messages.h"
+#include "ui/line_editor.h"
 #include "core/core_messages.h"
 
 namespace std
@@ -86,7 +87,7 @@ private:
 
 void runplugin(plugin_pipe &p, const string &name)
 {
-	QString input;
+	text_line input;
 	QString channel="default";
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
@@ -109,22 +110,16 @@ void runplugin(plugin_pipe &p, const string &name)
 		{
 			if (key=='\r' || key=='\n')
 			{
-				p.write(raw_edict_message::create(input,channel));
-				input="";
+				p.write(raw_edict_message::create(input.getQString(),channel));
+				input.kill_whole_line();
 			}
 			else if (key==(unsigned char)CTRL('U'))
 			{
-				input="";
+				input.backward_kill_line();
 			}
 			else if (key==(unsigned char)CTRL('H'))
 			{
-				QTextBoundaryFinder bounds(QTextBoundaryFinder::Grapheme, input);
-				bounds.toEnd();
-				int pos=bounds.toPreviousBoundary();
-				if (pos!=-1)
-				{
-					input.remove(pos, INT_MAX);
-				}
+				input.backward_delete_char();
 			}
 			else if (key==WEOF)
 			{
@@ -136,26 +131,19 @@ void runplugin(plugin_pipe &p, const string &name)
 				//This conversion is always valid, since key's
 				//only valid values are valid wchar_t values
 				//and WEOF, and we know it's not WEOF.
-				wchar_t tmp=key;
-				input.push_back(QString::fromWCharArray(&tmp, 1));
+				input.insert(key);
 			}
 		}
 		else if (rc==KEY_CODE_YES)
 		{
 			if (key==KEY_BACKSPACE)
 			{
-				QTextBoundaryFinder bounds(QTextBoundaryFinder::Grapheme, input);
-				bounds.toEnd();
-				int pos=bounds.toPreviousBoundary();
-				if (pos!=-1)
-				{
-					input.remove(pos, INT_MAX);
-				}
+				input.backward_delete_char();
 			}
 			else if (key==KEY_ENTER)
 			{
-				p.write(raw_edict_message::create(input,channel));
-				input="";
+				p.write(raw_edict_message::create(input.getQString(),channel));
+				input.kill_whole_line();
 			}
 		}
 		while (p.has_message())
@@ -226,7 +214,7 @@ void runplugin(plugin_pipe &p, const string &name)
 		getyx(channel_windows[channel], y, x);
 		pnoutrefresh(channel_windows[channel], max(y-(maxy-1),0), 0, 0,0,maxy-2,maxx-1);
 		wmove(input_display, 0, 0);
-		wprintu(input_display, "\n%s", input.toLocal8Bit().constData());
+		wprintu(input_display, "\n%s", input.getQString().toLocal8Bit().constData());
 		wnoutrefresh(input_display);
 		//This doesn't need to run all the time, but we should be able
 		//to cope with the screen refreshing at 10Hz
