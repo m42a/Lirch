@@ -244,9 +244,31 @@ void LirchQtInterface::on_actionViewTransfers_triggered()
 
 // ABOUT MENU
 
+QWizardPage *createWelcomePage() {
+	QWizardPage *page = new QWizardPage();
+	page->setTitle(QLabel::tr("Welcome to %1!").arg(LIRCH_PRODUCT_NAME));
+	QLabel *label1 = new QLabel(QLabel::tr("It's quick and easy to start using %1 is your local IRC host.").arg(LIRCH_PRODUCT_NAME));
+	QLabel *label2 = new QLabel(QLabel::tr("With just a few more clicks, %1 will let you chat with everyone on your LAN.").arg(LIRCH_PRODUCT_NAME));
+	QLabel *label3 = new QLabel(QLabel::tr("This wizard will help you configure %1 so that it works the way you want it to. Nifty, huh?").arg(LIRCH_PRODUCT_NAME));
+	label1->setWordWrap(true);
+	label2->setWordWrap(true);
+	label3->setWordWrap(true);
+	QVBoxLayout *layout = new QVBoxLayout();
+	layout->addWidget(label1);
+	layout->addWidget(label2);
+	layout->addWidget(label3);
+	page->setLayout(layout);
+	return page;
+}
+
 void LirchQtInterface::on_actionWizard_triggered()
 {
 	alert_user(tr("The %1 feature is forthcoming.").arg("Help > Setup Wizard"));
+
+	QWizard setup_wizard;
+	setup_wizard.addPage(createWelcomePage());
+	setup_wizard.setWindowTitle(tr("Setup Wizard"));
+	setup_wizard.show();
 }
 
 void LirchQtInterface::on_actionAbout_triggered()

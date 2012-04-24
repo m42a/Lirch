@@ -7,6 +7,7 @@
 #include <QDesktopServices>
 #include <QEvent>
 #include <QFileDialog>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QMessageBox>
@@ -18,6 +19,9 @@
 #include <QTime>
 #include <QTimer>
 #include <QUrl>
+#include <QVBoxLayout>
+#include <QWizard>
+#include <QWizardPage>
 
 #include "lirch_constants.h"
 #include "ui/lirch_client_pipe.h"
