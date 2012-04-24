@@ -12,6 +12,7 @@
 #include <climits>
 #include <cstdio>
 #include <unordered_map>
+#include <cwctype>
 
 #include <QString>
 #include <QTextBoundaryFinder>
@@ -65,8 +66,8 @@ template <class... args>
 void wprintu(WINDOW *w, const string &format, args... a)
 {
 	string s=strprintf(format, a...);
-	for (unsigned char c : s)
-		waddch(w, c|(c>0x7f ? A_ALTCHARSET : 0));
+	wstring wstr=QString::fromLocal8Bit(s.c_str()).toStdWString();
+	waddwstr(w, wstr.c_str());
 }
 
 //This wraps WINDOW pointers so they're be destroyed on exit
@@ -110,6 +111,20 @@ void runplugin(plugin_pipe &p, const string &name)
 			{
 				p.write(raw_edict_message::create(input,channel));
 				input="";
+			}
+			else if (key==(unsigned char)CTRL('U'))
+			{
+				input="";
+			}
+			else if (key==(unsigned char)CTRL('H'))
+			{
+				QTextBoundaryFinder bounds(QTextBoundaryFinder::Grapheme, input);
+				bounds.toEnd();
+				int pos=bounds.toPreviousBoundary();
+				if (pos!=-1)
+				{
+					input.remove(pos, INT_MAX);
+				}
 			}
 			else if (key==WEOF)
 			{
