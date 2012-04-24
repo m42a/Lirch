@@ -1,7 +1,7 @@
 #include <fstream>
 #include <map>
 #include <string>
-using namespace std;
+#include <memory>
 
 #include <QDir>
 #include <QFileInfo>
@@ -14,13 +14,15 @@ using namespace std;
 #include "plugins/lirch_plugin.h"
 #include "plugins/logger_messages.h"
 
+using namespace std;
+
 void run(plugin_pipe pipe, std::string name)
 {
 	// Register for certain message types
 	pipe.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_DISPLAY));
 
-	// Maintain a record of open files (so we can close them later)
-	map<QString, ofstream*> open_files;
+	// Maintain a record of open files (close on destruction)
+	map<QString, unique_ptr<ofstream>> open_files;
 	// Maintain a record of channel names not to log (ephemeral)
 	map<QString, bool> channel_blacklist;
 	
@@ -91,40 +93,35 @@ void run(plugin_pipe pipe, std::string name)
 				//convert the message contents into something logable
 				QString channelname = QUrl::toPercentEncoding(internals->channel);
 
-				//find the corresponding filestream TODO what about QMap<QString, QFile>?
-				ofstream *filestream;
-				//create one if it doesn't already exist
+				//find the corresponding filestream
 				if (!open_files.count(channelname)) {
 					// Open a new file in the desired directory
 					string filepath = log_directory.append(channelname).append(".log").toStdString();
 					// Append to any pre-existing file
-					filestream = new ofstream(filepath.c_str(), fstream::app);
+					auto filestream = new ofstream(filepath.c_str(), fstream::app);
 					// TODO what if open fails? or insert fails?
-					open_files[channelname] = filestream;
+					open_files[channelname] = unique_ptr<ofstream>(filestream);
 					*filestream << "~~~~~~~~" << endl;
 				}
 
-				//actually get the representation we can log FIXME wstring? QFile?
-				string nick = internals->nick.toStdString();
-				string contents = internals->contents.toStdString();
+				auto nick = internals->nick.toUtf8();
+				auto contents = internals->contents.toUtf8();
 				//log the message contents in a manner which matches the message type
 				switch (internals->subtype) {
 					case display_message_subtype::NORMAL:
-					*filestream << "<" << nick << "> " << contents;
+					*open_files[channelname] << "<" << nick.constData() << "> " << contents.constData();
 					break;
 					case display_message_subtype::ME:
-					*filestream << "* " << nick << " " << contents;
+					*open_files[channelname] << "* " << nick.constData() << " " << contents.constData();
 					break;
 					case display_message_subtype::NOTIFY:
-					// FIXME make this not raw UTF-8:
-					//*filestream << "‼‽ " + contents;
-					*filestream << "! " << contents;
+					*open_files[channelname] << QString("‼‽ ").toUtf8().constData() << contents.constData();
 					break;
 					default:
-					*filestream << "? " << contents;
+					*open_files[channelname] << "? " << contents.constData();
 				}
 				//flush the stream
-				*filestream << endl;
+				*open_files[channelname] << endl;
 			}
 		}
 
@@ -157,12 +154,6 @@ void run(plugin_pipe pipe, std::string name)
 		{
 			pipe.write(front.decrement_priority());
 		}
-	}
-
-	// Don't forget to close open files
-	for (auto &key_pair : open_files) {
-		key_pair.second->close();
-		delete key_pair.second;
 	}
 
 	// FIXME is this proper usage?
