@@ -3,6 +3,8 @@
 
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QDate>
+#include <QDesktopServices>
 #include <QEvent>
 #include <QFileDialog>
 #include <QLineEdit>
@@ -15,6 +17,7 @@
 #include <QString>
 #include <QTime>
 #include <QTimer>
+#include <QUrl>
 
 #include "lirch_constants.h"
 #include "ui/lirch_client_pipe.h"

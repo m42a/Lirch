@@ -251,13 +251,32 @@ void LirchQtInterface::on_actionWizard_triggered()
 
 void LirchQtInterface::on_actionAbout_triggered()
 {
-    QMessageBox::information(this,
-                             tr("About Lirch %1").arg(LIRCH_VERSION_STRING),
-                             tr("Lirch %1 (%2) is Copyright (c) %3, %4 (see README)").arg(
-                                     LIRCH_VERSION_STRING,
-                                     LIRCH_BUILD_HASH,
-                                     LIRCH_COPYRIGHT_YEAR,
-                                     LIRCH_COMPANY_NAME));
+	QMessageBox about_box;
+	about_box.setIcon(QMessageBox::Information);
+	about_box.setWindowTitle(tr("About %1 %2").arg(
+		LIRCH_PRODUCT_NAME,
+		LIRCH_VERSION_STRING));
+	about_box.setText(tr("%1 %2 (%3) is Copyright (c) %4, %5 (see README)").arg(
+		LIRCH_PRODUCT_NAME,
+		LIRCH_VERSION_STRING,
+		LIRCH_BUILD_HASH,
+		LIRCH_COPYRIGHT_YEAR,
+		LIRCH_COMPANY_NAME));
+	about_box.setInformativeText("Do you want to report a bug?");
+	about_box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+	about_box.setDefaultButton(QMessageBox::No);
+	if (about_box.exec() == QMessageBox::Yes) {
+		QString date, time, title, body, url;
+		date = QDate::currentDate().toString();
+		time = QTime::currentTime().toString();
+		title = tr("Auto-Generated Bug Report [%1 at %2]").arg(date, time);
+		body = tr("I am experiencing the following issue with %1 %2 (%3):").arg(
+			LIRCH_PRODUCT_NAME,
+			LIRCH_VERSION_STRING,
+			LIRCH_BUILD_HASH);
+		url = tr("https://github.com/m42a/Lirch/issues/new?title=%1&body=%2");
+		QDesktopServices::openUrl(QUrl(url.arg(title, body)));
+	}
 }
 
 // INTERNAL SLOTS
