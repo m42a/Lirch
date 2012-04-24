@@ -80,7 +80,9 @@ if(PRELOADS)
 endif(PRELOADS)
 
 # Configure some string literals and include build/source dir
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/log")
+set(DEFAULT_LOG_DIRECTORY "${CMAKE_BINARY_DIR}/log")
+file(MAKE_DIRECTORY "${DEFAULT_LOG_DIRECTORY}")
+set(LIRCH_LOG_DIRECTORY "${DEFAULT_LOG_DIRECTORY}" CACHE STRING "Configure the program to place log files here by default")
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
 include_directories("${CMAKE_BINARY_DIR}")
 include_directories("${CMAKE_SOURCE_DIR}")

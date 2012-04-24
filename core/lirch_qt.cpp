@@ -115,10 +115,8 @@ int main(int argc, char *argv[])
 	while (pit != pitend) {
 		p.first = *pit; ++pit;
 		if (pit == pitend) {
-			if (verbose) {
-				error_msg = error_msg.arg(QString::fromStdString(p.first));
-				cerr << error_msg.toStdString() << endl;
-			}
+			error_msg = error_msg.arg(QString::fromStdString(p.first));
+			cerr << error_msg.toStdString() << endl;
 			break;
 		}
 		p.second = *pit; ++pit;
