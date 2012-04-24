@@ -44,4 +44,4 @@ if(UNIX)
 endif(UNIX)
 
 # For install (packaging)
-install(TARGETS antenna logger masseuse meatgrinder userlist DESTINATION lib)
+install(TARGETS antenna logger masseuse meatgrinder userlist DESTINATION lib/lirch)
