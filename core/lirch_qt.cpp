@@ -131,7 +131,6 @@ int main(int argc, char *argv[])
 		add_messages.push_back(plugin_adder::create(p.first, p.second));
 	}
 	thread core_thread(run_core, add_messages);
-	core_thread.detach();
 	// The mediator needs to know which thread to join
 	mediator.load(&core_thread);
 

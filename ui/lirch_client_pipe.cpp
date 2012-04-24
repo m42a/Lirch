@@ -71,11 +71,9 @@ void LirchClientPipe::close(QString reason) {
 // The client pipe wait on the core thread when the UI is closed
 void LirchClientPipe::join() {
     send(core_quit_message::create());
-    // FIXME this provides sufficient time for the core to cleanup
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    // FIXME but it's a hack; why doesn't this work?
-    //if (core_thread) {
-    //    core_thread->join();
-    //}
+    // Wait for the core to exit
+    if (core_thread) {
+        core_thread->join();
+    }
 }
 

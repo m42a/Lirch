@@ -35,7 +35,7 @@ private:
     // All client pipes wrap a plugin pipe for a specific (named) plugin
     QString client_name;
     plugin_pipe client_pipe;
-    // FIXME somehow refer to the core_thread
+    // In order to join with the core thread, we need this
     std::thread *core_thread;
 public slots:
     void join();
