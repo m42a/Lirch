@@ -2,26 +2,29 @@
 
 // These are rather trivial
 LirchClientPipe::LirchClientPipe() :
-    client_state(State::BEFORE) { }
+    client_state(State::BEFORE), core_thread(nullptr) { }
 LirchClientPipe::~LirchClientPipe() { }
+
+void LirchClientPipe::load(std::thread *t) {
+    core_thread = t;
+}
 
 // A client pipe is ready for a duration
 bool LirchClientPipe::ready() const {
     return client_state == State::DURING;
 }
 
-// The client pipe writes outbound messages
-void LirchClientPipe::send(message m) {
-    if (ready()) {
-        if (m.type == LIRCH_MSG_TYPE_RAW_EDICT) {
-            client_pipe.write(m);
-        }
-    }
-}
-
 #ifndef NDEBUG
 #include <QDebug>
 #endif
+
+// The client pipe writes outbound messages
+void LirchClientPipe::send(message m) {
+    if (ready()) {
+        qDebug() << tr("Mediator for '%1' forwarded '%2' message").arg(client_name, QString::fromStdString(m.type));
+        client_pipe.write(m);
+    }
+}
 
 // The client pipe alerts the client of inbound messages
 void LirchClientPipe::display(display_message m) {
@@ -63,5 +66,16 @@ void LirchClientPipe::open(plugin_pipe pipe, QString name) {
 void LirchClientPipe::close(QString reason) {
     client_state = State::AFTER;
     emit shutdown(tr("%1 was closed for %2").arg(client_name, reason));
+}
+
+// The client pipe wait on the core thread when the UI is closed
+void LirchClientPipe::join() {
+    send(core_quit_message::create());
+    // FIXME this provides sufficient time for the core to cleanup
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // FIXME but it's a hack; why doesn't this work?
+    //if (core_thread) {
+    //    core_thread->join();
+    //}
 }
 

@@ -15,7 +15,7 @@ endif(BUILD_TESTING)
 qt4_wrap_cpp(lirch_client_pipe_MOC_SOURCES ../lirch_client_pipe.h)
 add_library(lirch-client ../lirch_client_pipe.cpp ${lirch_client_pipe_MOC_SOURCES})
 target_link_libraries(lirch-client ${QT_LIBRARIES})
-set_target_properties(lirch-client PROPERTIES COMPILE_FLAGS -fPIC)
+set_target_properties(lirch-client PROPERTIES COMPILE_FLAGS "-fPIC -pthread")
 
 # Build the actual plugin
 add_library(lirch-gui SHARED lirch_qt_plugin.cpp)

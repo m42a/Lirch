@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 	QApplication qlirch(argc, argv);
 	// TODO sometimes being necessary to avoid string conversion issues?
 	setlocale(LC_NUMERIC, "C");
-	// The window is constructed here, show()'n later (see plugin header)
+	// The window is constructed here, show()'n later (see ui/qt)
 	LirchQtInterface main_window;
         // A small intermediate object is used to mediate
         QObject::connect(&mediator,    SIGNAL(alert(QString, QString)),
@@ -76,6 +76,8 @@ int main(int argc, char *argv[])
                          &main_window, SLOT(die(QString)));
         QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),
                          &main_window, SLOT(use(LirchClientPipe *)));
+        QObject::connect(&qlirch,      SIGNAL(aboutToQuit()),
+                         &mediator,    SLOT(join()));
 
 	vector<pair<string, string>> plugins;
 	// Prepare the list of plugins specified in build (see lirch_constants.h)
@@ -130,8 +132,9 @@ int main(int argc, char *argv[])
 	}
 	thread core_thread(run_core, add_messages);
 	core_thread.detach();
+	// The mediator needs to know which thread to join
+	mediator.load(&core_thread);
 
 	// When this event loop terminates, so will we
-	// TODO FIXME wrap this and make it core_thread.join(); after shutdown
 	return qlirch.exec();
 }
