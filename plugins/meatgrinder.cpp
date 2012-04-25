@@ -126,9 +126,9 @@ void run(plugin_pipe p, string name)
 			auto s=dynamic_cast<registration_status *>(m.getdata());
 			if (!s)
 				continue;
-			//Retry 2000 times until we succeed
 			if (!s->status)
 			{
+				//Retry 2000 times until we succeed
 				if (s->priority>-32000)
 					p.write(registration_message::create(s->priority-1, name, s->type));
 			}
@@ -152,7 +152,9 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(replacer_ready::create());
 					p.write(register_replacer::create("/slap", QRegExp("/slap\\b( ?) *(.*)", Qt::CaseSensitive, QRegExp::RegExp2), "/me slaps\\1\\2 with an optimistic biologist"));
-					p.write(register_replacer::create("/replace", QRegExp("/replace", Qt::CaseSensitive, QRegExp::RegExp2), "/macro ''"));
+					p.write(register_replacer::create("/replace", QRegExp("/replace", Qt::CaseSensitive, QRegExp::RegExp2), "/macro \"\""));
+					p.write(register_replacer::create("/macros", QRegExp("/macros", Qt::CaseSensitive, QRegExp::RegExp2), "/commands macros"));
+					p.write(register_replacer::create("/replacements", QRegExp("/replacements", Qt::CaseSensitive, QRegExp::RegExp2), "/commands replacements"));
 				}
 			}
 		}
@@ -207,9 +209,6 @@ void run(plugin_pipe p, string name)
 			}
 			if (handlers.count(pre)==0)
 				//Nothing can handle this type of message, so complain
-				//We should be using tr here since this is a
-				//message to be displayed, but I'm not sure
-				//which tr to use.
 				p.write(notify_message::create(e->channel, QObject::tr("Unknown message type \"%1\"").arg(pre)));
 			else
 				p.write(handlers[pre](mod, e->channel));
@@ -232,7 +231,6 @@ void run(plugin_pipe p, string name)
 				for (const auto &s : commands)
 					output+="\n"+s;
 			}
-			//Should this be put into a "/macros" command?
 			if (internals->arguments.count("macros")!=0)
 			{
 				output += "\nmacros:";
@@ -240,7 +238,6 @@ void run(plugin_pipe p, string name)
 					if (p.first!="")
 						output+="\n"+p.first+" \'"+p.second.first.pattern()+"\' \'"+p.second.second+"\'";
 			}
-			//Same for this
 			if (internals->arguments.count("replacements")!=0)
 			{
 				output += "\nreplacements:";
