@@ -29,7 +29,7 @@ void run(plugin_pipe pipe, std::string name)
 	// Fetch the settings
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
 	settings.beginGroup("Logging");
-	bool logging_disabled = settings.value("disabled", false).value<bool>();
+
 	// Determine the default log directory
 	QDir default_log_directory;
 	// FIXME current method: use the build-configured directory if possible; otherwise, make a subdir in settings
@@ -46,6 +46,7 @@ void run(plugin_pipe pipe, std::string name)
 	}
 	// TODO consider this (it drags in a QtGui dependency)
 	// QDesktopServices::storageLocation(QDesktopServices::DataLocation)
+
 	// Set the log directory
 	QString log_directory = settings.value("root_directory", default_log_directory.canonicalPath()).value<QString>();
 	
@@ -74,7 +75,7 @@ void run(plugin_pipe pipe, std::string name)
 		}
 
 		//logs the display messages, provided logging is enabled
-		else if (front.type == LIRCH_MSG_TYPE_DISPLAY && !logging_disabled)
+		else if (front.type == LIRCH_MSG_TYPE_DISPLAY)
 		{
 			display_message * internals = dynamic_cast<display_message *>(front.getdata());
 			//if this is truly a display message, then we can use it
@@ -138,9 +139,13 @@ void run(plugin_pipe pipe, std::string name)
 					// FIXME just setting log_directory won't update open_files
 					settings.setValue("root_directory", internals->get_directory());
 				}
-				// SET_LGBL disables logging globally
-				if (internals->has_option(logging_message::logging_option::SET_LGBL)) {
-					logging_disabled = internals->is_disabled();
+				// SET_MODE sets the logger's mode (on/off)
+				if (internals->has_option(logging_message::logging_option::SET_MODE)) {
+					// FIXME handle this
+				}
+				// SET_FORM sets the logger's format
+				if (internals->has_option(logging_message::logging_option::SET_FORM)) {
+					// FIXME handle this
 				}
 				// SET_CHAN enables/disables logging for specific channels
 				if (internals->has_option(logging_message::logging_option::SET_CHAN)) {
@@ -157,7 +162,6 @@ void run(plugin_pipe pipe, std::string name)
 	}
 
 	// FIXME is this proper usage?
-	settings.setValue("disabled", logging_disabled);
 	settings.setValue("root_directory", log_directory);
 	settings.endGroup();
 
