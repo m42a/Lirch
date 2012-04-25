@@ -27,7 +27,7 @@ void send_input(plugin_pipe out, plugin_pipe in)
 			message m=in.read();
 			if (m.type=="set_channel")
 			{
-				auto i=dynamic_cast<set_channel *>(m.getdata());
+				auto i=dynamic_cast<set_channel_message *>(m.getdata());
 				if (i)
 					channel=i->channel;
 			}
@@ -113,7 +113,7 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type=="set_channel")
 		{
-			auto i=dynamic_cast<set_channel *>(m.getdata());
+			auto i=dynamic_cast<set_channel_message *>(m.getdata());
 			if (!i)
 				continue;
 			p.write(m.decrement_priority());

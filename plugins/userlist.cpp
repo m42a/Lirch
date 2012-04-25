@@ -10,6 +10,7 @@
 #include "grinder_messages.h"
 #include "lirch_constants.h"
 #include "nick_messages.h"
+#include "channel_messages.h"
 
 using namespace std;
 
@@ -46,25 +47,50 @@ message sendList(QString text, QString channel)
 }
 
 //updates all of the relevent fields of out status map based on the received message
-void updateSenderStatus(plugin_pipe p, received_message * message, unordered_map<QString, user_status> & userList)
+void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_status> & userList)
 {
-	//message->channel is storing the old nickname of the user in the case that it is a nick type received.
-	//if it is, remove the person of the old nickname
-	if (message->subtype==received_message_subtype::NICK)
+
+	if (m.type=="received")
 	{
-		user_status oldNickInfo = userList[message->channel];
-		oldNickInfo.nick=message->nick;
-		userList.erase(message->channel);
-		userList[message->nick]=oldNickInfo;
-		return;
+		auto message=dynamic_cast<received_message *>(m.getdata());
+		userList[message->nick].nick=message->nick;
+		userList[message->nick].channels.insert(message->channel);
+		userList[message->nick].ip=message->ipAddress;
+		userList[message->nick].lastseen=time(NULL);
 	}
 
-	userList[message->nick].nick=message->nick;
-	if ((message->subtype==received_message_subtype::NORMAL || message->subtype==received_message_subtype::ME || message->subtype==received_message_subtype::NOTIFY) && message->channel!="")
-		userList[message->nick].channels.insert(message->channel);
+	if (m.type=="received_status")
+	{
+		auto message=dynamic_cast<received_status_message *>(m.getdata());
+		userList[message->nick].lastseen=time(NULL);
+		userList[message->nick].nick=message->nick;
+		userList[message->nick].ip=message->ipAddress;
 
-	userList[message->nick].ip=message->ipAddress;
-	userList[message->nick].lastseen=time(NULL);
+		if (message->subtype==received_status_message_subtype::LEFT)
+		{
+			userList[message->nick].channels.erase(message->channel);
+			p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
+		}
+		else if (message->subtype==received_status_message_subtype::HERE)
+		{
+			userList[message->nick].channels.insert(message->channel);
+		}
+		else if (message->subtype==received_status_message_subtype::WHOHERE)
+		{
+			p.write(here_message::create(message->channel));
+			userList[message->nick].channels.insert(message->channel);
+		}
+		else if (message->subtype==received_status_message_subtype::NICK)
+		{
+			//message->channel is storing the old nickname of the user in the case that it is a nick type received.
+			//if it is, remove the person of the old nickname
+			user_status oldNickInfo = userList[message->channel];
+			oldNickInfo.nick=message->nick;
+			userList.erase(message->channel);
+			userList[message->nick]=oldNickInfo;
+		}
+
+	}
 
 	p.write(userlist_message::create(userList));
 }
@@ -120,8 +146,10 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "userlist_request"));
 	p.write(registration_message::create(0, name, "userlist_timer"));
 	p.write(registration_message::create(30000, name, "received"));
+	p.write(registration_message::create(30000, name, "received_status"));
 	p.write(registration_message::create(0, name, "list_channels"));
 	p.write(registration_message::create(0, name, "handler_ready"));
+	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
 
 
@@ -191,17 +219,10 @@ void run(plugin_pipe p, string name)
 			p.write(register_handler::create("/list", sendList));
 			p.write(register_handler::create("/nick", sendNick));
 		}
-		else if (m.type=="received")
+		else if (m.type=="received" || m.type=="received_status")
 		{
-			auto s=dynamic_cast<received_message *>(m.getdata());
-			if (!s)
-				continue;
 			p.write(m.decrement_priority());
-			updateSenderStatus(p,s,userList);
-			if (s->subtype==received_message_subtype::WHOHERE)
-			{
-				p.write(here_message::create(s->channel));
-			}
+			updateSenderStatus(p,m,userList);
 		}
 		else if (m.type=="nick")
 		{

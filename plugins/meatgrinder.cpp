@@ -56,7 +56,7 @@ message handle_channel_change(QString text, QString)
 {
 	if (!text.startsWith("/channel"))
 		return empty_message::create();
-	return set_channel::create(text.remove(0, 9));
+	return set_channel_message::create(text.remove(0, 9));
 }
 
 message handle_commands(QString text, QString channel)
@@ -88,7 +88,7 @@ message handle_channel_leave(QString text, QString)
 {
 	if (!text.startsWith("/leave"))
 		return empty_message::create();
-	return leave_channel::create(text.remove(0, 7));
+	return leave_channel_message::create(text.remove(0, 7));
 }
 
 message handle_user_command(QString text, QString)
