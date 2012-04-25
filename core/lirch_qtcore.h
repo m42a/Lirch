@@ -3,28 +3,37 @@
 
 #include <QObject>
 
-//Yes, these have to go in a header file.  No, I don't know why.
-class core_waiter : public QObject
-{
-	Q_OBJECT
+#include "core/message.h"
+#include "core/message_pipe.h"
+#include "core/core_messages.h"
 
+class core_mediator : public QObject {
+	Q_OBJECT
+	typedef void (*core_function)(const std::vector<message> &);
 public:
-	core_waiter(std::thread &tt) : t(tt) {}
+	core_mediator(core_function func, const std::vector<message> &msgs) :
+		core_thread(new std::thread(func, msgs)) { }
+	~core_mediator() { shutdown(); }
 
 public slots:
-	void onQuit() {t.join();}
-
-private:
-	std::thread &t;
-};
-
-class core_notifier : public QObject
-{
-	Q_OBJECT
-
-public:
-	void emitQuit() {emit quit();}
+	void shutdown() {
+		if (shutdown_mutex.try_lock()) {
+			extern message_pipe in_pipe;
+			in_pipe.write(core_quit_message::create());
+			if (core_thread) {
+				core_thread->join();
+				delete core_thread;
+				core_thread = nullptr;
+			}
+			shutdown_mutex.unlock();
+			emit aboutToShutdown();
+		}
+	}
 
 signals:
-	void quit();
+	void aboutToShutdown();
+
+private:
+	std::thread *core_thread;
+	std::mutex shutdown_mutex;
 };
