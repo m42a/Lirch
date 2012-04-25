@@ -60,10 +60,8 @@ void updateSenderStatus(plugin_pipe p, received_message * message, unordered_map
 	}
 
 	userList[message->nick].nick=message->nick;
-	if (message->subtype==received_message_subtype::NORMAL || message->subtype==received_message_subtype::ME || message->subtype==received_message_subtype::NOTIFY)
+	if ((message->subtype==received_message_subtype::NORMAL || message->subtype==received_message_subtype::ME || message->subtype==received_message_subtype::NOTIFY) && message->channel!="")
 		userList[message->nick].channels.insert(message->channel);
-
-
 
 	userList[message->nick].ip=message->ipAddress;
 	userList[message->nick].lastseen=time(NULL);
