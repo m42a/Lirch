@@ -25,18 +25,7 @@
 #include "plugins/channel_messages.h"
 #include "ui/line_editor.h"
 #include "core/core_messages.h"
-
-namespace std
-{
-	template <>
-	struct hash<QString>
-	{
-		size_t operator()(const QString& v) const
-		{
-			return std::hash<std::string>()(v.toStdString());
-		}
-	};
-}
+#include "plugins/QString_hash.h"
 
 inline char CTRL(char c)
 {
