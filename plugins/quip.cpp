@@ -29,7 +29,7 @@ class file_descriptor_handler
 {
 public:
 	file_descriptor_handler(int _file_descriptor) : file_descriptor(_file_descriptor) {}
-	~file_descriptor_handler(){close(file_descriptor);}
+	~file_descriptor_handler() {close(file_descriptor);}
 private:
 	int file_descriptor;
 };
@@ -68,8 +68,10 @@ bool generate_quip(plugin_pipe &pipe, generate_quip_message *possible_generate_q
 		read_return_value=read(pipe_file_descriptors[0], fortune_output_buffer+fortune_output_buffer_offset, sizeof(fortune_output_buffer)-fortune_output_buffer_offset);
 		fortune_output_buffer_offset+=read_return_value*(read_return_value>0);
 	}
-	while (fortune_output_buffer_offset!=0 && fortune_output_buffer[fortune_output_buffer_offset-1]=='\n')
-		--fortune_output_buffer_offset;
+	while (fortune_output_buffer_offset!=0 && fortune_output_buffer[--fortune_output_buffer_offset]=='\n');
+	{
+		++fortune_output_buffer_offset;
+	}
 	QString quip_recieved_from_fortune=QString::fromLocal8Bit(fortune_output_buffer, fortune_output_buffer_offset);
 	if (fortune_output_buffer_offset!=0)
 		pipe.write(edict_message::create(edict_message_subtype::ME, possible_generate_quip_message->channel, quip_recieved_from_fortune));
@@ -87,18 +89,18 @@ bool possibly_deal_with_registration_status_message(plugin_pipe &pipe, registrat
 	return true;
 }
 
-bool deal_with_message(plugin_pipe &pipe, message m, const string &plugin_name)
+bool deal_with_message(plugin_pipe &pipe, message incoming_message, const string &plugin_name)
 {
-	if (m.type=="shutdown")
+	if (incoming_message.type=="shutdown")
 		return false;
-	if (m.type=="registration_status")
-		return possibly_deal_with_registration_status_message(pipe, dynamic_cast<registration_status *>(m.getdata()), plugin_name);
-	if (m.type=="generate_quip")
-		return generate_quip(pipe, dynamic_cast<generate_quip_message *>(m.getdata()));
-	if (m.type=="handler_ready")
+	if (incoming_message.type=="registration_status")
+		return possibly_deal_with_registration_status_message(pipe, dynamic_cast<registration_status *>(incoming_message.getdata()), plugin_name);
+	if (incoming_message.type=="generate_quip")
+		return generate_quip(pipe, dynamic_cast<generate_quip_message *>(incoming_message.getdata()));
+	if (incoming_message.type=="handler_ready")
 		pipe.write(register_handler::create("/quip", generate_generate_quip_message));
-	m.decrement_priority();
-	pipe.write(m);
+	incoming_message.decrement_priority();
+	pipe.write(incoming_message);
 	return true;
 }
 
