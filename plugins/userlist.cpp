@@ -176,7 +176,7 @@ void run(plugin_pipe p, string name)
 			while ((i=std::find_if(userList.begin(), userList.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=userList.end())
 			{
 				for(auto iter = i->second.channels.begin(); iter!=i->second.channels.end(); iter++)
-					p.write(notify_message::create(*iter, i->first.repeated(1).append(" has left the channel")));
+					p.write(notify_message::create(*iter, i->first.repeated(1).append(" has logged off")));
 				userList.erase(i);
 			}
 			p.write(userlist_message::create(userList));
