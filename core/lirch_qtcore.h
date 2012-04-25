@@ -1,5 +1,5 @@
+#include <mutex>
 #include <thread>
-#include <vector>
 
 #include <QObject>
 
@@ -9,23 +9,29 @@
 
 class core_mediator : public QObject {
 	Q_OBJECT
-	typedef void (*core_function)(const std::vector<message> &);
 public:
-	core_mediator(core_function func, const std::vector<message> &msgs) :
-		core_thread(new std::thread(func, msgs)) { }
-	~core_mediator() { shutdown(); }
+	core_mediator(std::thread *t = nullptr) :
+		core_thread(t) { }
+
+	void load(std::thread *t) {
+		if (thread_mutex.try_lock()) {
+			if (!core_thread) {
+				core_thread = t;
+			}
+			thread_mutex.unlock();
+		}
+	}
 
 public slots:
 	void shutdown() {
-		if (shutdown_mutex.try_lock()) {
-			extern message_pipe in_pipe;
-			in_pipe.write(core_quit_message::create());
-			if (core_thread) {
+		if (thread_mutex.try_lock()) {
+			if (core_thread && core_thread->joinable()) {
+				extern message_pipe in_pipe;
+				in_pipe.write(core_quit_message::create());
 				core_thread->join();
-				delete core_thread;
 				core_thread = nullptr;
 			}
-			shutdown_mutex.unlock();
+			thread_mutex.unlock();
 			emit aboutToShutdown();
 		}
 	}
@@ -35,5 +41,5 @@ signals:
 
 private:
 	std::thread *core_thread;
-	std::mutex shutdown_mutex;
+	std::mutex thread_mutex;
 };

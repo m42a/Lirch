@@ -1,6 +1,6 @@
 #include <vector>
 #include <iostream>
-//#include <csignal>
+#include <csignal>
 #include <string>
 
 #include <QCoreApplication>
@@ -18,20 +18,20 @@ extern bool verbose;
 
 void run_core(const vector<message> &vm);
 
-//void handle_sigint(int)
-//{
+void handle_sigint(int)
+{
 	//Quit nicely when we get a ctrl-c, but not if we get it twice.  We
 	//need to unregister before we write because we don't want to lock the
 	//mutex twice.  This should only be a problem under heavy load (which
 	//is exactly when we don't want to block SIGINT).
-//	signal(SIGINT, SIG_DFL);
-//	in_pipe.write(core_quit_message::create());
-//}
+	signal(SIGINT, SIG_DFL);
+	in_pipe.write(core_quit_message::create());
+}
 
 int main(int argc, char *argv[])
 {
-//	if (signal(SIGINT, handle_sigint)==SIG_IGN)
-//		signal(SIGINT, SIG_IGN);
+	if (signal(SIGINT, handle_sigint)==SIG_IGN)
+		signal(SIGINT, SIG_IGN);
 	QCoreApplication app(argc, argv);
 	vector<message> vm;
 	bool preload=true;
@@ -102,12 +102,13 @@ int main(int argc, char *argv[])
 	}
 
 	// Create a QThread where we will have the mediator run the core
-	core_mediator mediator(run_core, pp);
+	core_mediator mediator;
 	// The application qutting shuts down the core
 	QObject::connect(&app, SIGNAL(aboutToQuit()), &mediator, SLOT(shutdown()));
 	// The core shutting down quits the application
 	QObject::connect(&mediator, SIGNAL(aboutToShutdown()), &app, SLOT(quit()));
-
-	// Kick everything off
+	// Run the core in a thread until such a time that the mediator decides
+	thread core_thread([&mediator, pp](){ run_core(pp); mediator.shutdown(); });
+	mediator.load(&core_thread);
 	app.exec();
 }
