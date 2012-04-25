@@ -117,9 +117,8 @@ void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &se
 	string root(settings.value("Logger/root_directory", LIRCH_DEFAULT_LOG_DIR).toString().toUtf8().data());
 	root += "/";
 	string filename(QUrl::toPercentEncoding(channel, "\0").data());
-	//sanatize(filename);
-	filename += ".txt";
-	filename = root.append(filename);
+	//sanatize(filename); 
+ 	filename = root+filename+".txt";
 	ofstream * newFile = new ofstream();
 	newFile->open(filename.c_str(), fstream::app);
 	*newFile <<"~~~~~~~~"<<endl;

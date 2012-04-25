@@ -129,15 +129,6 @@ void run(plugin_pipe p, string name)
 				bmp.core_write(m);
 			}
 		}
-		else if (m.type=="query_channel")
-		{
-			auto i=dynamic_cast<query_channel *>(m.getdata());
-			if (!i)
-				continue;
-			QStringList channels;
-			channels.push_back(channel);
-			p.write(channel_list::create(channels));
-		}
 		else if (m.type=="only")
 		{
 			auto i=dynamic_cast<display_single_channel *>(m.getdata());

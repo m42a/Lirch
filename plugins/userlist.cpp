@@ -47,7 +47,7 @@ message sendList(QString text, QString channel)
 }
 
 //updates all of the relevent fields of out status map based on the received message
-void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_status> & userList)
+void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_status> & userList, QString currentNick)
 {
 
 	if (m.type=="received")
@@ -92,7 +92,7 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 
 	}
 
-	p.write(userlist_message::create(userList));
+	p.write(userlist_message::create(currentNick, userList));
 }
 
 void askForUsers(plugin_pipe p, QString channel)
@@ -194,7 +194,7 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type=="userlist_request")
 		{
-			p.write(userlist_message::create(userList));
+			p.write(userlist_message::create(currentNick, userList));
 		}
 		else if (m.type=="userlist_timer")
 		{
@@ -207,7 +207,7 @@ void run(plugin_pipe p, string name)
 					p.write(notify_message::create(*iter, i->first.repeated(1).append(" has logged off")));
 				userList.erase(i);
 			}
-			p.write(userlist_message::create(userList));
+			p.write(userlist_message::create(currentNick, userList));
 			thread([](plugin_pipe p)
 			{
 				this_thread::sleep_for(chrono::seconds(10));
@@ -222,7 +222,7 @@ void run(plugin_pipe p, string name)
 		else if (m.type=="received" || m.type=="received_status")
 		{
 			p.write(m.decrement_priority());
-			updateSenderStatus(p,m,userList);
+			updateSenderStatus(p,m,userList,currentNick);
 		}
 		else if (m.type=="nick")
 		{
