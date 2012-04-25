@@ -242,7 +242,7 @@ void run(plugin_pipe p, string name)
 			{
 				output += "\nreplacements:";
 				auto range=text_replacements.equal_range("");
-				for_each(range.first, range.second, [&output](const decltype(text_replacements)::value_type &p)
+				for_each(range.first, range.second, [&output](decltype(*range.first) &p)
 				{
 					output+="\n\'"+p.second.first.pattern()+"\' \'"+p.second.second+"\'";
 				});
