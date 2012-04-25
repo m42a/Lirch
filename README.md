@@ -8,7 +8,7 @@ It is meant to replicate the IRC protocol as closely as possible, with some pote
 1. Providing a simple and intuitive method for digital communication with those near you
 2. Multiple use patterns:
     - A Qt4-based GUI, designed for easy use by normal end-users
-    - An ncurses interface, designed for advanced users and/or those desiring light-weight installs
+    - A curses-based interface, designed for advanced users and/or those desiring light-weight installs
 3. File transfer capabilities (unicast to single users or multicast to a channel)
 4. Private (encrypted) sub-channels using pre-shared keys
 5. The ability to persist conversations to a variety of log formats
@@ -35,7 +35,7 @@ Any assistance toward getting additional build platforms working would be _much_
 ### Using cmake (better for developers, isolated source)
 1. Create a directory to perform the build. `../lirch-build` is a good choice. We will use this in our example.
 2. Navigate to this directory. We will assume the source is located in `../lirch-source`; if not, adjust accordingly.
-3. From here, point cmake to the top source directory, which contains a file named CMakeLists.txt. We will use the ncurses interface to cmake, ccmake: `ccmake ../lirch-source`
+3. From here, point cmake to the top source directory, which contains a file named CMakeLists.txt. We will use the curses interface to cmake, ccmake: `ccmake ../lirch-source`
     - You can also select from a variety of generators, using (c)cmake's -G argument. See `cmake` for list.
 4. Use the keyboard to select the desired build options. You will need Qt4.8. Press `c` to configure, then `g` to generate.
 5. If you used a Makefile generator option, run `make`. Otherwise, load the project into your desired environment.
