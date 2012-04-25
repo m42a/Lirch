@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LirchSetupWizard</class>
+ <widget class="QWizard" name="LirchSetupWizard">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>320</width>
+    <height>240</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Lirch @LIRCH_VERSION_STRING@ Setup Wizard</string>
+  </property>
+  <widget class="QWizardPage" name="welcome_page">
+   <layout class="QVBoxLayout" name="welcome_layout">
+    <item>
+     <widget class="QLabel" name="welcome_label">
+      <property name="text">
+       <string>Welcome to Lirch @LIRCH_VERSION_STRING@!</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="description_label">
+      <property name="text">
+       <string>In just a few moments, you'll be able to chat with everyone on your LAN. (They're probably the people who are sitting around you right now!)</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="instruction_label">
+      <property name="text">
+       <string>Click &quot;Next &gt;&quot; to customize Lirch,</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Or click &quot;Cancel&quot; for defaults.</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWizardPage" name="nickname_config_page">
+   <layout class="QVBoxLayout" name="nickname_config_layout">
+    <item>
+     <widget class="QLabel" name="nickname_label">
+      <property name="text">
+       <string>Please select a nickname:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="nickname_lineedit"/>
+    </item>
+    <item>
+     <widget class="QCheckBox" name="nickname_checkbox">
+      <property name="text">
+       <string>Use this as the default nickname</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="nickname_note">
+      <property name="text">
+       <string>(Note: if you do not check the box above, you will be prompted to enter a nickname on startup.)</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWizardPage" name="logging_config_page">
+   <layout class="QVBoxLayout" name="logging_config_layout">
+    <item>
+     <widget class="QGroupBox" name="logging_type_box">
+      <property name="title">
+       <string>Logging Preferences</string>
+      </property>
+      <layout class="QVBoxLayout" name="logging_type_layout">
+       <item>
+        <widget class="QRadioButton" name="logging_type_on">
+         <property name="text">
+          <string>On (log everything)</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="logging_type_off">
+         <property name="text">
+          <string>Off (log nothing)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="logging_type_default">
+         <property name="text">
+          <string>Default (default channel only)</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="logging_dir_layout">
+      <item>
+       <widget class="QLineEdit" name="logging_dir_lineedit">
+        <property name="text">
+         <string>@LIRCH_LOG_DIRECTORY@</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="logging_dir_button">
+        <property name="text">
+         <string>Browse...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

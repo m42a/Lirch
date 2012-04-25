@@ -1,31 +1,24 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
-#include <QCheckBox>
 #include <QCloseEvent>
 #include <QDate>
 #include <QDesktopServices>
-#include <QEvent>
 #include <QFileDialog>
-#include <QLabel>
-#include <QLineEdit>
 #include <QMainWindow>
 #include <QMessageBox>
-#include <QObject>
-#include <QPushButton>
 #include <QSettings>
 #include <QShowEvent>
 #include <QString>
 #include <QTime>
 #include <QTimer>
 #include <QUrl>
-#include <QVBoxLayout>
-#include <QWizard>
-#include <QWizardPage>
 
 #include "lirch_constants.h"
 #include "ui/lirch_client_pipe.h"
 #include "plugins/edict_messages.h"
+#include "plugins/display_messages.h"
+#include "plugins/logger_messages.h"
 
 namespace Ui {
     class LirchQtInterface;

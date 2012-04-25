@@ -31,11 +31,23 @@ set(QT_DONT_USE_QTGUI FALSE)
 include("${QT_USE_FILE}")
 include_directories("${QT_INCLUDE_DIR}")
 # Source, headers to moc, UI, and resource files need prep
-set(lirch_qt_interface_HEADERS lirch_qt_interface.h lirch_qlineedit_dialog.h lirch_qtabwidget.h)
-set(lirch_qt_interface_SOURCES lirch_qt_interface.cpp lirch_qlineedit_dialog.cpp lirch_qtabwidget.cpp)
-# Needs to have the version string replaced
+set(lirch_qt_interface_HEADERS
+  lirch_qt_interface.h
+  lirch_qlineedit_dialog.h
+  lirch_qtabwidget.h
+  lirch_setup_wizard.h)
+set(lirch_qt_interface_SOURCES
+  lirch_qt_interface.cpp
+  lirch_qlineedit_dialog.cpp
+  lirch_qtabwidget.cpp
+  lirch_setup_wizard.cpp)
+# These need to have some strings replaced
 configure_file(lirch_qt_interface.ui "${LIRCH_QT_DIR}/lirch_qt_interface.ui")
-set(lirch_qt_interface_UI "${LIRCH_QT_DIR}/lirch_qt_interface.ui" lirch_qlineedit_dialog.ui)
+configure_file(lirch_setup_wizard.ui "${LIRCH_QT_DIR}/lirch_setup_wizard.ui")
+set(lirch_qt_interface_UI
+  "${LIRCH_QT_DIR}/lirch_qt_interface.ui"
+  lirch_qlineedit_dialog.ui
+  "${LIRCH_QT_DIR}/lirch_setup_wizard.ui")
 set(lirch_qt_interface_QRC lirch_qt_interface.qrc)
 # Prepare each type of code
 qt4_wrap_cpp(lirch_qt_interface_MOC_SOURCES ${lirch_qt_interface_HEADERS})

@@ -15,7 +15,8 @@
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
 #include "ui/qt/lirch_qlineedit_dialog.h"
-#include "ui/qt/ui_lirch_qlineedit_dialog.h"
+#include "ui/qt/lirch_qtabwidget.h"
+#include "ui/qt/lirch_setup_wizard.h"
 
 // QT UI
 
@@ -244,31 +245,22 @@ void LirchQtInterface::on_actionViewTransfers_triggered()
 
 // ABOUT MENU
 
-QWizardPage *createWelcomePage() {
-	QWizardPage *page = new QWizardPage();
-	page->setTitle(QLabel::tr("Welcome to %1!").arg(LIRCH_PRODUCT_NAME));
-	QLabel *label1 = new QLabel(QLabel::tr("It's quick and easy to start using %1 is your local IRC host.").arg(LIRCH_PRODUCT_NAME));
-	QLabel *label2 = new QLabel(QLabel::tr("With just a few more clicks, %1 will let you chat with everyone on your LAN.").arg(LIRCH_PRODUCT_NAME));
-	QLabel *label3 = new QLabel(QLabel::tr("This wizard will help you configure %1 so that it works the way you want it to. Nifty, huh?").arg(LIRCH_PRODUCT_NAME));
-	label1->setWordWrap(true);
-	label2->setWordWrap(true);
-	label3->setWordWrap(true);
-	QVBoxLayout *layout = new QVBoxLayout();
-	layout->addWidget(label1);
-	layout->addWidget(label2);
-	layout->addWidget(label3);
-	page->setLayout(layout);
-	return page;
-}
-
 void LirchQtInterface::on_actionWizard_triggered()
 {
-	alert_user(tr("The %1 feature is forthcoming.").arg("Help > Setup Wizard"));
-
-	QWizard setup_wizard;
-	setup_wizard.addPage(createWelcomePage());
-	setup_wizard.setWindowTitle(tr("Setup Wizard"));
-	setup_wizard.show();
+	LirchSetupWizard setup_wizard;
+	if (setup_wizard.exec()) {
+		nick = setup_wizard.get_nick();
+		if (setup_wizard.nick_is_default()) {
+			default_nick = nick;
+		}
+		logging_message::logging_options options;
+		options |= logging_message::logging_option::SET_LDIR;
+		options |= logging_message::logging_option::SET_MODE;
+		logging_message log_data(options);
+		log_data.set_directory(setup_wizard.get_logging_directory());
+		log_data.set_mode(setup_wizard.get_logging_mode());
+		client_pipe->send(logging_message::create(log_data));
+	}
 }
 
 void LirchQtInterface::on_actionAbout_triggered()
