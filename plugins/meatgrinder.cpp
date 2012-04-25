@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <set>
 
 #include <QString>
 
@@ -71,12 +72,11 @@ message handle_erase_command(QString text, QString)
 {
 	if(!text.startsWith("/macro_erase "))
 		return empty_message::create();
-	text.remove(0, 13);
-	while(text[0] == ' ')
-		text.remove(0, 1);
 	QStringList parsed = parse(text);
+	parsed.removeFirst();
 	QString command = parsed.at(0);
-	command.push_front("/");
+	if (command.size()!=0 && command[0]!='/')
+		command.push_front("/");
 	if(parsed.size() < 1)
 		return empty_message::create();
 	while(parsed.size() < 3)
@@ -95,12 +95,11 @@ message handle_user_command(QString text, QString)
 {
 	if (!text.startsWith("/macro "))
 		return empty_message::create();
-	text.remove(0, 7);
-	while(text[0] == ' ')
-		text.remove(0, 1);
 	QStringList parsed = parse(text);
+	parsed.removeFirst();
 	QString command = parsed.at(0);
-	command.push_front("/");
+	if (command.size()!=0 && command[0]!='/')
+		command.push_front("/");
 	if(parsed.size() < 3)
 		return empty_message::create();
 	return register_replacer::create(command, QRegExp(parsed.at(1), Qt::CaseSensitive, QRegExp::RegExp2), parsed.at(2));
@@ -127,9 +126,9 @@ void run(plugin_pipe p, string name)
 			auto s=dynamic_cast<registration_status *>(m.getdata());
 			if (!s)
 				continue;
-			//Retry 2000 times until we succeed
 			if (!s->status)
 			{
+				//Retry 2000 times until we succeed
 				if (s->priority>-32000)
 					p.write(registration_message::create(s->priority-1, name, s->type));
 			}
@@ -153,6 +152,9 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(replacer_ready::create());
 					p.write(register_replacer::create("/slap", QRegExp("/slap\\b( ?) *(.*)", Qt::CaseSensitive, QRegExp::RegExp2), "/me slaps\\1\\2 with an optimistic biologist"));
+					p.write(register_replacer::create("/replace", QRegExp("/replace", Qt::CaseSensitive, QRegExp::RegExp2), "/macro \"\""));
+					p.write(register_replacer::create("/macros", QRegExp("/macros", Qt::CaseSensitive, QRegExp::RegExp2), "/commands macros"));
+					p.write(register_replacer::create("/replacements", QRegExp("/replacements", Qt::CaseSensitive, QRegExp::RegExp2), "/commands replacements"));
 				}
 			}
 		}
@@ -207,12 +209,9 @@ void run(plugin_pipe p, string name)
 			}
 			if (handlers.count(pre)==0)
 				//Nothing can handle this type of message, so complain
-				//We should be using tr here since this is a
-				//message to be displayed, but I'm not sure
-				//which tr to use.
-				p.write(notify_message::create(e->channel, QString("Unknown message type \"%1\"").arg(pre)));
+				p.write(notify_message::create(e->channel, QObject::tr("Unknown message type \"%1\"").arg(pre)));
 			else
-				p.write(handlers[pre](str, e->channel));
+				p.write(handlers[pre](mod, e->channel));
 		}
 		else if (m.type == "display commands")
 		{
@@ -222,34 +221,33 @@ void run(plugin_pipe p, string name)
 			QString output;
 			if(internals->arguments.size() == 0)
 			{
-				output = "commands:";
-				for(unordered_map<QString, function<message (QString, QString)>>::iterator i = handlers.begin(); i != handlers.end(); i++)
-				{	
-					if(i->first != "")
-					{
-						output += "\n";
-						output += i->first;
-					}
-				}
-				for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
-				{	
-					if(i->first != "")
-					{
-						output += "\n";
-						output += i->first;
-					}
-				}
+				output = "\ncommands:";
+				set<QString> commands;
+				for(const auto &p : handlers)
+					commands.insert(p.first);
+				for(const auto &p : text_replacements)
+					commands.insert(p.first);
+				commands.erase("");
+				for (const auto &s : commands)
+					output+="\n"+s;
 			}
-			for(int argument = 0; argument < internals->arguments.size(); argument++)
+			if (internals->arguments.count("macros")!=0)
 			{
-				if(internals->arguments[argument] == "macros")
-				{
-					output = "macros:";
-					for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
-						if(i->first != "")
-							output.append("\n").append(i->first).append(" \"").append(i->second.first.pattern()).append("\" \"").append(i->second.second).append("\"");
-				}
+				output += "\nmacros:";
+				for(const auto &p : text_replacements)
+					if (p.first!="")
+						output+="\n"+p.first+" \'"+p.second.first.pattern()+"\' \'"+p.second.second+"\'";
 			}
+			if (internals->arguments.count("replacements")!=0)
+			{
+				output += "\nreplacements:";
+				auto range=text_replacements.equal_range("");
+				for_each(range.first, range.second, [&output](decltype(*range.first) &p)
+				{
+					output+="\n\'"+p.second.first.pattern()+"\' \'"+p.second.second+"\'";
+				});
+			}
+			output.remove(0,1);
 			p.write(notify_message::create(internals->channel, output));
 		}
 		else if (m.type == "query commands")
