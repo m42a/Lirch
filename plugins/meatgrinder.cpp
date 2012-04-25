@@ -71,12 +71,11 @@ message handle_erase_command(QString text, QString)
 {
 	if(!text.startsWith("/macro_erase "))
 		return empty_message::create();
-	text.remove(0, 13);
-	while(text[0] == ' ')
-		text.remove(0, 1);
 	QStringList parsed = parse(text);
+	parsed.removeFirst();
 	QString command = parsed.at(0);
-	command.push_front("/");
+	if (command.size()!=0 && command[0]!='/')
+		command.push_front("/");
 	if(parsed.size() < 1)
 		return empty_message::create();
 	while(parsed.size() < 3)
@@ -95,12 +94,11 @@ message handle_user_command(QString text, QString)
 {
 	if (!text.startsWith("/macro "))
 		return empty_message::create();
-	text.remove(0, 7);
-	while(text[0] == ' ')
-		text.remove(0, 1);
 	QStringList parsed = parse(text);
+	parsed.removeFirst();
 	QString command = parsed.at(0);
-	command.push_front("/");
+	if (command.size()!=0 && command[0]!='/')
+		command.push_front("/");
 	if(parsed.size() < 3)
 		return empty_message::create();
 	return register_replacer::create(command, QRegExp(parsed.at(1), Qt::CaseSensitive, QRegExp::RegExp2), parsed.at(2));
