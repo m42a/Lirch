@@ -109,6 +109,19 @@ void run(plugin_pipe p, string name)
 
 			if (m.type=="shutdown")
 			{
+				QString channel="";
+				QString contents=currentNick+ "has logged off.";
+				QString type="ntfy";
+
+				QByteArray message = formatMessage(type,channel,currentNick,contents);
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+
 				udpSocket.leaveMulticastGroup(groupAddress);
 				udpSocket.close();
 				return;
