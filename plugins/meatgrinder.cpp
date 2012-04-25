@@ -152,6 +152,7 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(replacer_ready::create());
 					p.write(register_replacer::create("/slap", QRegExp("/slap\\b( ?) *(.*)", Qt::CaseSensitive, QRegExp::RegExp2), "/me slaps\\1\\2 with an optimistic biologist"));
+					p.write(register_replacer::create("/replace", QRegExp("/replace", Qt::CaseSensitive, QRegExp::RegExp2), "/macro ''"));
 				}
 			}
 		}
