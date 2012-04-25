@@ -32,6 +32,7 @@
 #define LIRCH_DEFAULT_LOG_DIR "@CMAKE_BINARY_DIR@/log"
 
 #define LIRCH_DEFAULT_CHANNEL "default"
+#define LIRCH_DEFAULT_NICK "spartacus"
 
 // PRELOADS
 

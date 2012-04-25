@@ -11,6 +11,8 @@
 #include "blocker_messages.h"
 #include "notify_messages.h"
 #include "channel_messages.h"
+#include "parser.h"
+
 
 using namespace std;
 
@@ -53,14 +55,36 @@ message handle_channel_change(QString text, QString)
 {
 	if (!text.startsWith("/channel"))
 		return empty_message::create();
-	return set_channel::create(text.remove(0, 9));
+	return set_channel_message::create(text.remove(0, 9));
+}
+
+message handle_commands(QString text, QString channel)
+{
+	if (!text.startsWith("/commands"))
+		return empty_message::create();
+	return display_commands_message::create(channel);
 }
 
 message handle_channel_leave(QString text, QString)
 {
 	if (!text.startsWith("/leave"))
 		return empty_message::create();
-	return leave_channel::create(text.remove(0, 7));
+	return leave_channel_message::create(text.remove(0, 7));
+}
+
+message handle_user_command(QString text, QString)
+{
+	if (!text.startsWith("/user-command "))
+		return empty_message::create();
+	text.remove(0, 14);
+	while(text[0] == ' ')
+		text.remove(0, 1);
+	QStringList parsed = parse(text);
+	QString command = parsed.at(0);
+	command.push_front("/");
+	if(parsed.size() < 3)
+		return empty_message::create();
+	return register_replacer::create(command, QRegExp(parsed.at(1), Qt::CaseSensitive, QRegExp::RegExp2), parsed.at(2));
 }
 
 void run(plugin_pipe p, string name)
@@ -68,6 +92,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(-30000, name, "raw_edict"));
 	p.write(registration_message::create(-30000, name, "register_replacer"));
 	p.write(registration_message::create(-30000, name, "register_handler"));
+	p.write(registration_message::create(-30000, name, "display commands"));
 	unordered_multimap<QString, pair<QRegExp, QString>> text_replacements;
 	unordered_map<QString, function<message (QString, QString)>> handlers;
 	while (true)
@@ -100,12 +125,14 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
 					p.write(register_handler::create("/channel", handle_channel_change));
+					p.write(register_handler::create("/commands", handle_commands));
 					p.write(register_handler::create("/leave", handle_channel_leave));
+					p.write(register_handler::create("/user-command", handle_user_command));
 				}
 				else if (s->type=="register_replacer")
 				{
 					p.write(replacer_ready::create());
-					p.write(register_replacer::create("/slap", QRegExp("/slap (.*)"), "/me slaps \\1 with an optimistic biologist"));
+					p.write(register_replacer::create("/slap", QRegExp("/slap\\b( ?) *(.*)", Qt::CaseSensitive, QRegExp::RegExp2), "/me slaps\\1\\2 with an optimistic biologist"));
 				}
 			}
 		}
@@ -151,6 +178,34 @@ void run(plugin_pipe p, string name)
 				p.write(notify_message::create(e->channel, QString("Unknown message type \"%1\"").arg(pre)));
 			else
 				p.write(handlers[pre](str, e->channel));
+		}
+		else if (m.type == "display commands")
+		{
+			auto internals=dynamic_cast<display_commands_message *>(m.getdata());
+			if (!internals)
+				continue;
+			QString output = "commands:";
+			for(unordered_map<QString, function<message (QString, QString)>>::iterator i = handlers.begin(); i != handlers.end(); i++)
+			{	
+				if(i->first != "")
+				{
+					output += "\n";
+					output += i->first;
+				}
+			}
+			for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
+			{	
+				if(i->first != "")
+				{
+					output += "\n";
+					output += i->first;
+				}
+			}
+			p.write(notify_message::create(internals->channel, output));
+		}
+		else if (m.type == "query commands")
+		{
+			
 		}
 		else
 		{
