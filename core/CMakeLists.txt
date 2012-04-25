@@ -21,7 +21,7 @@ if(BUILD_CLIENT_NON_QT)
   install(TARGETS lirch DESTINATION bin)
 endif(BUILD_CLIENT_NON_QT)
 
-if(BUILD_CLIENT_QT)
+if(BUILD_CLIENT_QTGUI)
   # Use QtCore and QtGui
   set(QT_DONT_USE_QTCORE FALSE)
   set(QT_DONT_USE_QTGUI FALSE)
@@ -30,7 +30,7 @@ if(BUILD_CLIENT_QT)
   include(${QT_USE_FILE})
   include_directories(${QT_INCLUDE_DIR})
   # Build the core executable with Qt GUI
-  add_executable(qlirch lirch_qt.cpp)
+  add_executable(qlirch lirch_qtgui.cpp)
   target_link_libraries(qlirch lirch-core lirch-qt-interface ${QT_LIBRARIES})
   install(TARGETS qlirch DESTINATION bin)
-endif(BUILD_CLIENT_QT)
+endif(BUILD_CLIENT_QTGUI)
