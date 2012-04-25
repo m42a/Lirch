@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <set>
 
 #include <QString>
 
@@ -208,9 +209,9 @@ void run(plugin_pipe p, string name)
 				//We should be using tr here since this is a
 				//message to be displayed, but I'm not sure
 				//which tr to use.
-				p.write(notify_message::create(e->channel, QString("Unknown message type \"%1\"").arg(pre)));
+				p.write(notify_message::create(e->channel, QObject::tr("Unknown message type \"%1\"").arg(pre)));
 			else
-				p.write(handlers[pre](str, e->channel));
+				p.write(handlers[pre](mod, e->channel));
 		}
 		else if (m.type == "display commands")
 		{
@@ -220,34 +221,35 @@ void run(plugin_pipe p, string name)
 			QString output;
 			if(internals->arguments.size() == 0)
 			{
-				output = "commands:";
-				for(unordered_map<QString, function<message (QString, QString)>>::iterator i = handlers.begin(); i != handlers.end(); i++)
-				{	
-					if(i->first != "")
-					{
-						output += "\n";
-						output += i->first;
-					}
-				}
-				for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
-				{	
-					if(i->first != "")
-					{
-						output += "\n";
-						output += i->first;
-					}
-				}
+				output = "\ncommands:";
+				set<QString> commands;
+				for(const auto &p : handlers)
+					commands.insert(p.first);
+				for(const auto &p : text_replacements)
+					commands.insert(p.first);
+				commands.erase("");
+				for (const auto &s : commands)
+					output+="\n"+s;
 			}
-			for(int argument = 0; argument < internals->arguments.size(); argument++)
+			//Should this be put into a "/macros" command?
+			if (internals->arguments.count("macros")!=0)
 			{
-				if(internals->arguments[argument] == "macros")
-				{
-					output = "macros:";
-					for(unordered_multimap<QString, pair<QRegExp, QString>>::iterator i = text_replacements.begin(); i != text_replacements.end(); i++)
-						if(i->first != "")
-							output.append("\n").append(i->first).append(" \"").append(i->second.first.pattern()).append("\" \"").append(i->second.second).append("\"");
-				}
+				output += "\nmacros:";
+				for(const auto &p : text_replacements)
+					if (p.first!="")
+						output+="\n"+p.first+" \'"+p.second.first.pattern()+"\' \'"+p.second.second+"\'";
 			}
+			//Same for this
+			if (internals->arguments.count("replacements")!=0)
+			{
+				output += "\nreplacements:";
+				auto range=text_replacements.equal_range("");
+				for_each(range.first, range.second, [&output](const decltype(text_replacements)::value_type &p)
+				{
+					output+="\n\'"+p.second.first.pattern()+"\' \'"+p.second.second+"\'";
+				});
+			}
+			output.remove(0,1);
 			p.write(notify_message::create(internals->channel, output));
 		}
 		else if (m.type == "query commands")
