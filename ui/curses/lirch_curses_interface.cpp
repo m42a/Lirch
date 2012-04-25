@@ -179,7 +179,7 @@ void runplugin(plugin_pipe &p, const string &name)
 			}
 			else if (m.type=="set_channel")
 			{
-				auto i=dynamic_cast<set_channel *>(m.getdata());
+				auto i=dynamic_cast<set_channel_message *>(m.getdata());
 				if (!i)
 					continue;
 				p.write(m.decrement_priority());
@@ -190,7 +190,7 @@ void runplugin(plugin_pipe &p, const string &name)
 			}
 			else if (m.type=="leave_channel")
 			{
-				auto i=dynamic_cast<leave_channel *>(m.getdata());
+				auto i=dynamic_cast<leave_channel_message *>(m.getdata());
 				if (!i)
 					continue;
 				p.write(m.decrement_priority());
