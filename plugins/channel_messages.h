@@ -3,6 +3,7 @@
 
 #include <QStringList>
 
+
 class set_channel_message : public message_data
 
 {
