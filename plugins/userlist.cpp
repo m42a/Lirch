@@ -96,6 +96,7 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 			oldNickInfo.nick=message->nick;
 			userList.erase(message->channel);
 			userList[message->nick]=oldNickInfo;
+			p.write(sendable_notify_message::create("",message->channel+" has changed their nick to "+message->nick+"."));
 		}
 
 	}
@@ -116,7 +117,15 @@ void askForUsers(plugin_pipe p, QString channel)
 bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick)
 {
 	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
+	{
+		p.write(notify_message::create("","Nick taken.  Keeping old nick."));
 		return false;
+	}
+	else if (newNick.toUtf8().size() > 64)
+	{
+		p.write(notify_message::create("","Nick too long.  Keeping old nick."));
+		return false;
+	}
 	else
 	{
 		p.write(changed_nick_message::create(oldNick,newNick));
@@ -156,6 +165,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "list_channels"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 	p.write(registration_message::create(0, name, "leave_channel"));
+	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
 
 
@@ -239,17 +249,7 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			if (s->nick.toUtf8().size() > 64)
-			{
-				p.write(notify_message::create("","Nick too long.  Keeping old nick."));
-				continue;
-			}
-			QString newNick=s->nick;
-			QString oldNick=currentNick;
-			if (setNick(p,userList,currentNick,newNick))
-				p.write(sendable_notify_message::create("",oldNick+" has changed their nick to "+newNick+"."));
-			else
-				p.write(notify_message::create("","Nick taken.  Keeping old nick."));
+			setNick(p,userList,currentNick,s->nick);
 		}
 		else if (m.type=="list_channels")
 		{
@@ -265,6 +265,27 @@ void run(plugin_pipe p, string name)
 						channelList.append(c);
 					p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), ctime(&i.second.lastseen), channelList.join(" "))));
 				}
+			}
+		}
+		else if (m.type == "set_channel")
+		{
+			auto s=dynamic_cast<set_channel_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+
+			askForUsers(p,s->channel);
+		}
+		else if (m.type == "leave_channel")
+		{
+			auto s=dynamic_cast<leave_channel_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+
+			for(auto & person:userList)
+			{
+				person.second.channels.erase(s->channel);
 			}
 		}
 		else
