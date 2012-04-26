@@ -65,8 +65,9 @@ void QuipPlugin::handle_quip_request(quip_request_data *request_data) {
 
 // QUIPPLUGING PUBLIC FUNCTIONS (public)
 
-bool QuipPlugin::handle_message(message incoming_message)
+bool QuipPlugin::handle_message()
 {
+	message incoming_message = pipe.blocking_read();
 	// Pull out some internals for later use
 	message_data *data = incoming_message.data.get();
 	QString message_type = QString::fromStdString(incoming_message.type);
@@ -95,7 +96,8 @@ bool QuipPlugin::handle_message(message incoming_message)
 }
 
 void QuipPlugin::register_for_message_type(const QString &message_type, int with_priority) {
-	pipe.write(registration_message::create(with_priority, name, message_type.toStdString()));
+	std::string transformed_string = message_type.toStdString(); 
+	pipe.write(registration_message::create(with_priority, name, transformed_string));
 }
 
 // MAIN PLUGIN FUNCTION
@@ -109,7 +111,7 @@ void run(plugin_pipe pipe, std::string internal_name)
 	plugin.register_for_message_type(QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST));
 	// FIXME why is this here?
 	pipe.write(register_handler::create(QObject::tr("/quip"), QuipPlugin::forward_quip_request));
-	while (plugin.handle_message(pipe.blocking_read()));
+	while (plugin.handle_message());
 	{
 		pipe.write(done_message::create(internal_name));
 	}

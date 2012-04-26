@@ -33,7 +33,7 @@ public:
 
 	// Plugins have exactly two roles: 1) register for messages; 2) handle messages
 	void register_for_message_type(const QString &message_type, int with_priority = 0);
-	bool handle_message(message incoming_message);
+	bool handle_message();
 
 	// This is given to the meatgrinder (/quip handler)
 	static message forward_quip_request(QString command, QString channel);
