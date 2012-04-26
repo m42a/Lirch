@@ -30,7 +30,7 @@ message QuipPlugin::Quip::to_message()
 	// /quip messages appear in the same way /me messages do
 	edict_message_subtype quip_subtype = edict_message_subtype::ME;
 	// The format is <username> quips <fortune_text>
-	QString quip_text = QObject::tr("quips ") + text;
+	QString quip_text = QObject::tr("quips\n") + text;
 	return edict_message::create(quip_subtype, channel, quip_text);
 }
 
