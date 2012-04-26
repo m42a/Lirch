@@ -4,11 +4,11 @@
 
 #include <QtNetwork>
 
-#include "lirch_plugin.h"
+#include "plugins/lirch_plugin.h"
 #include "core/core_messages.h"
-#include "received_messages.h"
-#include "userlist_messages.h"
-#include "user_status.h"
+#include "plugins/received_messages.h"
+#include "plugins/userlist_messages.h"
+#include "plugins/user_status.h"
 
 using namespace std;
 

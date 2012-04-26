@@ -1,8 +1,7 @@
-## These plugins use no Qt:
-
-# Timer plugin
-add_library(timer SHARED timer.cpp)
-target_link_libraries(timer envelope)
+## Optional plugins
+if(BUILD_PLUGINS_EXTRA OR BUILD_TESTING)
+  add_subdirectory(extra)
+endif(BUILD_PLUGINS_EXTRA OR BUILD_TESTING)
 
 ## These plugins use QtCore only:
 set(QT_DONT_USE_QTCORE FALSE)
@@ -15,10 +14,6 @@ include_directories(${QT_INCLUDE_DIR})
 # Logger plugin
 add_library(logger SHARED logger.cpp)
 target_link_libraries(logger envelope ${QT_LIBRARIES})
- 
-# Settings tester plugin
-add_library(settingstest SHARED settingstest.cpp)
-target_link_libraries(settingstest envelope ${QT_LIBRARIES})
  
 # Masseuse plugin
 add_library(masseuse SHARED masseuse.cpp)
@@ -44,12 +39,6 @@ target_link_libraries(antenna envelope ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARIES}
 # Userlist plugin
 add_library(userlist SHARED userlist.cpp)
 target_link_libraries(userlist envelope ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
-
-# Tester plugin
-if(UNIX)
-  add_library(linuxtester SHARED linuxtester.cpp)
-  target_link_libraries(linuxtester envelope ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
-endif(UNIX)
 
 # For install (packaging)
 install(TARGETS antenna logger masseuse meatgrinder quip userlist DESTINATION lib/lirch)
