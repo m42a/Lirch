@@ -1,6 +1,8 @@
 #ifndef CHANNEL_MESSAGES_H_
 #define CHANNEL_MESSAGES_H_
 
+#include <QStringList>
+
 class set_channel : public message_data
 {
 public:
