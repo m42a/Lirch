@@ -73,6 +73,7 @@ void run(plugin_pipe p, string name)
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
 	p.write(registration_message::create(0, name, "edict"));
+	p.write(registration_message::create(0, name, "here"));
 	p.write(registration_message::create(0, name, "who is here"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 	p.write(registration_message::create(0, name, "block query"));
@@ -112,8 +113,8 @@ void run(plugin_pipe p, string name)
 			if (m.type=="shutdown")
 			{
 				QString channel="";
-				QString contents=currentNick+ "has logged off.";
-				QString type="ntfy";
+				QString type="left";
+				QString contents="";
 
 				QByteArray message = formatMessage(type,channel,currentNick,contents);
 

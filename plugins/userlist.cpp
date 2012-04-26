@@ -1,6 +1,7 @@
 #include <thread>
 #include <ctime>
 #include <QSettings>
+#include <iostream>
 
 #include "lirch_plugin.h"
 #include "userlist_messages.h"
@@ -69,7 +70,14 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 		if (message->subtype==received_status_message_subtype::LEFT)
 		{
 			userList[message->nick].channels.erase(message->channel);
-			p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
+			if (message->channel=="")
+			{
+				for(const auto & iterator:userList[message->nick].channels)
+					p.write(notify_message::create(iterator,message->nick + " has logged off."));
+				userList.erase(message->nick);
+			}
+			else
+				p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
 		}
 		else if (message->subtype==received_status_message_subtype::HERE)
 		{
@@ -97,18 +105,20 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 
 void askForUsers(plugin_pipe p, QString channel)
 {
-	time_t start = time(NULL);
-	while (time(NULL)-start < 1)
+	for(int i=0; i<20; i++)
 	{
 		p.write(who_is_here_message::create(channel));
 		this_thread::sleep_for(chrono::milliseconds(50));
+		if(p.has_message())
+			break;
 	}
+	this_thread::sleep_for(chrono::milliseconds(50));
 }
 
 //validateName also sets old nick to new nick if it is acceptable
 bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick)
 {
-	if (newNick!=LIRCH_DEFAULT_NICK && userList.count(newNick))
+	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
 		return false;
 	else
 	{
@@ -127,6 +137,16 @@ void populateDefaultChannel(plugin_pipe p, QString channel, unordered_map<QStrin
 	settings.endGroup();
 
 	askForUsers(p,channel);
+
+	while (p.has_message())
+	{
+		message m = p.read();
+
+		if (m.type == "received_status")
+		{
+			updateSenderStatus(p,m,userList);
+		}
+	}
 
 	if (defaultNick.toUtf8().size() > 64)
 	{
@@ -160,6 +180,7 @@ void run(plugin_pipe p, string name)
 	populateDefaultChannel(p,LIRCH_DEFAULT_CHANNEL,userList,currentNick);
 
 	p.write(register_handler::create("/nick", sendNick));
+	p.write(register_handler::create("/list", sendList));
 
 	while (true)
 	{
@@ -173,6 +194,7 @@ void run(plugin_pipe p, string name)
 			auto s=dynamic_cast<registration_status *>(m.getdata());
 			if (!s)
 				continue;
+
 			if (!s->status)
 			{
 				if ((0>=s->priority && s->priority>-200) || (30000>=s->priority && s->priority>29000))
@@ -204,7 +226,7 @@ void run(plugin_pipe p, string name)
 			while ((i=std::find_if(userList.begin(), userList.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=userList.end())
 			{
 				for(auto iter = i->second.channels.begin(); iter!=i->second.channels.end(); iter++)
-					p.write(notify_message::create(*iter, i->first.repeated(1).append(" has logged off")));
+					p.write(notify_message::create(*iter, i->first + " has logged off."));
 				userList.erase(i);
 			}
 			p.write(userlist_message::create(userList));
@@ -217,6 +239,7 @@ void run(plugin_pipe p, string name)
 		else if (m.type=="handler_ready")
 		{
 			p.write(register_handler::create("/list", sendList));
+
 			p.write(register_handler::create("/nick", sendNick));
 		}
 		else if (m.type=="received" || m.type=="received_status")
