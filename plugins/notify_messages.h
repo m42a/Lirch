@@ -4,6 +4,8 @@
  * Standard Notify are things that will be displayed in the UI.  This should be used for local messages.
  * Sendable Notify are things that you do that other users should see, such as changing your nick, and do get sent over the network.
  * Received notifies should be stored as a received_message of type NOTIFY.  See received_messages.h
+ *
+ * Notifies to no channel should go to all channels
  */
 
 

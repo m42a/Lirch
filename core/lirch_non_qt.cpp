@@ -3,10 +3,15 @@
 #include <csignal>
 #include <string>
 
+#include <thread>
+
+#include <QCoreApplication>
+
 #include "message.h"
 #include "message_pipe.h"
 #include "core_messages.h"
 #include "lirch_constants.h"
+#include "lirch_non_qt.h"
 
 using namespace std;
 
@@ -27,9 +32,9 @@ void handle_sigint(int)
 
 int main(int argc, char *argv[])
 {
-	setlocale(LC_ALL,"");
 	if (signal(SIGINT, handle_sigint)==SIG_IGN)
 		signal(SIGINT, SIG_IGN);
+	QCoreApplication app(argc, argv);
 	vector<message> vm;
 	bool preload=true;
 	char **arg=argv; //Skip the program name
@@ -98,6 +103,14 @@ int main(int argc, char *argv[])
 		arg+=2;
 	}
 
-	// Loop until core shutdown
-	run_core(pp);
+	thread t([&app, pp](){
+		run_core(pp);
+		core_notifier notifier;
+		QObject::connect(&notifier, SIGNAL(quit()), &app, SLOT(quit()));
+		notifier.emitQuit();
+	});
+	// Wait until core shutdown
+	core_waiter waiter(t);
+	QObject::connect(&app, SIGNAL(aboutToQuit()), &waiter, SLOT(onQuit()));
+	app.exec();
 }

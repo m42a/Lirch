@@ -15,9 +15,13 @@ add_library(lirch-core core.cpp plugin_loader.cpp)
 target_link_libraries(lirch-core envelope dl pthread)
 
 if(BUILD_CLIENT_NON_QT)
-  # Build the client executable
-  add_executable(lirch lirch_non_qt.cpp)
-  target_link_libraries(lirch lirch-core)
+  # Build the core executable
+  set(QT_DONT_USE_QTGUI TRUE)
+  include(${QT_USE_FILE})
+  include_directories(${QT_INCLUDE_DIR})
+  qt4_wrap_cpp(QT_LIRCH lirch_non_qt.h)
+  add_executable(lirch lirch_non_qt.cpp ${QT_LIRCH})
+  target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
   install(TARGETS lirch DESTINATION bin)
 endif(BUILD_CLIENT_NON_QT)
 

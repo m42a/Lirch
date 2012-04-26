@@ -16,6 +16,10 @@ include_directories(${QT_INCLUDE_DIR})
 add_library(logger SHARED logger.cpp)
 target_link_libraries(logger envelope ${QT_LIBRARIES})
  
+# Settings tester plugin
+add_library(settingstest SHARED settingstest.cpp)
+target_link_libraries(settingstest envelope ${QT_LIBRARIES})
+ 
 # Masseuse plugin
 add_library(masseuse SHARED masseuse.cpp)
 target_link_libraries(masseuse envelope ${QT_LIBRARIES})
@@ -23,6 +27,10 @@ target_link_libraries(masseuse envelope ${QT_LIBRARIES})
 # Meatgrinder plugin
 add_library(meatgrinder SHARED meatgrinder.cpp)
 target_link_libraries(meatgrinder envelope ${QT_LIBRARIES})
+
+# Quip plugin
+add_library(quip SHARED quip.cpp)
+target_link_libraries(quip envelope ${QT_LIBRARIES})
 
 ## These plugins use QtNetwork, too:
 set(QT_USE_QTNETWORK TRUE)
@@ -44,4 +52,4 @@ if(UNIX)
 endif(UNIX)
 
 # For install (packaging)
-install(TARGETS antenna logger masseuse meatgrinder userlist DESTINATION lib/lirch)
+install(TARGETS antenna logger masseuse meatgrinder quip userlist DESTINATION lib/lirch)
