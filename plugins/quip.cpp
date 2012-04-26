@@ -1,115 +1,136 @@
-#include <cstdio>
-#include <errno.h>
-#include <sys/wait.h>
-#include <unistd.h>
+// This is a plugin for Lirch (see us on GitHub!)
+#include "plugins/lirch_plugin.h"
+#include "plugins/quip.h"
+#include "plugins/quip_messages.h"
+#include "plugins/edict_messages.h"
+#include "plugins/grinder_messages.h"
 
-#include "lirch_plugin.h"
-#include "grinder_messages.h"
-#include "edict_messages.h"
+// QUIP CLASS FUNCTIONS (constructor and message wrapper)
 
-using namespace std;
-
-class generate_quip_message : public message_data
+QuipPlugin::Quip::Quip(quip_request_data *request_data)
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new generate_quip_message(*this));}
-	static message create(QString _channel) {return message_create("generate_quip", new generate_quip_message(_channel));}
-
-	generate_quip_message(QString _channel) : channel(_channel) {}
-
-	QString channel;
-};
-
-message generate_generate_quip_message(QString, QString channel)
-{
-	return generate_quip_message::create(channel);
-}
-
-class file_descriptor_handler
-{
-public:
-	file_descriptor_handler(int _file_descriptor) : file_descriptor(_file_descriptor) {}
-	~file_descriptor_handler() {close(file_descriptor);}
-private:
-	int file_descriptor;
-};
-
-void execute_fortune_process(int pipe_write_file_descriptor)
-{
-	if (dup2(pipe_write_file_descriptor, STDOUT_FILENO)==-1)
-		_exit(1);
-	execlp("fortune", "fortune", "-s", "-n", "240", NULL);
-	_exit(1);
-}
-
-bool generate_quip(plugin_pipe &pipe, generate_quip_message *possible_generate_quip_message)
-{
-	if (possible_generate_quip_message==nullptr)
-		return true;
-	int pipe_file_descriptors[2];
-	if (::pipe(pipe_file_descriptors)==-1)
-		return true;
-	pid_t fork_return_value=fork();
-	if (fork_return_value==0)
+	// Fill in the destined channel name
+	channel = request_data->channel;
+	// Execute a subprocess (get a fortune)
+	QProcess fortune_process;
+	QString fortune_command = QObject::tr("fortune -sn 240");
+	fortune_process.start(fortune_command, QIODevice::ReadOnly);
+	fortune_process.waitForFinished();
+	fortune_process.closeWriteChannel();
+	text = QString(fortune_process.readAll());
+	// Be at least a bit witty
+	if (text.isEmpty())
 	{
-		close(pipe_file_descriptors[0]);
-		execute_fortune_process(pipe_file_descriptors[1]);
+		text = QObject::tr("I should install fortune!");
 	}
-	file_descriptor_handler read_pipe_file_descriptor(pipe_file_descriptors[0]);
-	close(pipe_file_descriptors[1]);
-	if (fork_return_value==-1)
-		return true;
-	waitpid(fork_return_value, NULL, 0);
-	char fortune_output_buffer[252]="quips\n";
-	int fortune_output_buffer_offset=strlen(fortune_output_buffer);
-	int read_return_value=12;
-	while (fortune_output_buffer_offset!=sizeof(fortune_output_buffer) && read_return_value!=0 && (read_return_value!=-1 || errno==EINTR))
-	{
-		read_return_value=read(pipe_file_descriptors[0], fortune_output_buffer+fortune_output_buffer_offset, sizeof(fortune_output_buffer)-fortune_output_buffer_offset);
-		fortune_output_buffer_offset+=read_return_value*(read_return_value>0);
-	}
-	while (fortune_output_buffer_offset!=0 && fortune_output_buffer[--fortune_output_buffer_offset]=='\n');
-	{
-		++fortune_output_buffer_offset;
-	}
-	QString quip_recieved_from_fortune=QString::fromLocal8Bit(fortune_output_buffer, fortune_output_buffer_offset);
-	if (fortune_output_buffer_offset!=0)
-		pipe.write(edict_message::create(edict_message_subtype::ME, possible_generate_quip_message->channel, quip_recieved_from_fortune));
-	return true;
 }
 
-bool possibly_deal_with_registration_status_message(plugin_pipe &pipe, registration_status *possible_registration_message, const string &plugin_name)
+message QuipPlugin::Quip::to_message()
 {
-	if (possible_registration_message==nullptr)
-		return true;
-	if (possible_registration_message->status)
-		return true;
-	if (possible_registration_message->priority>28000)
-		pipe.write(registration_message::create(possible_registration_message->priority-1, plugin_name, possible_registration_message->type));
-	return true;
+	// /quip messages appear in the same way /me messages do
+	edict_message_subtype quip_subtype = edict_message_subtype::ME;
+	// The format is <username> quips <fortune_text>
+	QString quip_text = QObject::tr("quips ") + text;
+	return edict_message::create(quip_subtype, channel, quip_text);
 }
 
-bool deal_with_message(plugin_pipe &pipe, message incoming_message, const string &plugin_name)
+// QUIPPLUGIN CLASS FUNCTIONS (static)
+
+message QuipPlugin::forward_quip_request(QString command, QString channel)
 {
-	if (incoming_message.type=="shutdown")
+	if (command == QObject::tr("/quip"))
+	{
+		return quip_request_data(channel).to_message();
+	}
+	return empty_message::create();
+}
+
+// QUIPPLUGIN CLASS FUNCTIONS (private)
+
+void QuipPlugin::handle_registration_reply(registration_status *status_data)
+{
+	if (!status_data)
+	{
+		return;
+	}
+	int priority = status_data->priority;
+	// Provided we failed to register, but have high enough priority, retry
+	if (!status_data->status && priority > LIRCH_MESSAGE_PRIORITY_MIN)
+	{
+		std::string message_type = status_data->type;
+		pipe.write(registration_message::create(--priority, name, message_type));
+	}
+}
+
+void QuipPlugin::handle_quip_request(quip_request_data *request_data)
+{
+	if (!request_data)
+	{
+		return;
+	}
+	// Make a Quip and forward it
+	Quip quip(request_data);
+	message quip_message = quip.to_message();
+	pipe.write(quip_message);
+}
+
+// QUIPPLUGING PUBLIC FUNCTIONS (public)
+
+bool QuipPlugin::has_not_received_shutdown_command()
+{
+	message incoming_message = pipe.blocking_read();
+	// Pull out some internals for later use
+	std::unique_ptr<message_data> message_data = std::move(incoming_message.data);
+	QString message_type = QString::fromStdString(incoming_message.type);
+	// The type of a message determines what to do with it
+	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_SHUTDOWN))
+	{
+		// Shutdown messages immediately terminate the plugin
 		return false;
-	if (incoming_message.type=="registration_status")
-		return possibly_deal_with_registration_status_message(pipe, dynamic_cast<registration_status *>(incoming_message.getdata()), plugin_name);
-	if (incoming_message.type=="generate_quip")
-		return generate_quip(pipe, dynamic_cast<generate_quip_message *>(incoming_message.getdata()));
-	if (incoming_message.type=="handler_ready")
-		pipe.write(register_handler::create("/quip", generate_generate_quip_message));
+	}
+	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_REGISTRATION_STATUS))
+	{
+		// Registration statuses might need to be echoed
+		handle_registration_reply(dynamic_cast<registration_status *>(message_data.get()));
+	}
+	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST))
+	{
+		// Quip requests are captured and not forwarded
+		handle_quip_request(dynamic_cast<quip_request_data *>(message_data.get()));
+		return true;
+	}
+	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_HANDLER_READY))
+	{
+		// When the handler is ready, we want to tell it we know how to handle /quip
+		pipe.write(register_handler::create(QObject::tr("/quip"), forward_quip_request));
+	}
+	// Put back what you stole
+	incoming_message.data = std::move(message_data);
+	// This message might need to be forwarded (do so by default)
 	incoming_message.decrement_priority();
 	pipe.write(incoming_message);
 	return true;
 }
 
-void run(plugin_pipe pipe, string plugin_name)
+void QuipPlugin::register_for_message_type(const QString &message_type, int with_priority)
 {
-	pipe.write(registration_message::create(30000, plugin_name, "handler_ready"));
-	pipe.write(registration_message::create(30000, plugin_name, "generate_quip"));
-	pipe.write(register_handler::create("/quip", generate_generate_quip_message));
-	while (deal_with_message(pipe, pipe.blocking_read(), plugin_name));
+	std::string type_string = message_type.toStdString();
+	pipe.write(registration_message::create(with_priority, name, type_string));
+}
+
+// MAIN PLUGIN FUNCTION
+
+void run(plugin_pipe pipe, std::string internal_name)
+{
+	// Construct a plugin object (used throughout)
+	QuipPlugin plugin(internal_name, pipe);
+	// Register for these message types with the following priorities:
+	plugin.register_for_message_type(QObject::tr(LIRCH_MESSAGE_TYPE_HANDLER_READY));
+	plugin.register_for_message_type(QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST));
+	pipe.write(register_handler::create(QObject::tr("/quip"), QuipPlugin::forward_quip_request));
+	// Begin a loop that will only exit when sent the shutdown command
+	while (plugin.has_not_received_shutdown_command());
 	{
+		pipe.write(done_message::create(internal_name));
 	}
 }
