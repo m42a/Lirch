@@ -195,6 +195,8 @@ void runplugin(plugin_pipe &p, const string &name)
 					continue;
 				p.write(m.decrement_priority());
 				channel_windows.erase(i->channel);
+				if (i->channel==channel)
+					p.write(set_channel_message::create(channel));
 			}
 			else
 				p.write(m.decrement_priority());
