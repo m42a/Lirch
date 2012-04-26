@@ -132,6 +132,7 @@ void run(plugin_pipe p, string name)
 			else if (m.type=="registration_status")
 			{
 				auto s=dynamic_cast<registration_status *>(m.getdata());
+				p.write(m.decrement_priority());
 				if (!s)
 					continue;
 				//Retry 2000 times until we succeed
@@ -150,6 +151,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="block")
 			{
 				auto castMessage=dynamic_cast<block_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a block message, ignore it and move on
 				if (!castMessage)
@@ -176,6 +178,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="edict")
 			{
 				auto castMessage=dynamic_cast<edict_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually an edict message, ignore it and move on
 				if (!castMessage)
@@ -203,6 +206,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="sendable_notify")
 			{
 				auto castMessage=dynamic_cast<sendable_notify_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a notify message, ignore it and move on
 				if (!castMessage)
@@ -226,6 +230,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type == "block query")
 			{
 				auto castMessage = dynamic_cast<block_query_message *>(m.getdata());
+				p.write(m.decrement_priority());
 				if(!castMessage)
 					continue;
 					
@@ -234,6 +239,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="who is here")
 			{
 				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a who's here message, ignore it and move on
 				if (!castMessage)
@@ -254,6 +260,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="here")
 			{
 				auto castMessage=dynamic_cast<here_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a here message, ignore it and move on
 				if (!castMessage)
@@ -274,6 +281,7 @@ void run(plugin_pipe p, string name)
 			else if (m.type == "changed_nick")
 			{
 				auto castMessage=dynamic_cast<changed_nick_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a here message, ignore it and move on
 				if (!castMessage)
@@ -296,6 +304,7 @@ void run(plugin_pipe p, string name)
 			else if (m.type == "leave_channel")
 			{
 				auto castMessage=dynamic_cast<leave_channel_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a here message, ignore it and move on
 				if (!castMessage)
