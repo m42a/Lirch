@@ -3,6 +3,7 @@
 #include <QString>
 
 #include "lirch_plugin.h"
+#include "QString_hash.h"
 #include "edict_messages.h"
 #include "notify_messages.h"
 #include "grinder_messages.h"
@@ -12,18 +13,6 @@
 #include "channel_messages.h"
 
 using namespace std;
-
-namespace std
-{
-	template <>
-	struct hash<QString>
-	{
-		size_t operator()(const QString& v) const
-		{
-			return std::hash<std::string>()(v.toStdString());
-		}
-	};
-}
 
 QString prefix(const QString &s)
 {
@@ -62,9 +51,16 @@ message handle_normal(QString text, QString channel)
 
 message handle_channel_change(QString text, QString)
 {
-	if (!text.startsWith("/channel "))
+	if (!text.startsWith("/channel"))
 		return empty_message::create();
 	return set_channel::create(text.remove(0, 9));
+}
+
+message handle_channel_leave(QString text, QString)
+{
+	if (!text.startsWith("/leave"))
+		return empty_message::create();
+	return leave_channel::create(text.remove(0, 7));
 }
 
 void run(plugin_pipe p, string name)
@@ -104,6 +100,7 @@ void run(plugin_pipe p, string name)
 					p.write(register_handler::create("/q", handle_quit));
 					p.write(register_handler::create("/quit", handle_quit));
 					p.write(register_handler::create("/channel", handle_channel_change));
+					p.write(register_handler::create("/leave", handle_channel_leave));
 				}
 				else if (s->type=="register_replacer")
 				{
@@ -131,7 +128,10 @@ void run(plugin_pipe p, string name)
 			auto e=dynamic_cast<raw_edict_message *>(m.getdata());
 			if (!e)
 				continue;
-			auto &str=e->contents;
+			//Ensure that characters with multiple representations
+			//are normalized so we can compare strings directly by
+			//character.
+			auto str=e->contents.normalized(QString::NormalizationForm_C);
 			if (str.isEmpty())
 				//We don't propagate empty messages (on principle)
 				continue;

@@ -6,19 +6,7 @@
 #include <ctime>
 #include <unordered_set>
 
-namespace std
-{
-	template <>
-	struct hash<QString>
-	{
-		size_t operator()(const QString& v) const
-		{
-			//This isn't unique, but hashes need only conflict rarely, not never
-			return std::hash<std::string>()(v.toStdString());
-		}
-	};
-
-}
+#include "QString_hash.h"
 
 struct user_status
 {
