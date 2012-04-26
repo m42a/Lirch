@@ -66,6 +66,8 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(-30000, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "handler_ready"));
 	p.write(registration_message::create(-30000, name, "only"));
+	p.write(registration_message::create(-30000, name, "query_channel"));
+	
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -126,6 +128,15 @@ void run(plugin_pipe p, string name)
 			{
 				bmp.core_write(m);
 			}
+		}
+		else if (m.type=="query_channel")
+		{
+			auto i=dynamic_cast<query_channel *>(m.getdata());
+			if (!i)
+				continue;
+			QStringList channels;
+			channels.push_back(channel);
+			p.write(channel_list::create(channels));
 		}
 		else if (m.type=="only")
 		{

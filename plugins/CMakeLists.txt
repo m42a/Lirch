@@ -26,6 +26,10 @@ target_link_libraries(masseuse envelope ${QT_LIBRARIES})
 add_library(meatgrinder SHARED meatgrinder.cpp)
 target_link_libraries(meatgrinder envelope ${QT_LIBRARIES})
 
+# Quip plugin
+add_library(quip SHARED quip.cpp)
+target_link_libraries(quip envelope ${QT_LIBRARIES})
+
 # Antenna and Userlist plugin uses QtNetwork
 set(QT_USE_QTNETWORK TRUE)
 include(${QT_USE_FILE})

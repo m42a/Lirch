@@ -1,4 +1,6 @@
 #include <thread>
+#include <ctime>
+#include <QSettings>
 
 #include "lirch_plugin.h"
 #include "userlist_messages.h"
@@ -6,8 +8,19 @@
 #include "received_messages.h"
 #include "notify_messages.h"
 #include "grinder_messages.h"
+#include "lirch_constants.h"
+#include "nick_messages.h"
 
 using namespace std;
+
+message sendNick(QString str, QString)
+{
+	if (str.startsWith("/nick "))
+	{
+		return nick_message::create(str.section(' ',1));
+	}
+	return empty_message::create();
+}
 
 class userlist_timer : public message_data
 {
@@ -32,15 +45,96 @@ message sendList(QString text, QString channel)
 	return list_channels::create(text.section(QChar(' '), 1), channel);
 }
 
+//updates all of the relevent fields of out status map based on the received message
+void updateSenderStatus(plugin_pipe p, received_message * message, unordered_map<QString, user_status> & userList)
+{
+	//message->channel is storing the old nickname of the user in the case that it is a nick type received.
+	//if it is, remove the person of the old nickname
+	if (message->subtype==received_message_subtype::NICK)
+	{
+		user_status oldNickInfo = userList[message->channel];
+		oldNickInfo.nick=message->nick;
+		userList.erase(message->channel);
+		userList[message->nick]=oldNickInfo;
+		return;
+	}
+
+	userList[message->nick].nick=message->nick;
+	if (message->subtype==received_message_subtype::NORMAL || message->subtype==received_message_subtype::ME || message->subtype==received_message_subtype::NOTIFY)
+		userList[message->nick].channels.insert(message->channel);
+
+
+
+	userList[message->nick].ip=message->ipAddress;
+	userList[message->nick].lastseen=time(NULL);
+
+	p.write(userlist_message::create(userList));
+}
+
+void askForUsers(plugin_pipe p, QString channel)
+{
+	time_t start = time(NULL);
+	while (time(NULL)-start < 1)
+	{
+		p.write(who_is_here_message::create(channel));
+		this_thread::sleep_for(chrono::milliseconds(50));
+	}
+}
+
+//validateName also sets old nick to new nick if it is acceptable
+bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick)
+{
+	if (newNick!=LIRCH_DEFAULT_NICK && userList.count(newNick))
+		return false;
+	else
+	{
+		p.write(changed_nick_message::create(oldNick,newNick));
+		oldNick = newNick;
+		return true;
+	}
+}
+
+void populateDefaultChannel(plugin_pipe p, QString channel, unordered_map<QString, user_status> & userList,QString & nick)
+{
+	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
+	settings.beginGroup("UserData");
+	QString defaultNick = settings.value("nick",LIRCH_DEFAULT_NICK).value<QString>();
+	settings.sync();
+	settings.endGroup();
+
+	askForUsers(p,channel);
+
+	if (defaultNick.toUtf8().size() > 64)
+	{
+		p.write(notify_message::create("","Default nick too long.  You are spartacus."));
+		return;
+	}
+
+	if (setNick(p,userList,nick,defaultNick))
+		p.write(notify_message::create(channel,"Welcome to LIRCH, "+defaultNick+"."));
+	else
+		p.write(notify_message::create(channel,"Default nick taken.  You can assign a new one with /nick <username>"));
+
+}
+
 void run(plugin_pipe p, string name)
 {
 	p.write(registration_message::create(0, name, "userlist_request"));
 	p.write(registration_message::create(0, name, "userlist_timer"));
 	p.write(registration_message::create(30000, name, "received"));
-	p.write(registration_message::create(30000, name, "received_me"));
 	p.write(registration_message::create(0, name, "list_channels"));
 	p.write(registration_message::create(0, name, "handler_ready"));
-	unordered_map<QString, user_status> statuses;
+	p.write(registration_message::create(-30000, name, "nick"));
+
+
+	unordered_map<QString, user_status> userList;
+
+	QString currentNick = LIRCH_DEFAULT_NICK;
+
+	populateDefaultChannel(p,LIRCH_DEFAULT_CHANNEL,userList,currentNick);
+
+	p.write(register_handler::create("/nick", sendNick));
+
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -74,16 +168,16 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type=="userlist_request")
 		{
-			p.write(userlist_message::create(statuses));
+			p.write(userlist_message::create(userList));
 		}
 		else if (m.type=="userlist_timer")
 		{
 			time_t now=time(NULL);
 			//Remove all nicks that haven't been seen in 2 minutes
-			decltype(statuses.begin()) i;
-			while ((i=std::find_if(statuses.begin(), statuses.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=statuses.end())
-				statuses.erase(i);
-			p.write(userlist_message::create(statuses));
+			decltype(userList.begin()) i;
+			while ((i=std::find_if(userList.begin(), userList.end(), [now](const std::pair<const QString &, const user_status &> &p) {return p.second.lastseen<now-2*60;}))!=userList.end())
+				userList.erase(i);
+			p.write(userlist_message::create(userList));
 			thread([](plugin_pipe p)
 			{
 				this_thread::sleep_for(chrono::seconds(10));
@@ -93,6 +187,7 @@ void run(plugin_pipe p, string name)
 		else if (m.type=="handler_ready")
 		{
 			p.write(register_handler::create("/list", sendList));
+			p.write(register_handler::create("/nick", sendNick));
 		}
 		else if (m.type=="received")
 		{
@@ -100,18 +195,36 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			statuses[s->nick].nick=s->nick;
-			if (s->subtype==received_message_subtype::NORMAL || s->subtype==received_message_subtype::ME || s->subtype==received_message_subtype::NOTIFY)
-				statuses[s->nick].channels.insert(s->channel);
-			statuses[s->nick].ip=s->ipAddress;
-			statuses[s->nick].lastseen=time(NULL);
+			updateSenderStatus(p,s,userList);
+			if (s->subtype==received_message_subtype::WHOHERE)
+			{
+				p.write(here_message::create(s->channel));
+			}
+		}
+		else if (m.type=="nick")
+		{
+			auto s=dynamic_cast<nick_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+			if (s->nick.toUtf8().size() > 64)
+			{
+				p.write(notify_message::create("","Nick too long.  Keeping old nick."));
+				continue;
+			}
+			QString newNick=s->nick;
+			QString oldNick=currentNick;
+			if (setNick(p,userList,currentNick,newNick))
+				p.write(sendable_notify_message::create("",oldNick+" has changed their nick to "+newNick+"."));
+			else
+				p.write(notify_message::create("","Nick taken.  Keeping old nick."));
 		}
 		else if (m.type=="list_channels")
 		{
 			auto s=dynamic_cast<list_channels *>(m.getdata());
 			if (!s)
 				continue;
-			for (auto &i : statuses)
+			for (auto &i : userList)
 			{
 				if (s->filterChannel=="" || i.second.channels.count(s->filterChannel)!=0)
 				{
@@ -126,3 +239,5 @@ void run(plugin_pipe p, string name)
 			p.write(m.decrement_priority());
 	}
 }
+
+
