@@ -8,6 +8,7 @@
 #include "plugins/display_messages.h"
 #include "plugins/grinder_messages.h"
 #include "plugins/channel_messages.h"
+#include "plugins/notify_messages.h"
 #include "core/core_messages.h"
 
 using namespace std;
@@ -65,6 +66,8 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(-30000, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "handler_ready"));
 	p.write(registration_message::create(-30000, name, "only"));
+	p.write(registration_message::create(-30000, name, "query_channel"));
+	
 	while (true)
 	{
 		message m=p.blocking_read();
@@ -94,7 +97,7 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			if (channel!="" && channel!=s->channel)
+			if (channel!="" && channel!=s->channel && s->channel!="")
 				continue;
 
 			string channel=s->channel.toLocal8Bit().constData();
@@ -113,8 +116,27 @@ void run(plugin_pipe p, string name)
 			auto i=dynamic_cast<set_channel *>(m.getdata());
 			if (!i)
 				continue;
-			bmp.core_write(m);
 			p.write(m.decrement_priority());
+			if (i->channel=="")
+			{
+				if (channel=="")
+					p.write(notify_message::create("", "On all channels"));
+				else
+					p.write(notify_message::create("", "On channel "+channel));
+			}
+			else
+			{
+				bmp.core_write(m);
+			}
+		}
+		else if (m.type=="query_channel")
+		{
+			auto i=dynamic_cast<query_channel *>(m.getdata());
+			if (!i)
+				continue;
+			QStringList channels;
+			channels.push_back(channel);
+			p.write(channel_list::create(channels));
 		}
 		else if (m.type=="only")
 		{

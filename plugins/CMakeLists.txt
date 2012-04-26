@@ -14,6 +14,10 @@ include_directories(${QT_INCLUDE_DIR})
 add_library(logger SHARED logger.cpp)
 target_link_libraries(logger envelope ${QT_LIBRARIES})
  
+# Settings tester plugin
+add_library(settingstest SHARED settingstest.cpp)
+target_link_libraries(settingstest envelope ${QT_LIBRARIES})
+ 
 # Masseuse plugin
 add_library(masseuse SHARED masseuse.cpp)
 target_link_libraries(masseuse envelope ${QT_LIBRARIES})
