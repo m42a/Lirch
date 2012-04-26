@@ -1,3 +1,6 @@
+#ifndef QUIP_PLUGIN_H
+#define QUIP_PLUGIN_H
+
 #include <string>
 
 #include <QString>
@@ -6,38 +9,35 @@
 #include "core/message.h"
 #include "core/message_view.h"
 
-class Quip {
-	QString text;
-
-	// Helper functions called by the constructor
-	void execute_fortune_process();
-private:
-	Quip(quip_request *request_data);
-	message to_message();
-}
+#include "plugins/quip_messages.h"
 
 class QuipPlugin {
 	// A QuipPlugin wraps its internal name and a pipe (used for communication)
 	std::string name;
 	plugin_pipe pipe;
 
-	// This is given to the meatgrinder (/quip handler)
-	void forward_quip_request(QString command, QString channel);
+	// A QuipPlugin manages objects of the following type
+	class Quip {
+		// A Quip encapsuates the destined channel and fortune text
+		QString channel;
+		QString text;
+	public:
+		Quip(quip_request_data *request_data);
+		message to_message();
+	};
 
-	// TODO should we add this to the project globally?
+	// This is given to the meatgrinder (/quip handler)
+	static message forward_quip_request(QString command, QString channel);
+public:
+	// TODO should we add something like this to the project globally?
 	enum class MessageType {
 		SHUTDOWN,
 		REGISTRATION_STATUS,
 		QUIP_REQUEST,
 		HANDLER_READY,
-		UNKNOWN;
+		UNKNOWN
 	};
 
-	// Helper functions for handle_message (see below)
-	MessageType enumerate(const QString &message_type) const;
-	void handle_registration_reply(registration status *status_data);
-	void handle_quip_request(quip_request *request_data);
-public:
 	// When the plugin runs, we create an instance to manage behavior
 	QuipPlugin(const std::string &quip_plugin_name, plugin_pipe &quip_plugin_pipe) :
 		name(quip_plugin_name),
@@ -45,5 +45,11 @@ public:
 
 	// Plugins have exactly two roles: 1) register for messages; 2) handle messages
 	void register_for_message_type(const QString &message_type, int with_priority = 0);
-	void handle_message(message incoming_message);
+	bool handle_message(message incoming_message);
+private:
+	MessageType enumerate(const QString &message_type) const;
+	void handle_registration_reply(registration_status *status_data);
+	void handle_quip_request(quip_request_data *request_data);
 };
+
+#endif // QUIP_PLUGIN_H
