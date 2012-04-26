@@ -32,10 +32,10 @@ message QuipPlugin::Quip::to_message() {
 }
 
 // QUIPPLUGIN CLASS FUNCTIONS (static)
-#include <cassert>
+//#include <cassert> // TODO remove this and line below
 message QuipPlugin::forward_quip_request(QString command, QString channel) {
 	// TODO what else to do with command?
-	assert(command == QObject::tr("/quip"));
+	//assert(command == QObject::tr("/quip"));
 	return quip_request_data(channel).to_message();
 }
 
@@ -46,7 +46,8 @@ void QuipPlugin::handle_registration_reply(registration_status *status_data) {
 		return;
 	}
 	int priority = status_data->priority;
-	if (!status_data->status && priority > 0) {
+	// Provided we failed to register, but have high enough priority, retry
+	if (!status_data->status && priority > LIRCH_MESSAGE_PRIORITY_MIN) {
 		std::string message_type = status_data->type;
 		pipe.write(registration_message::create(--priority, name, message_type));
 	}
@@ -56,6 +57,7 @@ void QuipPlugin::handle_quip_request(quip_request_data *request_data) {
 	if (!request_data) {
 		return;
 	}
+	// Make a Quip and forward it
 	pipe.write(Quip(request_data).to_message());
 }
 
@@ -78,7 +80,7 @@ QuipPlugin::MessageType enumerate(const QString &message_type) {
 
 // QUIPPLUGING PUBLIC FUNCTIONS (public)
 
-#include <QDebug>
+//#include <QDebug>
 
 bool QuipPlugin::handle_message(message incoming_message)
 {
@@ -88,7 +90,7 @@ bool QuipPlugin::handle_message(message incoming_message)
 	message_data *data = incoming_message.data.get();
 	QString message_type = QString::fromStdString(incoming_message.type);
 	// TODO remove this and #include above
-	qDebug() << QObject::tr("Received '%1' message tag").arg(message_type);
+	//qDebug() << QObject::tr("Received '%1' message tag").arg(message_type);
 	// The type of a message determines what to do with it
 	switch(enumerate(message_type)) {
 	// Shutdown messages immediately terminate the plugin
