@@ -96,7 +96,8 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 			oldNickInfo.nick=message->nick;
 			userList.erase(message->channel);
 			userList[message->nick]=oldNickInfo;
-			p.write(sendable_notify_message::create("",message->channel+" has changed their nick to "+message->nick+"."));
+			for(const auto & iterator:userList[message->nick].channels)
+				p.write(notify_message::create(iterator,message->channel+" has changed their nick to "+message->nick+"."));
 		}
 
 	}
@@ -114,16 +115,22 @@ void askForUsers(plugin_pipe p, QString channel)
 }
 
 //validateName also sets old nick to new nick if it is acceptable
-bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick)
+bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick,bool firstTime)
 {
 	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
 	{
-		p.write(notify_message::create("","Nick taken.  Keeping old nick."));
+		if (firstTime)
+			p.write(notify_message::create("","Default nick taken.  You will be Spartacus."));
+		else
+			p.write(notify_message::create("","Nick taken.  Keeping old nick."));
 		return false;
 	}
 	else if (newNick.toUtf8().size() > 64)
 	{
-		p.write(notify_message::create("","Nick too long.  Keeping old nick."));
+		if (firstTime)
+			p.write(notify_message::create("","Default nick too long.  You will be Spartacus."));
+		else
+			p.write(notify_message::create("","Nick too long.  Keeping old nick."));
 		return false;
 	}
 	else
@@ -144,14 +151,6 @@ void populateDefaultChannel(plugin_pipe p)
 
 	askForUsers(p,"default");
 
-
-
-	if (defaultNick.toUtf8().size() > 64)
-	{
-		p.write(notify_message::create("","Default nick too long.  You are spartacus."));
-		return;
-	}
-
 	p.write(nick_message::create(defaultNick));
 
 }
@@ -168,6 +167,8 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
 
+
+	bool firstTime=true;
 
 	unordered_map<QString, user_status> userList;
 
@@ -249,7 +250,8 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			setNick(p,userList,currentNick,s->nick);
+			setNick(p,userList,currentNick,s->nick,firstTime);
+			firstTime = false;
 		}
 		else if (m.type=="list_channels")
 		{
@@ -275,6 +277,7 @@ void run(plugin_pipe p, string name)
 			p.write(m.decrement_priority());
 
 			askForUsers(p,s->channel);
+			p.write(sendable_notify_message::create(s->channel, currentNick + " has joined channel "+s->channel+"."));
 		}
 		else if (m.type == "leave_channel")
 		{
