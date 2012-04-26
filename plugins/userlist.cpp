@@ -79,7 +79,7 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 			else
 				p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
 		}
-		else if (message->subtype==received_status_message_subtype::HERE)
+		else if (message->subtype==received_status_message_subtype::HERE && message->channel!="")
 		{
 			userList[message->nick].channels.insert(message->channel);
 		}
@@ -276,8 +276,11 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 
-			askForUsers(p,s->channel);
-			p.write(sendable_notify_message::create(s->channel, currentNick + " has joined channel "+s->channel+"."));
+			if (userList[currentNick].channels.count(s->channel)==0)
+			{
+				askForUsers(p,s->channel);
+				p.write(sendable_notify_message::create(s->channel, currentNick + " has joined channel "+s->channel+"."));
+			}
 		}
 		else if (m.type == "leave_channel")
 		{
