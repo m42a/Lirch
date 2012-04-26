@@ -1,3 +1,9 @@
+/*
+ *
+ * nick messages ask for the nick to be changed.
+ * changed nick messages are for the userlist to send out so everyone can tell when it does.
+ */
+
 #ifndef NICK_MESSAGES_H
 #define NICK_MESSAGES_H
 

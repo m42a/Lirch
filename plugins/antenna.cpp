@@ -253,7 +253,7 @@ void run(plugin_pipe p, string name)
 			}
 			else if(m.type=="here")
 			{
-				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
+				auto castMessage=dynamic_cast<here_message *>(m.getdata());
 
 				//if it's not actually a here message, ignore it and move on
 				if (!castMessage)
