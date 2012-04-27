@@ -51,16 +51,24 @@ using namespace std;
 message sendBlock(QString str, QString channel)
 {
 	if (str.startsWith("/block "))
-		return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
+	{
+		if(!QHostAddress(str.section(' ',1)).isNull())
+			return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
+		return block_name_message::create(str.section(' ',1), channel,block_name_message_subtype::ADD);
+	}
 	if (str.startsWith("/block"))
 		return display_blocks_message::create(channel);
 	return empty_message::create();
 }
 
-message sendUnblock(QString str, QString)
+message sendUnblock(QString str, QString channel)
 {
 	if (str.startsWith("/unblock "))
-		return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
+	{
+		if(!QHostAddress(str.section(' ',1)).isNull())
+			return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
+		return block_name_message::create(str.section(' ',1), channel,block_name_message_subtype::REMOVE);
+	}
 	return empty_message::create();
 }
 

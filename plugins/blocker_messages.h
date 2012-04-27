@@ -34,7 +34,7 @@ public:
 
 class display_blocks_message : public message_data
 {
-	public:
+public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_blocks_message(*this));}
 
 	static message create(QString c) {return message_create("display blocks", new display_blocks_message(c));}
@@ -42,6 +42,25 @@ class display_blocks_message : public message_data
 	display_blocks_message(QString c) : channel(c) {}
 
 	QString channel;
+};
+
+enum class block_name_message_subtype
+{
+	ADD,REMOVE
+};
+
+class block_name_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new block_name_message(*this));}
+
+	static message create(QString n, QString c, block_name_message_subtype s) {return message_create("block name", new block_name_message(n,c,s));}
+
+	block_name_message(QString n, QString c, block_name_message_subtype s) : name(n), channel(c), type(s) {}
+
+	QString name;
+	QString channel;
+	block_name_message_subtype type;
 };
 
 class block_status_message : public message_data
