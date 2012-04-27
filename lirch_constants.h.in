@@ -35,12 +35,4 @@
 #define LIRCH_DEFAULT_CHANNEL "default"
 #define LIRCH_DEFAULT_NICK    "spartacus"
 
-// PRELOADS
-
-struct preload_data {
-	const char *name, *filename; 
-};
-
-static const preload_data preloads[] = { @LIRCH_PRELOADS@ };
-
 #endif // LIRCH_CONSTANTS_H

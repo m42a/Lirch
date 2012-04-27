@@ -9,12 +9,22 @@ using namespace std;
 #include <QObject>
 #include <QString>
 
-#include "lirch_constants.h"
 #include "core/core_messages.h"
 #include "ui/lirch_client_pipe.h"
 #include "ui/qt/lirch_qt_interface.h"
 
-// Necessary for communication with lirch-qt
+// For preloading
+
+struct preload_data {
+	const char *plugin_name, *plugin_path;
+};
+
+static preload_data preloads[] = {
+	@LIRCH_PRELOADS@
+	@LIRCH_CLIENT_PRELOADS@
+};
+
+// Necessary for communication with lirch-gui
 LirchClientPipe mediator;
 
 // Declared in core.cpp

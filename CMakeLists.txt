@@ -30,6 +30,17 @@ else(GIT_EXECUTABLE)
   set(LIRCH_BUILD_HASH "GIT_NOT_FOUND")
 endif(GIT_EXECUTABLE)
 
+# Create a log subdirectory in the build directory
+set(DEFAULT_LOG_DIRECTORY "${CMAKE_BINARY_DIR}/log")
+file(MAKE_DIRECTORY "${DEFAULT_LOG_DIRECTORY}")
+# Configure some string literals and include some necessary directories
+set(LOG_DIR_DOCSTRING "Configure the program to place log files here by default")
+set(LIRCH_LOG_DIRECTORY "${DEFAULT_LOG_DIRECTORY}" CACHE STRING "${LOG_DIR_DOCSTRING}")
+configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
+configure_file(core/lirch_qtcore.cpp.in lirch_qtcore.cpp)
+include_directories("${CMAKE_BINARY_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}")
+
 # Basic build options
 option(BUILD_CLIENT_BASIC  "Build the basic interface"       OFF)
 option(BUILD_CLIENT_CURSES "Build the curses interface"      OFF)
@@ -38,14 +49,10 @@ option(BUILD_PLUGINS       "Build the standard plugin suite" ON)
 option(BUILD_PLUGINS_EXTRA "Build non-standard plugins"      OFF)
 mark_as_advanced(BUILD_PLUGINS_EXTRA FORCE)
 
-if(BUILD_CLIENT_BASIC OR BUILD_CLIENT_CURSES)
-  set(BUILD_CLIENT_NON_QT ON)
-endif(BUILD_CLIENT_BASIC OR BUILD_CLIENT_CURSES)
-
-# Preload options (advanced)
-macro(preload_option NAME OPTION_STATE)
-  string(TOUPPER "PRELOAD_${NAME}" OPTION_NAME)
-  set(OPTION_DOC "Preload the ${NAME} plugin")
+# Handle preload option additions (advanced)
+macro(add_preload_option PLUGIN_NAME OPTION_STATE)
+  string(TOUPPER "PRELOAD_${PLUGIN_NAME}" OPTION_NAME)
+  set(OPTION_DOC "Preload the ${PLUGIN_NAME} plugin")
   # Preload defaults to OFF
   option(${OPTION_NAME} ${OPTION_DOC} OFF)
   mark_as_advanced(${OPTION_NAME} FORCE)
@@ -55,39 +62,58 @@ macro(preload_option NAME OPTION_STATE)
   endif(NOT ${OPTION_STATE})
   # Preloads might modify the configuration of lirch_constants.h
   if(${OPTION_NAME})
-    string(TOUPPER "PREPATH_${NAME}" LIBRARY_NAME)
+    string(TOUPPER "PREPATH_${PLUGIN_NAME}" LIBRARY_NAME)
     # TODO add paths to facilitate finding the correct lib
-    find_library(${LIBRARY_NAME} ${NAME} "${LIBRARY_OUTPUT_PATH}")
+    # FIXME this needs to use find_library or something for portability
+    # set(${LIBRARY_NAME} "${LIBRARY_OUTPUT_PATH}/lib${PLUGIN_NAME}.so")
+    # FIXME don't use LIBRARY_OUTPUT_PATH or don't use find_library
+    find_library(${LIBRARY_NAME} ${PLUGIN_NAME} "${LIBRARY_OUTPUT_PATH}")	
     mark_as_advanced(${LIBRARY_NAME} FORCE)
+    # Provided this preload is selected, add it to LIRCH_PRELOADS
     if(${LIBRARY_NAME})
-      list(APPEND PRELOADS "{ \"${NAME}\", \"${${LIBRARY_NAME}}\" },")
+      set(LIRCH_PRELOADS "${LIRCH_PRELOADS}
+	{ \"${PLUGIN_NAME}\", \"${${LIBRARY_NAME}}\" },")
     endif(${LIBRARY_NAME})
   endif(${OPTION_NAME})
-endmacro(preload_option)
+endmacro(add_preload_option)
 # The active state of each is determined above
-preload_option("antenna"       BUILD_PLUGINS)
-preload_option("lirch-basic"   BUILD_CLIENT_BASIC)
-preload_option("lirch-curses"  BUILD_CLIENT_CURSES)
-preload_option("lirch-gui"     BUILD_CLIENT_QTGUI)
-preload_option("logger"        BUILD_PLUGINS)
-preload_option("masseuse"      BUILD_PLUGINS)
-preload_option("meatgrinder"   BUILD_PLUGINS)
-preload_option("userlist"      BUILD_PLUGINS)
-# Propagate the preloads for configuration
-if(PRELOADS)
-  foreach(PRELOAD IN LISTS PRELOADS)
-    set(LIRCH_PRELOADS "${LIRCH_PRELOADS}
-	${PRELOAD}")
-  endforeach(PRELOAD IN LISTS PRELOADS)
-endif(PRELOADS)
+add_preload_option("timer"          BUILD_PLUGINS_EXTRA)
+add_preload_option("linuxtester"    BUILD_PLUGINS_EXTRA)
+add_preload_option("settingstester" BUILD_PLUGINS_EXTRA)
 
-# Configure some string literals and include build/source dir
-set(DEFAULT_LOG_DIRECTORY "${CMAKE_BINARY_DIR}/log")
-file(MAKE_DIRECTORY "${DEFAULT_LOG_DIRECTORY}")
-set(LIRCH_LOG_DIRECTORY "${DEFAULT_LOG_DIRECTORY}" CACHE STRING "Configure the program to place log files here by default")
-configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
-include_directories("${CMAKE_BINARY_DIR}")
-include_directories("${CMAKE_SOURCE_DIR}")
+# Any specific client requires certain preloads
+macro(add_preload PLUGIN_NAME PRELOADS)
+  # FIXME this needs to use find_library or something for portability
+  set(LIBRARY_NAME "${LIBRARY_OUTPUT_PATH}/lib${PLUGIN_NAME}.so")
+  set(${PRELOADS} "${${PRELOADS}}
+	{ \"${PLUGIN_NAME}\", \"${LIBRARY_NAME}\" },")
+endmacro(add_preload PLUGIN_NAME PRELOADS)
+if(BUILD_CLIENT_BASIC OR BUILD_CLIENT_CURSES OR BUILD_CLIENT_QTGUI)
+  # Load all standard plugins
+  if(BUILD_PLUGINS)
+    add_preload("antenna"     CLIENT_PRELOADS)
+    add_preload("logger"      CLIENT_PRELOADS)
+    add_preload("meatgrinder" CLIENT_PRELOADS)
+    add_preload("masseuse"    CLIENT_PRELOADS)
+    add_preload("userlist"    CLIENT_PRELOADS)
+  endif(BUILD_PLUGINS)
+  # These are for specific UI
+  if(BUILD_CLIENT_BASIC)
+    set(LIRCH_CLIENT_PRELOADS "${CLIENT_PRELOADS}")
+    add_preload("lirch-basic" LIRCH_CLIENT_PRELOADS)
+    configure_file(core/lirch_qtcore.cpp.in core/blirch_qtcore.cpp)
+  endif(BUILD_CLIENT_BASIC)
+  if(BUILD_CLIENT_CURSES)
+    set(LIRCH_CLIENT_PRELOADS "${CLIENT_PRELOADS}")
+    add_preload("lirch-curses" LIRCH_CLIENT_PRELOADS)
+    configure_file(core/lirch_qtcore.cpp.in core/clirch_qtcore.cpp)
+  endif(BUILD_CLIENT_CURSES)
+  if(BUILD_CLIENT_QTGUI)
+    set(LIRCH_CLIENT_PRELOADS "${CLIENT_PRELOADS}")
+    add_preload("lirch-gui" LIRCH_CLIENT_PRELOADS)
+    configure_file(core/lirch_qtgui.cpp.in core/qlirch_qtgui.cpp)
+  endif(BUILD_CLIENT_QTGUI)
+endif(BUILD_CLIENT_BASIC OR BUILD_CLIENT_CURSES OR BUILD_CLIENT_QTGUI)
 
 ## LIBRARIES
 

@@ -14,27 +14,42 @@ set_target_properties(envelope PROPERTIES COMPILE_FLAGS -fPIC)
 add_library(lirch-core core.cpp plugin_loader.cpp)
 target_link_libraries(lirch-core envelope dl pthread)
 
-if(BUILD_CLIENT_NON_QT)
-  # Build the core executable
-  set(QT_DONT_USE_QTGUI TRUE)
-  include(${QT_USE_FILE})
-  include_directories(${QT_INCLUDE_DIR})
-  qt4_wrap_cpp(QT_LIRCH lirch_non_qt.h)
-  add_executable(lirch lirch_non_qt.cpp ${QT_LIRCH})
-  target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
-  install(TARGETS lirch DESTINATION bin)
-endif(BUILD_CLIENT_NON_QT)
+# Prepare the core's QtCore mediator
+set(QT_DONT_USE_QTCORE FALSE)
+set(QT_DONT_USE_QTGUI TRUE)
+set(QT_USE_QTNETWORK FALSE)
+set(QT_USE_QTTEST FALSE)
+if(BUILD_TESTING)
+  set(QT_USE_QTTEST TRUE)
+endif(BUILD_TESTING)
+include(${QT_USE_FILE})
+include_directories(${QT_INCLUDE_DIR})
+qt4_wrap_cpp(LIRCH_QTCORE_MOC lirch_qtcore.h)
+
+# Build the core executable with QtGUI
+add_executable(lirch lirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
+target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
+install(TARGETS lirch DESTINATION bin)
+
+if(BUILD_CLIENT_BASIC)
+  add_executable(blirch blirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
+  target_link_libraries(blirch lirch-core ${QT_LIBRARIES})
+  install(TARGETS blirch DESTINATION bin)
+endif(BUILD_CLIENT_BASIC)
+
+if(BUILD_CLIENT_CURSES)
+  add_executable(clirch clirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
+  target_link_libraries(clirch lirch-core ${QT_LIBRARIES})
+  install(TARGETS clirch DESTINATION bin)
+endif(BUILD_CLIENT_CURSES)
 
 if(BUILD_CLIENT_QTGUI)
   # Use QtCore and QtGui
-  set(QT_DONT_USE_QTCORE FALSE)
   set(QT_DONT_USE_QTGUI FALSE)
-  set(QT_USE_QTNETWORK FALSE)
-  set(QT_USE_QTTEST FALSE)
   include(${QT_USE_FILE})
   include_directories(${QT_INCLUDE_DIR})
-  # Build the core executable with Qt GUI
-  add_executable(qlirch lirch_qtgui.cpp)
+  # Build the core executable with QtGUI
+  add_executable(qlirch qlirch_qtgui.cpp)
   target_link_libraries(qlirch lirch-core lirch-qt-interface ${QT_LIBRARIES})
   install(TARGETS qlirch DESTINATION bin)
 endif(BUILD_CLIENT_QTGUI)
