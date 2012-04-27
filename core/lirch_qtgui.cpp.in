@@ -16,7 +16,7 @@ using namespace std;
 // For preloading
 
 struct preload_data {
-	const char *plugin_name, *plugin_path;
+	const char *name, *filename;
 };
 
 static preload_data preloads[] = {

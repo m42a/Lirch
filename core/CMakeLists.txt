@@ -26,18 +26,20 @@ include(${QT_USE_FILE})
 include_directories(${QT_INCLUDE_DIR})
 qt4_wrap_cpp(LIRCH_QTCORE_MOC lirch_qtcore.h)
 
-# Build the core executable with QtGUI
-add_executable(lirch lirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
-target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
-install(TARGETS lirch DESTINATION bin)
+# Build the core executable with QtCore
+#add_executable(lirch lirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
+#target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
+#install(TARGETS lirch DESTINATION bin)
 
 if(BUILD_CLIENT_BASIC)
+  # Build the core executable with QtCore and basic UI
   add_executable(blirch blirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
   target_link_libraries(blirch lirch-core ${QT_LIBRARIES})
   install(TARGETS blirch DESTINATION bin)
 endif(BUILD_CLIENT_BASIC)
 
 if(BUILD_CLIENT_CURSES)
+  # Build the core executable with QtCore and curses UI
   add_executable(clirch clirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
   target_link_libraries(clirch lirch-core ${QT_LIBRARIES})
   install(TARGETS clirch DESTINATION bin)
@@ -48,7 +50,7 @@ if(BUILD_CLIENT_QTGUI)
   set(QT_DONT_USE_QTGUI FALSE)
   include(${QT_USE_FILE})
   include_directories(${QT_INCLUDE_DIR})
-  # Build the core executable with QtGUI
+  # Build the core executable with QtGUI and qt UI
   add_executable(qlirch qlirch_qtgui.cpp)
   target_link_libraries(qlirch lirch-core lirch-qt-interface ${QT_LIBRARIES})
   install(TARGETS qlirch DESTINATION bin)

@@ -37,7 +37,7 @@ file(MAKE_DIRECTORY "${DEFAULT_LOG_DIRECTORY}")
 set(LOG_DIR_DOCSTRING "Configure the program to place log files here by default")
 set(LIRCH_LOG_DIRECTORY "${DEFAULT_LOG_DIRECTORY}" CACHE STRING "${LOG_DIR_DOCSTRING}")
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
-configure_file(core/lirch_qtcore.cpp.in lirch_qtcore.cpp)
+configure_file(core/lirch_qtcore.cpp.in core/lirch_qtcore.cpp)
 include_directories("${CMAKE_BINARY_DIR}")
 include_directories("${CMAKE_SOURCE_DIR}")
 

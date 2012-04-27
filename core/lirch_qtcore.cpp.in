@@ -7,10 +7,10 @@
 
 #include <QCoreApplication>
 
-#include "message.h"
-#include "message_pipe.h"
-#include "core_messages.h"
-#include "lirch_qtcore.h"
+#include "core/message.h"
+#include "core/message_pipe.h"
+#include "core/core_messages.h"
+#include "core/lirch_qtcore.h"
 
 // For preloading
 
