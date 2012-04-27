@@ -32,6 +32,18 @@ public:
 	QHostAddress ip;
 };
 
+class display_blocks_message : public message_data
+{
+	public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_blocks_message(*this));}
+
+	static message create(QString c) {return message_create("display blocks", new display_blocks_message(c));}
+
+	display_blocks_message(QString c) : channel(c) {}
+
+	QString channel;
+};
+
 class block_status_message : public message_data
 {
 public:

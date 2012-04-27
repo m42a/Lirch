@@ -48,10 +48,12 @@
 
 using namespace std;
 
-message sendBlock(QString str, QString)
+message sendBlock(QString str, QString channel)
 {
 	if (str.startsWith("/block "))
 		return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
+	if (str.startsWith("/block"))
+		return display_blocks_message::create(channel);
 	return empty_message::create();
 }
 
@@ -80,6 +82,8 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "changed_nick"));
 	p.write(registration_message::create(0, name, "sendable_notify"));
 	p.write(registration_message::create(0, name, "leave_channel"));
+	p.write(registration_message::create(0, name, "display blocks"));
+
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
@@ -174,6 +178,17 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(block_status_message::create(castMessage->ip, blocklist.count(castMessage->ip)));
 				}
+			}
+			else if(m.type=="display blocks")
+			{
+				auto castMessage=dynamic_cast<display_blocks_message *>(m.getdata());
+				p.write(m.decrement_priority());
+				
+				if (!castMessage)
+					continue;
+				
+				for(auto iter = blocklist.begin(); iter != blocklist.end(); iter++)
+					p.write(notify_message::create(castMessage->channel, iter->toString()+" is blocked"));
 			}			
 			else if(m.type=="edict")
 			{
