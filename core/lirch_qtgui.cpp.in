@@ -56,7 +56,7 @@ void parse_args(int argc, char *argv[]) {
 			"List the preloaded plugins", options, false);
 		// We're allowed exactly one of these:
 		TCLAP::UnlabeledMultiArg<string> plugin_pairs("plugins",
-			"Bare strings, in pairs like: antenna lib/libantenna.so", false,
+			"Bare strings, in pairs like: plug lirch/libplug.so", false,
 			"plugin_name plugin_file", "pair<string, string>");
                 options.add(plugin_pairs);
 		// Parse all the options, and fill in session
@@ -99,18 +99,19 @@ int main(int argc, char *argv[])
 	// Get the remaining arguments from the command line
 	parse_args(argc, argv);
 	verbose = session.verbose;
-	QString error_msg;
+	QString feedback_msg;
 
 	// Handle a request to display these
+	feedback_msg = QObject::tr("Plugins configured to preload: ");
 	if (session.list_preloads) {
-		error_msg = QObject::tr("Plugins configured to preload: ");
 		if (session.no_preloads) {
-			error_msg += QObject::tr("(Note: --no_preloads flag was specified.)");
+			feedback_msg += QObject::tr("(Note: --no_preloads flag was specified.)");
 		}
-		cerr << error_msg.toStdString() << endl;
+		cerr << feedback_msg.toStdString() << endl;
 		for (auto &p : plugins) {
 			cerr << p.first << ": " << p.second << endl;
 		}
+		return 0;
 	}
 
 	// Honor a request to ignore these
@@ -123,12 +124,12 @@ int main(int argc, char *argv[])
 	pit = session.plugins.begin();
 	pitend = session.plugins.end();
 	pair<string, string> p;
-	error_msg = QObject::tr("[WARNING] ignoring unpaired plugin argument '%1'");
+	feedback_msg = QObject::tr("[WARNING] ignoring unpaired plugin argument '%1'");
 	while (pit != pitend) {
 		p.first = *pit; ++pit;
 		if (pit == pitend) {
-			error_msg = error_msg.arg(QString::fromStdString(p.first));
-			cerr << error_msg.toStdString() << endl;
+			QString filename = QString::fromStdString(p.first);
+			cerr << feedback_msg.arg(filename).toStdString() << endl;
 			break;
 		}
 		p.second = *pit; ++pit;
