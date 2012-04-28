@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.0 FATAL_ERROR)
 project(Lirch C CXX)
 
-## BASIC OPTIONS
+## BUILD SETUP
 
 # Force a build type to be declared
 set(CMAKE_BUILD_TYPES "(None|Debug|Release|RelWithDebInfo|MinSizeRel)")
@@ -33,13 +33,16 @@ endif(GIT_EXECUTABLE)
 # Create a log subdirectory in the build directory
 set(DEFAULT_LOG_DIRECTORY "${CMAKE_BINARY_DIR}/log")
 file(MAKE_DIRECTORY "${DEFAULT_LOG_DIRECTORY}")
-# Configure some string literals and include some necessary directories
 set(LOG_DIR_DOCSTRING "Configure the program to place log files here by default")
 set(LIRCH_LOG_DIRECTORY "${DEFAULT_LOG_DIRECTORY}" CACHE STRING "${LOG_DIR_DOCSTRING}")
+# Configure some string literals
 configure_file(lirch_constants.h.in "${CMAKE_BINARY_DIR}/lirch_constants.h")
-configure_file(core/lirch_qtcore.cpp.in core/lirch_qtcore.cpp)
+configure_file(core/lirch_qtcore.cpp.in "${CMAKE_BINARY_DIR}/core/alirch_qtcore.cpp")
+# Include some default directories
 include_directories("${CMAKE_BINARY_DIR}")
 include_directories("${CMAKE_SOURCE_DIR}")
+
+## BUILD OPTIONS
 
 # Basic build options
 option(BUILD_CLIENT_BASIC  "Build the basic interface"       OFF)
@@ -175,7 +178,7 @@ if(BUILD_CLIENT_QTGUI)
   add_subdirectory(ui/qt)
 endif(BUILD_CLIENT_QTGUI)
 
-# TESTING
+## TESTING
 
 include(CTest)
 if(BUILD_TESTING)
@@ -183,59 +186,22 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif(BUILD_TESTING)
 
-# PACKAGING
+## PACKAGING
 
-# TODO dependencies and such
-include(InstallRequiredSystemLibraries)
-
-set(CPACK_PACKAGE_VENDOR              "The Addams Family")
-set(CPACK_PACKAGE_CONTACT             "Tor E. Hagemann <hagemt@rpi.edu>")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A local IRC host (lirch)")
-set(CPACK_PACKAGE_DESCRIPTION_FILE    "${CMAKE_SOURCE_DIR}/NEWS")
-
-set(CPACK_RESOURCE_FILE_LICENSE       "${CMAKE_SOURCE_DIR}/LICENSE")
-set(CPACK_RESOURCE_FILE_README        "${CMAKE_SOURCE_DIR}/README.md")
-set(CPACK_RESOURCE_FILE_WELCOME       "${CMAKE_SOURCE_DIR}/NEWS")
-
-set(CPACK_PACKAGE_VERSION_MAJOR       "${LIRCH_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR       "${LIRCH_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH       "${LIRCH_VERSION_PATCH}")
-set(CPACK_PACKAGE_VERSION_TWEAK       "${LIRCH_VERSION_TWEAK}")
-
-# TODO make sure this is what we need
-#set(CPACK_DEBIAN_PACKAGE_DEPENDS      "package_name (>= min_version), ...")
-# Obvious requirements: libdl libpthread libQtGui libQtNetwork libQtCore libQtTest? libc(6) libgcc libstdc++ libm
-# Pulled from objdump -p on bin,lib: libpng libSM libICE libfreetype libXext libX11 libz libgthread libglib libgobject librt
-# Referenced elsewhere: GLIBCXX_3.4.14 CXXABI_1.3.5 GCC_3.0 GLIBC_2.2.5
-set(CPACK_DEBIAN_PACKAGE_DEPENDS        "libqtcore4 (>= 4:4.8.1-0ubuntu4), libqtgui4 (4:4.8.1-0ubuntu4), libqt4-network (4:4.8.1-0ubuntu4)")
-# This defaults to i386
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
-# Similar projects are in 'net'
-set(CPACK_DEBIAN_PACKAGE_SECTION        "net")
-
-# TODO is any of this necessary for us? (if so, make it portable)
-#list(APPEND CPACK_SOURCE_STRIP_FILES "${CMAKE_BUILD_DIR}/lirch_constants.h")
-#list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/libenvelop.so")
-#list(APPEND CPACK_STRIP_FILES "${EXECUTABLE_OUTPUT_PATH}/lirch")
-#if(BUILD_PLUGINS)
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/libantenna.so")
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/liblogger.so")
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/libmasseuse.so")
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/libmeatgrinder.so")
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/libuserlist.so")
-#endif(BUILD_PLUGINS)
-#if(BUILD_BASIC_CLIENT)
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/liblirch-basic.so")
-#endif(BUILD_BASIC_CLIENT)
-#if(BUILD_CURSES_CLIENT)
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/liblirch-curses.so")
-#endif(BUILD_CURSES_CLIENT)
-#if(BUILD_QT_CLIENT)
-#  list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/liblirch-qt.so")
-#endif(BUILD_QT_CLIENT)
-
-set(CPACK_PACKAGE_EXECUTABLES "${CMAKE_EXECUTABLE_OUTPUT_PATH}/lirch" "Lirch (core)")
-
+# TODO how to get make package and cpack both to work?
+set(FROM_CMAKE_BUILD ON CACHE INTERNAL "Tag for make package" FORCE)
+# Initialize a global configuration
+set(CPACK_GENERATOR "STGZ;TGZ;TBZ2;TZ") # FIXME ZIP is broken for me
+set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackConfig.cmake")
+if(UNIX)
+  list(APPEND CPACK_GENERATOR "DEB") # TODO also RPM/arch?
+endif(UNIX)
+if(WIN32 AND NOT UNIX)
+  list(APPEND CPACK_GENERATOR "NSIS") # TODO doesn't work
+endif(WIN32 AND NOT UNIX)
+include("${CPACK_PROJECT_CONFIG_FILE}")
+# Initialize source packaging (for future use)
+#set(CPACK_SOURCE_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackSourceConfig.cmake")
+#include("${CPACK_SOURCE_PROJECT_CONFIG_FILE}")
+# Include the proper modules for packaging
 include(CPack)

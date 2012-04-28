@@ -26,10 +26,10 @@ include(${QT_USE_FILE})
 include_directories(${QT_INCLUDE_DIR})
 qt4_wrap_cpp(LIRCH_QTCORE_MOC lirch_qtcore.h)
 
-# Build the core executable with QtCore
-#add_executable(lirch lirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
-#target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
-#install(TARGETS lirch DESTINATION bin)
+# Build the core executable with QtCore and no UI
+add_executable(lirch alirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
+target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
+install(TARGETS lirch DESTINATION bin)
 
 if(BUILD_CLIENT_BASIC)
   # Build the core executable with QtCore and basic UI
