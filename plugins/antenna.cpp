@@ -5,7 +5,7 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes, "left" for announcing you left a channel.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes, "left" for announcing you left a channel, "join" for announcing you joined a channel.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
@@ -80,6 +80,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "changed_nick"));
 	p.write(registration_message::create(0, name, "sendable_notify"));
 	p.write(registration_message::create(0, name, "leave_channel"));
+    p.write(registration_message::create(0, name, "set_channel"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
@@ -301,12 +302,33 @@ void run(plugin_pipe p, string name)
 
 				currentNick=castMessage->newNick;
 			}
+            else if (m.type == "set_channel")
+            {
+                auto castMessage=dynamic_cast<set_channel_message *>(m.getdata());
+                p.write(m.decrement_priority());
+
+                //if it's not actually a set channel message, ignore it and move on
+                if (!castMessage)
+                    continue;
+
+                QString channel = castMessage->channel;
+                QString type = "join";
+
+                QByteArray message = formatMessage(type,channel,currentNick,"");
+
+                //change to use write() function when we have time
+                if(message.length()>0)
+                {
+                    udpSocket.writeDatagram(message,groupAddress,port);
+                    lastSent=time(NULL);
+                }
+            }
 			else if (m.type == "leave_channel")
 			{
 				auto castMessage=dynamic_cast<leave_channel_message *>(m.getdata());
 				p.write(m.decrement_priority());
 
-				//if it's not actually a here message, ignore it and move on
+                //if it's not actually a leave channel message, ignore it and move on
 				if (!castMessage)
 					continue;
 
@@ -358,7 +380,7 @@ void run(plugin_pipe p, string name)
 			}
 			else if (type=="here")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
+                p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
 				continue;
 			}
 			else if (type=="nick")
@@ -367,10 +389,15 @@ void run(plugin_pipe p, string name)
 				continue;
 			}
 			else if (type=="left")
-			{
-				p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
-				continue;
-			}
+            {
+                p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
+                continue;
+            }
+            else if (type=="join")
+            {
+                p.write(received_status_message::create(received_status_message_subtype::JOIN,destinationChannel,senderNick,senderIP));
+                continue;
+            }
 
 			QString sentContents=QString::fromUtf8(broadcast+132,256).section(QChar('\0'),0,0);
 
