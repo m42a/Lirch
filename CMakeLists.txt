@@ -163,6 +163,19 @@ set(CPACK_PACKAGE_VERSION_MINOR       "${LIRCH_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH       "${LIRCH_VERSION_PATCH}")
 set(CPACK_PACKAGE_VERSION_TWEAK       "${LIRCH_VERSION_TWEAK}")
 
+# TODO make sure this is what we need
+#set(CPACK_DEBIAN_PACKAGE_DEPENDS      "package_name (>= min_version), ...")
+# Obvious requirements: libdl libpthread libQtGui libQtNetwork libQtCore libQtTest? libc(6) libgcc libstdc++ libm
+# Pulled from objdump -p on bin,lib: libpng libSM libICE libfreetype libXext libX11 libz libgthread libglib libgobject librt
+# Referenced elsewhere: GLIBCXX_3.4.14 CXXABI_1.3.5 GCC_3.0 GLIBC_2.2.5
+set(CPACK_DEBIAN_PACKAGE_DEPENDS        "libqtcore4 (>= 4:4.8.1-0ubuntu4), libqtgui4 (4:4.8.1-0ubuntu4), libqt4-network (4:4.8.1-0ubuntu4)")
+# This defaults to i386
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+# Similar projects are in 'net'
+set(CPACK_DEBIAN_PACKAGE_SECTION        "net")
+
 # TODO is any of this necessary for us? (if so, make it portable)
 #list(APPEND CPACK_SOURCE_STRIP_FILES "${CMAKE_BUILD_DIR}/lirch_constants.h")
 #list(APPEND CPACK_STRIP_FILES "${LIBRARY_OUTPUT_PATH}/libenvelop.so")
