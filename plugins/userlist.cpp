@@ -79,6 +79,11 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 			else
 				p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
 		}
+        else if (message->subtype==received_status_message_subtype::JOIN)
+        {
+            userList[message->nick].channels.insert(message->channel);
+            p.write(notify_message::create(message->channel,message->nick+" has joined channel "+message->channel+"."));
+        }
 		else if (message->subtype==received_status_message_subtype::HERE && message->channel!="")
 		{
 			userList[message->nick].channels.insert(message->channel);
@@ -107,7 +112,7 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 
 void askForUsers(plugin_pipe p, QString channel)
 {
-	for(int i=0; i<20; i++)
+    for(int i=0; i<5; i++)
 	{
 		p.write(who_is_here_message::create(channel));
 		this_thread::sleep_for(chrono::milliseconds(50));
@@ -117,28 +122,33 @@ void askForUsers(plugin_pipe p, QString channel)
 //validateName also sets old nick to new nick if it is acceptable
 bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick,bool firstTime)
 {
+    bool result = false;
+
+    if (firstTime)
+        p.write(set_channel_message::create("default"));
+
 	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
 	{
 		if (firstTime)
 			p.write(notify_message::create("","Default nick taken.  You will be Spartacus."));
 		else
-			p.write(notify_message::create("","Nick taken.  Keeping old nick."));
-		return false;
+            p.write(notify_message::create("","Nick taken.  Keeping old nick."));
 	}
 	else if (newNick.toUtf8().size() > 64)
 	{
 		if (firstTime)
 			p.write(notify_message::create("","Default nick too long.  You will be Spartacus."));
 		else
-			p.write(notify_message::create("","Nick too long.  Keeping old nick."));
-		return false;
+            p.write(notify_message::create("","Nick too long.  Keeping old nick."));
 	}
 	else
-	{
+    {
 		p.write(changed_nick_message::create(oldNick,newNick));
 		oldNick = newNick;
-		return true;
+        result = true;
 	}
+
+    return result;
 }
 
 void populateDefaultChannel(plugin_pipe p)
@@ -276,11 +286,8 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 
-			if (userList[currentNick].channels.count(s->channel)==0)
-			{
-				askForUsers(p,s->channel);
-				p.write(sendable_notify_message::create(s->channel, currentNick + " has joined channel "+s->channel+"."));
-			}
+            if (userList[currentNick].channels.count(s->channel)==0)
+                askForUsers(p,s->channel);
 		}
 		else if (m.type == "leave_channel")
 		{
