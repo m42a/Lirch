@@ -179,13 +179,7 @@ void LirchQtInterface::on_actionSaveLog_triggered()
 void LirchQtInterface::on_actionOpenLog_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
-    // FIXME for now, just load the log into the tab
-    ui->chatLogArea->clear();
-    ui->chatLogArea->append(filename);
-    int index = ui->chatTabWidget->indexOf(ui->logChannelTab);
-    if (index != -1) {
-        ui->chatTabWidget->setCurrentIndex(index);
-    }
+    // TODO make it pop up a tab
 }
 
 // EDIT MENU

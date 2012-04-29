@@ -48,37 +48,29 @@
           <attribute name="title">
            <string>Chat View</string>
           </attribute>
-          <widget class="QTextEdit" name="chatViewArea">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>256</width>
-             <height>192</height>
-            </rect>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" name="defaultChannelLayout">
+           <item>
+            <widget class="QTextEdit" name="chatViewArea">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
-         <widget class="QWidget" name="logChannelTab">
+         <widget class="QWidget" name="fileTransfersTab">
           <attribute name="title">
-           <string>Log View</string>
+           <string>File Transfers</string>
           </attribute>
-          <widget class="QTextEdit" name="chatLogArea">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>256</width>
-             <height>192</height>
-            </rect>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" name="fileTransfersLayout">
+           <item>
+            <widget class="QLabel" name="fileTransfersLabel">
+             <property name="text">
+              <string>Version Two!</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </widget>
         <widget class="QListView" name="chatUserList"/>
