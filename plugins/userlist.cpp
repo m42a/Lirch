@@ -12,16 +12,20 @@
 #include "lirch_constants.h"
 #include "nick_messages.h"
 #include "channel_messages.h"
+#include "parser.h"
 
 using namespace std;
 
 message sendNick(QString str, QString)
 {
-	if (str.startsWith("/nick "))
-	{
-		return nick_message::create(str.section(' ',1));
-	}
-	return empty_message::create();
+	auto parsedNick=parse(str);
+	if (parsedNick.size()<2 || parsedNick[0]!="/nick")
+		return empty_message::create();
+	if (parsedNick.size()>2 && parsedNick[1]=="--")
+		return nick_message::create(parsedNick[2]);
+	if (parsedNick.size()>2 && parsedNick[1]=="-default")
+		return nick_message::create(parsedNick[2], true);
+	return nick_message::create(parsedNick[1]);
 }
 
 class userlist_timer : public message_data
@@ -251,7 +255,18 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 			setNick(p,userList,currentNick,s->nick,firstTime);
+
+			//The userlist is no longer a virgin
 			firstTime = false;
+
+			if (s->changeDefault)
+			{
+				QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
+				settings.beginGroup("UserData");
+				settings.setValue("nick", s->nick);
+				settings.sync();
+				settings.endGroup();
+			}
 		}
 		else if (m.type=="list_channels")
 		{
