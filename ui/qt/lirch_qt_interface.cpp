@@ -34,6 +34,12 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // client_pipe facilitates communication with the core
     client_pipe = nullptr;
 
+    // Set up models and attach them to views
+    default_chat_document = new QTextDocument(tr("Default Channel"));
+    ui->chatViewArea->setDocument(default_chat_document);
+    default_userlist_model = new QStandardItemModel(0, 1);
+    ui->chatUserList->setModel(default_userlist_model);
+
     // Load up the settings and kick things off
     loadSettings();
 }
@@ -42,6 +48,8 @@ LirchQtInterface::~LirchQtInterface()
 {
     // Save settings on destruction
     saveSettings();
+    delete default_chat_document;
+    delete default_userlist_model;
     delete ui;
 }
 
@@ -356,14 +364,15 @@ void LirchQtInterface::die(QString msg)
 }
 
 void LirchQtInterface::display(QString channel, QString contents) {
-    QString timestamp = "[" + QTime::currentTime().toString() + "]";
+    // TODO get this using the QDocument model
+    QString timestamp = "[" + QTime::currentTime().toString() + "] ";
     // FIXME Something funny is going on here
     if (channel.isEmpty()) {
-        ui->chatViewArea->append("At " + timestamp + ": /recv'd mangled message");
+        ui->chatViewArea->append("At " + timestamp + "/recv'd mangled message");
         return;
     }
     if (channel != tr(LIRCH_DEFAULT_CHANNEL)) {
-        ui->chatViewArea->append("At " + timestamp + ": /recv'd message on channel: " + channel);
+        ui->chatViewArea->append("At " + timestamp + "/recv'd message on channel: " + channel);
     }
 
     // Show the message in the view
@@ -372,6 +381,11 @@ void LirchQtInterface::display(QString channel, QString contents) {
     } else {
         ui->chatViewArea->append(contents);
     }
+}
+
+void LirchQtInterface::userlist(QString channel, QString nick) {
+    // TODO make this forget duplicates
+    default_userlist_model->appendRow(new QStandardItem(nick));
 }
 
 void LirchQtInterface::nick_changed(QString new_nick, bool permanent)

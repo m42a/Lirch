@@ -82,6 +82,8 @@ int main(int argc, char *argv[])
         // A small intermediate object is used to mediate
         QObject::connect(&mediator,    SIGNAL(alert(QString, QString)),
                          &main_window, SLOT(display(QString, QString)));
+        QObject::connect(&mediator,    SIGNAL(announce(QString, QString)),
+                         &main_window, SLOT(userlist(QString, QString)));
         QObject::connect(&mediator,    SIGNAL(shutdown(QString)),
                          &main_window, SLOT(die(QString)));
         QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),

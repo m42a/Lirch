@@ -1,8 +1,8 @@
 #ifndef USER_STATUS_H_
 #define USER_STATUS_H_
 
-#include <QtCore/QString>
-#include <QtNetwork>
+#include <QString>
+#include <QHostAddress>
 #include <ctime>
 #include <unordered_set>
 

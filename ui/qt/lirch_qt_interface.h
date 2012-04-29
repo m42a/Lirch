@@ -9,7 +9,10 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QShowEvent>
+#include <QStandardItem>
+#include <QStandardItemModel>
 #include <QString>
+#include <QTextDocument>
 #include <QTime>
 #include <QTimer>
 #include <QUrl>
@@ -42,6 +45,8 @@ private:
     // Internals
     Ui::LirchQtInterface *ui;
     LirchClientPipe *client_pipe;
+    QTextDocument *default_chat_document;
+    QStandardItemModel *default_userlist_model;
     // Application settings
     QSettings settings;
     QString nick, default_nick;
@@ -71,34 +76,43 @@ private:
     // chatArea draws (alternating) -----/_____ b/t messages?
 
 public slots:
-    void die(QString msg = "unknown error");
-    void display(QString channel, QString contents);
-    void use(LirchClientPipe *pipe);
+    void die(QString = "unknown error");
+    void display(QString, QString);
+    void userlist(QString, QString);
+    void use(LirchClientPipe *);
 
 protected slots:
     void closeEvent(QCloseEvent *);
     void showEvent(QShowEvent *);
 
 private slots:
-    void on_actionEditIgnored_triggered();
-    void on_actionEditNick_triggered();
-    void on_actionOpenLog_triggered();
-    void on_actionSaveLog_triggered();
-    void on_actionWizard_triggered();
-    void on_actionViewTransfers_triggered();
-    void on_actionViewDefault_triggered();
+    // MENU SLOTS
+    // File Menu
     void on_actionNewTransfer_triggered();
     void on_actionNewChannel_triggered();
     void on_actionConnect_triggered(bool);
-    void on_actionViewSendButton_toggled(bool);
-    void on_actionViewUserList_toggled(bool);
+    void on_actionOpenLog_triggered();
+    void on_actionSaveLog_triggered();
+    // Edit Menu
+    void on_actionEditNick_triggered();
+    void on_actionEditIgnored_triggered();
+    // View Menu
+    void on_actionViewDefault_triggered();
+    void on_actionViewTransfers_triggered();
     void on_actionViewIgnored_toggled(bool);
     void on_actionViewTimestamps_toggled(bool);
+    void on_actionViewSendButton_toggled(bool);
+    void on_actionViewUserList_toggled(bool);
+    // About Menu
+    void on_actionWizard_triggered();
     void on_actionAbout_triggered();
+
+    // SEND SLOTS
     void on_msgSendButton_clicked();
 
+    // MISC SLOTS
     void alert_user(QString);
-    // TODO these need to query the userlist
+    // TODO these need to query the userlist/antenna
     void ignore_changed(QString, bool);
     void nick_changed(QString, bool);
 };

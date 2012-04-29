@@ -5,6 +5,7 @@
 void run(plugin_pipe p, std::string name) {
     // Register for the messages that pertain to the GUI
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_DISPLAY));
+    p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_USERLIST));
     extern LirchClientPipe mediator;
     mediator.open(p, QString::fromStdString(name));
 
@@ -14,31 +15,33 @@ void run(plugin_pipe p, std::string name) {
         message m = p.blocking_read();
         // Determine what type of message it is
         if (m.type == LIRCH_MSG_TYPE_SHUTDOWN) {
-            mediator.close("core shutdown");
+            mediator.close(QObject::tr("core shutdown"));
             break;
         } else if (m.type == LIRCH_MSG_TYPE_REG_STAT) {
             // Recieved a registration status message
             auto reg = dynamic_cast<registration_status *>(m.getdata());
-            // Or not... in which case, continue reading
-            if (!reg) {
-                continue;
-            }
-            if (!reg->status) {
-                // Try again to register, if necessary
-                if (reg->priority > LIRCH_MSG_PRI_REG_MIN) {
-                  // FIXME??? reg->decrement_priority(); instead of -1
-                  p.write(registration_message::create(reg->priority - 1, name, reg->type));
-                } else {
-                  mediator.close("failed to register with core");
+            if (reg && !reg->status) {
+                int registration_priority = reg->priority;
+                // Retry over 9000 times until we succeed
+                if (registration_priority < LIRCH_MSG_PRI_REG_MIN) {
+                  mediator.close(QObject::tr("failed to register with core"));
                   break;
+		} else {
+                  // Try again to register, if necessary
+                  p.write(registration_message::create(--registration_priority, name, reg->type));
                 }
             }
         } else if (m.type == LIRCH_MSG_TYPE_DISPLAY) {
             auto data = dynamic_cast<display_message *>(m.getdata());
             if (data) {
-                // FIXME what about invalid display messages?
                 mediator.display(*data);
             }
+        } else if (m.type == LIRCH_MSG_TYPE_USERLIST) {
+            auto data = dynamic_cast<userlist_message *>(m.getdata());
+            if (data) {
+                mediator.userlist(*data);
+            }
+            p.write(m.decrement_priority());
         } else {
             // By default, echo the message with decremented priority
             p.write(m.decrement_priority());

@@ -22,8 +22,8 @@ set(QT_USE_QTTEST FALSE)
 if(BUILD_TESTING)
   set(QT_USE_QTTEST TRUE)
 endif(BUILD_TESTING)
-include(${QT_USE_FILE})
-include_directories(${QT_INCLUDE_DIR})
+include("${QT_USE_FILE}")
+include_directories("${QT_INCLUDE_DIR}")
 qt4_wrap_cpp(LIRCH_QTCORE_MOC lirch_qtcore.h)
 
 # Build the core executable with QtCore and no UI
@@ -46,12 +46,13 @@ if(BUILD_CLIENT_CURSES)
 endif(BUILD_CLIENT_CURSES)
 
 if(BUILD_CLIENT_QTGUI)
-  # Use QtCore and QtGui
+  # Use QtCore, QtGui, and QtNetwork
   set(QT_DONT_USE_QTGUI FALSE)
-  include(${QT_USE_FILE})
-  include_directories(${QT_INCLUDE_DIR})
+  set(QT_USE_QTNETWORK TRUE)
+  include("${QT_USE_FILE}")
+  include_directories("${QT_INCLUDE_DIR}" "${QT_QTNETWORK_INCLUDE_DIR}")
   # Build the core executable with QtGUI and qt UI
   add_executable(qlirch qlirch_qtgui.cpp)
-  target_link_libraries(qlirch lirch-core lirch-qt-interface ${QT_LIBRARIES})
+  target_link_libraries(qlirch lirch-core lirch-qt-interface)
   install(TARGETS qlirch DESTINATION bin)
 endif(BUILD_CLIENT_QTGUI)

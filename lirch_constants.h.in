@@ -24,6 +24,7 @@
 #define LIRCH_MSG_TYPE_DISPLAY    "display"
 #define LIRCH_MSG_TYPE_REG_STAT   "registration_status"
 #define LIRCH_MSG_TYPE_LOGGING    "logging"
+#define LIRCH_MSG_TYPE_USERLIST   "userlist"
 
 // DEFAULTS
 

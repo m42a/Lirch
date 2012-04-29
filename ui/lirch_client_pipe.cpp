@@ -21,8 +21,19 @@ bool LirchClientPipe::ready() const {
 // The client pipe writes outbound messages
 void LirchClientPipe::send(message m) {
     if (ready()) {
+        #ifndef NDEBUG
         qDebug() << tr("Mediator for '%1' forwarded '%2' message").arg(client_name, QString::fromStdString(m.type));
+        #endif
         client_pipe.write(m);
+    }
+}
+
+void LirchClientPipe::userlist(userlist_message m) {
+    for (auto &entry : m.statuses) {
+        QString nick = entry.second.nick;
+        for (auto &channel : entry.second.channels) {
+            emit announce(channel, nick);
+        }
     }
 }
 
