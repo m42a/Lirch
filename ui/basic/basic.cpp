@@ -27,7 +27,7 @@ void send_input(plugin_pipe out, plugin_pipe in)
 			message m=in.read();
 			if (m.type=="set_channel")
 			{
-				auto i=dynamic_cast<set_channel *>(m.getdata());
+				auto i=dynamic_cast<set_channel_message *>(m.getdata());
 				if (i)
 					channel=i->channel;
 			}
@@ -113,7 +113,7 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type=="set_channel")
 		{
-			auto i=dynamic_cast<set_channel *>(m.getdata());
+			auto i=dynamic_cast<set_channel_message *>(m.getdata());
 			if (!i)
 				continue;
 			p.write(m.decrement_priority());
@@ -128,15 +128,6 @@ void run(plugin_pipe p, string name)
 			{
 				bmp.core_write(m);
 			}
-		}
-		else if (m.type=="query_channel")
-		{
-			auto i=dynamic_cast<query_channel *>(m.getdata());
-			if (!i)
-				continue;
-			QStringList channels;
-			channels.push_back(channel);
-			p.write(channel_list::create(channels));
 		}
 		else if (m.type=="only")
 		{

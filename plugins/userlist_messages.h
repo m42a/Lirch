@@ -11,11 +11,12 @@ class userlist_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new userlist_message(*this));}
-	static message create(const std::unordered_map<QString, user_status> &m) {return message_create("userlist", new userlist_message(m));}
-
-	userlist_message(const std::unordered_map<QString, user_status> &m) : statuses(m) {}
+	static message create(QString n, const std::unordered_map<QString, user_status> &m) {return message_create("userlist", new userlist_message(n, m));}
 
 	// Map: nick -> user_status
+	userlist_message(QString n, const std::unordered_map<QString, user_status> &m) : currentNick(n), statuses(m) {}
+	
+	QString currentNick;
 	std::unordered_map<QString, user_status> statuses;
 };
 

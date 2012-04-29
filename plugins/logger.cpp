@@ -164,7 +164,4 @@ void run(plugin_pipe pipe, std::string name)
 	// FIXME is this proper usage?
 	settings.setValue("root_directory", log_directory);
 	settings.endGroup();
-
-	// TODO should the logger notify when it exits?
-	//done_message::create(name);
 }

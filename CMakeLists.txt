@@ -98,6 +98,7 @@ if(BUILD_CLIENT_BASIC OR BUILD_CLIENT_CURSES OR BUILD_CLIENT_QTGUI)
     add_preload("logger"      CLIENT_PRELOADS)
     add_preload("meatgrinder" CLIENT_PRELOADS)
     add_preload("masseuse"    CLIENT_PRELOADS)
+    add_preload("quip"        CLIENT_PRELOADS)
     add_preload("userlist"    CLIENT_PRELOADS)
   endif(BUILD_PLUGINS)
   # These are for specific UI

@@ -5,7 +5,7 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes, "left" for announcing you left a channel.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
@@ -44,6 +44,7 @@
 #include "QHostAddress_hash.h"
 #include "nick_messages.h"
 #include "userlist_messages.h"
+#include "channel_messages.h"
 
 using namespace std;
 
@@ -72,11 +73,13 @@ void run(plugin_pipe p, string name)
 	//register for the message types the antenna can handle
 	p.write(registration_message::create(0, name, "block"));
 	p.write(registration_message::create(0, name, "edict"));
+	p.write(registration_message::create(0, name, "here"));
 	p.write(registration_message::create(0, name, "who is here"));
 	p.write(registration_message::create(0, name, "handler_ready"));
 	p.write(registration_message::create(0, name, "block query"));
 	p.write(registration_message::create(0, name, "changed_nick"));
 	p.write(registration_message::create(0, name, "sendable_notify"));
+	p.write(registration_message::create(0, name, "leave_channel"));
 
 	p.write(register_handler::create("/block", sendBlock));
 	p.write(register_handler::create("/unblock", sendUnblock));
@@ -109,6 +112,19 @@ void run(plugin_pipe p, string name)
 
 			if (m.type=="shutdown")
 			{
+				QString channel="";
+				QString type="left";
+				QString contents="";
+
+				QByteArray message = formatMessage(type,channel,currentNick,contents);
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+
 				udpSocket.leaveMulticastGroup(groupAddress);
 				udpSocket.close();
 				return;
@@ -116,6 +132,7 @@ void run(plugin_pipe p, string name)
 			else if (m.type=="registration_status")
 			{
 				auto s=dynamic_cast<registration_status *>(m.getdata());
+				p.write(m.decrement_priority());
 				if (!s)
 					continue;
 				//Retry 2000 times until we succeed
@@ -134,6 +151,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="block")
 			{
 				auto castMessage=dynamic_cast<block_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a block message, ignore it and move on
 				if (!castMessage)
@@ -160,6 +178,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="edict")
 			{
 				auto castMessage=dynamic_cast<edict_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually an edict message, ignore it and move on
 				if (!castMessage)
@@ -187,6 +206,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="sendable_notify")
 			{
 				auto castMessage=dynamic_cast<sendable_notify_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a notify message, ignore it and move on
 				if (!castMessage)
@@ -210,6 +230,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type == "block query")
 			{
 				auto castMessage = dynamic_cast<block_query_message *>(m.getdata());
+				p.write(m.decrement_priority());
 				if(!castMessage)
 					continue;
 					
@@ -218,6 +239,7 @@ void run(plugin_pipe p, string name)
 			else if(m.type=="who is here")
 			{
 				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a who's here message, ignore it and move on
 				if (!castMessage)
@@ -237,7 +259,8 @@ void run(plugin_pipe p, string name)
 			}
 			else if(m.type=="here")
 			{
-				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
+				auto castMessage=dynamic_cast<here_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a here message, ignore it and move on
 				if (!castMessage)
@@ -258,6 +281,7 @@ void run(plugin_pipe p, string name)
 			else if (m.type == "changed_nick")
 			{
 				auto castMessage=dynamic_cast<changed_nick_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
 				//if it's not actually a here message, ignore it and move on
 				if (!castMessage)
@@ -276,6 +300,27 @@ void run(plugin_pipe p, string name)
 				}
 
 				currentNick=castMessage->newNick;
+			}
+			else if (m.type == "leave_channel")
+			{
+				auto castMessage=dynamic_cast<leave_channel_message *>(m.getdata());
+				p.write(m.decrement_priority());
+
+				//if it's not actually a here message, ignore it and move on
+				if (!castMessage)
+					continue;
+
+				QString channel = castMessage->channel;
+				QString type = "left";
+
+				QByteArray message = formatMessage(type,channel,currentNick,"");
+
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
 			}
 			//if somehow a message is recieved that is not of these types, send it back.
 			else
@@ -298,7 +343,7 @@ void run(plugin_pipe p, string name)
 
 			if (type=="auto")
 			{
-				p.write(received_message::create(received_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),"",senderIP));
+				p.write(received_status_message::create(received_status_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),senderIP));
 				continue;
 			}
 
@@ -308,17 +353,22 @@ void run(plugin_pipe p, string name)
 
 			if (type=="whhe")
 			{
-				p.write(received_message::create(received_message_subtype::WHOHERE,destinationChannel,senderNick,"",senderIP));
+				p.write(received_status_message::create(received_status_message_subtype::WHOHERE,destinationChannel,senderNick,senderIP));
 				continue;
 			}
 			else if (type=="here")
 			{
-				p.write(received_message::create(received_message_subtype::HERE,destinationChannel,senderNick,"",senderIP));
+				p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
 				continue;
 			}
 			else if (type=="nick")
 			{
-				p.write(received_message::create(received_message_subtype::NICK,destinationChannel,senderNick,"",senderIP));
+				p.write(received_status_message::create(received_status_message_subtype::NICK,destinationChannel,senderNick,senderIP));
+				continue;
+			}
+			else if (type=="left")
+			{
+				p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
 				continue;
 			}
 
