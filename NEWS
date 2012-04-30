@@ -18,3 +18,31 @@ Primary version
 
 NEW: Core messaging
 NEW: Plugin loading
+
+== Project Value ==
+
+SLOC	Directory	SLOC-by-Language (Sorted)
+2091    plugins         cpp=2091
+1068    ui              cpp=1068
+582     core            cpp=582
+446     test            cpp=446
+0       top_dir         (none)
+
+Totals grouped by language (dominant language first):
+cpp:           4187 (100.00%)
+
+Total Physical Source Lines of Code (SLOC)                = 4,187
+Development Effort Estimate, Person-Years (Person-Months) = 0.90 (10.79)
+ (Basic COCOMO model, Person-Months = 2.4 * (KSLOC**1.05))
+Schedule Estimate, Years (Months)                         = 0.51 (6.17)
+ (Basic COCOMO model, Months = 2.5 * (person-months**0.38))
+Estimated Average Number of Developers (Effort/Schedule)  = 1.75
+Total Estimated Cost to Develop                           = $ 121,518
+ (average salary = $56,286/year, overhead = 2.40).
+
+SLOCCount, Copyright (C) 2001-2004 David A. Wheeler
+SLOCCount is Open Source Software/Free Software, licensed under the GNU GPL.
+SLOCCount comes with ABSOLUTELY NO WARRANTY, and you are welcome to
+redistribute it under certain conditions as specified by the GNU GPL license;
+see the documentation for details.
+Please credit this data as "generated using David A. Wheeler's 'SLOCCount'."
