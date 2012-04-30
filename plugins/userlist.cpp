@@ -26,7 +26,15 @@ message sendNick(QString str, QString)
 		return nick_message::create(parsedNick[2]);
 	if (parsedNick.size()>2 && parsedNick[1]=="-default")
 		return nick_message::create(parsedNick[2], true);
-	return nick_message::create(parsedNick[1]);
+    return nick_message::create(parsedNick[1]);
+}
+message sendWhois(QString str, QString channel)
+{
+    if (str.startsWith("/whois "))
+    {
+        return who_is_message::create(channel, str.section(' ',1));
+    }
+    return empty_message::create();
 }
 
 class userlist_timer : public message_data
@@ -84,6 +92,11 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 			else
 				p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
 		}
+        else if (message->subtype==received_status_message_subtype::JOIN)
+        {
+            userList[message->nick].channels.insert(message->channel);
+            p.write(notify_message::create(message->channel,message->nick+" has joined channel "+message->channel+"."));
+        }
 		else if (message->subtype==received_status_message_subtype::HERE && message->channel!="")
 		{
 			userList[message->nick].channels.insert(message->channel);
@@ -112,7 +125,7 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 
 void askForUsers(plugin_pipe p, QString channel)
 {
-	for(int i=0; i<20; i++)
+    for(int i=0; i<5; i++)
 	{
 		p.write(who_is_here_message::create(channel));
 		this_thread::sleep_for(chrono::milliseconds(50));
@@ -122,28 +135,33 @@ void askForUsers(plugin_pipe p, QString channel)
 //validateName also sets old nick to new nick if it is acceptable
 bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick,bool firstTime)
 {
+    bool result = false;
+
+    if (firstTime)
+        p.write(set_channel_message::create("default"));
+
 	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
 	{
 		if (firstTime)
 			p.write(notify_message::create("","Default nick taken.  You will be Spartacus."));
 		else
-			p.write(notify_message::create("","Nick taken.  Keeping old nick."));
-		return false;
+            p.write(notify_message::create("","Nick taken.  Keeping old nick."));
 	}
 	else if (newNick.toUtf8().size() > 64)
 	{
 		if (firstTime)
 			p.write(notify_message::create("","Default nick too long.  You will be Spartacus."));
 		else
-			p.write(notify_message::create("","Nick too long.  Keeping old nick."));
-		return false;
+            p.write(notify_message::create("","Nick too long.  Keeping old nick."));
 	}
 	else
-	{
+    {
 		p.write(changed_nick_message::create(oldNick,newNick));
 		oldNick = newNick;
-		return true;
+        result = true;
 	}
+
+    return result;
 }
 
 void populateDefaultChannel(plugin_pipe p)
@@ -171,6 +189,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
+	p.write(registration_message::create(-30000, name, "who_is"));
 	p.write(registration_message::create(-30000, name, "block name"));
 
 	bool firstTime=true;
@@ -181,6 +200,7 @@ void run(plugin_pipe p, string name)
 
 	std::thread populate(populateDefaultChannel,p);
 	populate.detach();
+
 
 	while (true)
 	{
@@ -212,6 +232,7 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(register_handler::create("/list", sendList));
 					p.write(register_handler::create("/nick", sendNick));
+					p.write(register_handler::create("/whois", sendWhois));
 				}
 			}
 		}
@@ -241,6 +262,7 @@ void run(plugin_pipe p, string name)
 		{
 			p.write(register_handler::create("/list", sendList));
 			p.write(register_handler::create("/nick", sendNick));
+			p.write(register_handler::create("/whois", sendWhois));
 		}
 		else if (m.type=="received" || m.type=="received_status")
 		{
@@ -279,7 +301,7 @@ void run(plugin_pipe p, string name)
 					QStringList channelList;
 					for (auto &c : i.second.channels)
 						channelList.append(c);
-					p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), ctime(&i.second.lastseen), channelList.join(" "))));
+                    p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), QDateTime::fromTime_t(i.second.lastseen).toString(), channelList.join(" "))));
 				}
 			}
 		}
@@ -291,10 +313,7 @@ void run(plugin_pipe p, string name)
 			p.write(m.decrement_priority());
 
 			if (userList[currentNick].channels.count(s->channel)==0)
-			{
 				askForUsers(p,s->channel);
-				p.write(sendable_notify_message::create(s->channel, currentNick + " has joined channel "+s->channel+"."));
-			}
 		}
 		else if (m.type == "leave_channel")
 		{
@@ -308,20 +327,21 @@ void run(plugin_pipe p, string name)
 				person.second.channels.erase(s->channel);
 			}
 		}
-		else if(m.type == "block name")
+		else if (m.type == "who_is")
 		{
-			auto s=dynamic_cast<block_name_message *>(m.getdata());
+			auto s=dynamic_cast<who_is_message *>(m.getdata());
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
 
-			if(userList.count(s->name))
-			{
-				if(s->type == block_name_message_subtype::ADD)
-					p.write(block_message::create(block_message_subtype::ADD, userList.find(s->name)->second.ip));
-				else if(s->type == block_name_message_subtype::REMOVE)
-					p.write(block_message::create(block_message_subtype::REMOVE, userList.find(s->name)->second.ip));
-			}
+			if (userList.count(s->nick)==0)
+				continue;
+
+			QStringList channelList;
+			for (auto &c : userList[s->nick].channels)
+				channelList.append(c);
+
+			p.write(notify_message::create(s->channel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(userList[s->nick].nick, userList[s->nick].ip.toString(), QDateTime::fromTime_t(userList[s->nick].lastseen).toString(), channelList.join(" "))));
 		}
 		else
 			p.write(m.decrement_priority());

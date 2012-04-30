@@ -5,7 +5,7 @@
  *
  * broadcasts are of the format
  * [type][channel][nick][contents]
- * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes, "left" for announcing you left a channel.
+ * type is a 4 byte string, currently "edct" for normal edicts, "mdct" for medicts, "ntfy" for notifies, "whhe" for who is here, "here" for here, "nick" for nick changes, "left" for announcing you left a channel, "join" for announcing you joined a channel.
  * channel is a 64 byte string which contains the destination channel for the message terminated with zero characters.
  * nick is the same size and idea as channel, except it contains the nick of the sender.
  * contents is a max 256 byte string of whatever the text being sent is.  If the contents are shorter, the broadcast is shorter to match.
@@ -72,7 +72,7 @@ message sendUnblock(QString str, QString channel)
 	return empty_message::create();
 }
 
-QByteArray formatMessage(QString type, QString channel, QString nick, QString contents);
+QByteArray formatMessage(QString type, QString channel, QString nick, QString contents, int &flag);
 
 void run(plugin_pipe p, string name)
 {
@@ -90,6 +90,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "changed_nick"));
 	p.write(registration_message::create(0, name, "sendable_notify"));
 	p.write(registration_message::create(0, name, "leave_channel"));
+	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(0, name, "display blocks"));
 
 	//connect to multicast group
@@ -123,8 +124,9 @@ void run(plugin_pipe p, string name)
 				QString channel="";
 				QString type="left";
 				QString contents="";
+                int flag = 0;;
 
-				QByteArray message = formatMessage(type,channel,currentNick,contents);
+                QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -219,16 +221,26 @@ void run(plugin_pipe p, string name)
 					type="edct";
 				else if(castMessage->subtype==edict_message_subtype::ME)
 					type="mdct";
-				QByteArray message = formatMessage(type,channel,currentNick,contents);
+
+                int flag = 0;;
+                QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
 
 				//change to use write() function when we have time
-				if(message.length()>0)
-				{
-					udpSocket.writeDatagram(message,groupAddress,port);
-					lastSent=time(NULL);
-				}
-				else
-					p.write(notify_message::create(channel,"Message too long."));
+                switch (flag)
+                {
+                    case 1:
+                        p.write(notify_message::create(channel,"Channel name too long."));
+                        break;
+                    case 2:
+                        p.write(notify_message::create(channel,"Nick too long."));
+                        break;
+                    case 3:
+                        p.write(notify_message::create(channel,"Message too long."));
+                        break;
+                    default:
+                        udpSocket.writeDatagram(message,groupAddress,port);
+                        lastSent=time(NULL);
+                }
 			}
 			else if(m.type=="sendable_notify")
 			{
@@ -242,17 +254,26 @@ void run(plugin_pipe p, string name)
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
 				QString type="ntfy";
+                int flag = 0;;
 
-				QByteArray message = formatMessage(type,channel,currentNick,contents);
+                QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
 
 				//change to use write() function when we have time
-				if(message.length()>0)
-				{
-					udpSocket.writeDatagram(message,groupAddress,port);
-					lastSent=time(NULL);
-				}
-				else
-					p.write(notify_message::create(channel,"Notify message too long. No idea how you did that."));
+                switch (flag)
+                {
+                    case 1:
+                        p.write(notify_message::create(channel,"Channel name too long."));
+                        break;
+                    case 2:
+                        p.write(notify_message::create(channel,"Nick too long."));
+                        break;
+                    case 3:
+                        p.write(notify_message::create(channel,"Message too long."));
+                        break;
+                    default:
+                        udpSocket.writeDatagram(message,groupAddress,port);
+                        lastSent=time(NULL);
+                }
 			}
 			else if(m.type == "block query")
 			{
@@ -273,8 +294,9 @@ void run(plugin_pipe p, string name)
 
 				QString channel=castMessage->channel;
 				QString type="whhe";
+                int flag = 0;;
 
-				QByteArray message = formatMessage(type,channel,currentNick,"");
+                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -294,8 +316,9 @@ void run(plugin_pipe p, string name)
 
 				QString channel=castMessage->channel;
 				QString type="here";
+                int flag = 0;;
 
-				QByteArray message = formatMessage(type,channel,currentNick,"");
+                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -315,8 +338,9 @@ void run(plugin_pipe p, string name)
 
 
 				QString type = "nick";
+                int flag = 0;;
 
-				QByteArray message = formatMessage(type,currentNick,castMessage->newNick,"");
+                QByteArray message = formatMessage(type,currentNick,castMessage->newNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -327,19 +351,42 @@ void run(plugin_pipe p, string name)
 
 				currentNick=castMessage->newNick;
 			}
+            else if (m.type == "set_channel")
+            {
+                auto castMessage=dynamic_cast<set_channel_message *>(m.getdata());
+                p.write(m.decrement_priority());
+
+                //if it's not actually a set channel message, ignore it and move on
+                if (!castMessage)
+                    continue;
+
+                QString channel = castMessage->channel;
+                QString type = "join";
+                int flag = 0;;
+
+                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
+
+                //change to use write() function when we have time
+                if(message.length()>0)
+                {
+                    udpSocket.writeDatagram(message,groupAddress,port);
+                    lastSent=time(NULL);
+                }
+            }
 			else if (m.type == "leave_channel")
 			{
 				auto castMessage=dynamic_cast<leave_channel_message *>(m.getdata());
 				p.write(m.decrement_priority());
 
-				//if it's not actually a here message, ignore it and move on
+                //if it's not actually a leave channel message, ignore it and move on
 				if (!castMessage)
 					continue;
 
 				QString channel = castMessage->channel;
 				QString type = "left";
+                int flag = 0;;
 
-				QByteArray message = formatMessage(type,channel,currentNick,"");
+                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -384,7 +431,7 @@ void run(plugin_pipe p, string name)
 			}
 			else if (type=="here")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
+                p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
 				continue;
 			}
 			else if (type=="nick")
@@ -393,10 +440,15 @@ void run(plugin_pipe p, string name)
 				continue;
 			}
 			else if (type=="left")
-			{
-				p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
-				continue;
-			}
+            {
+                p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
+                continue;
+            }
+            else if (type=="join")
+            {
+                p.write(received_status_message::create(received_status_message_subtype::JOIN,destinationChannel,senderNick,senderIP));
+                continue;
+            }
 
 			QString sentContents=QString::fromUtf8(broadcast+132,256).section(QChar('\0'),0,0);
 
@@ -435,18 +487,33 @@ void run(plugin_pipe p, string name)
 }
 
 //stores type in he first 4 bytes, channel in the 64 after that, then 64 for nick, and up to 256 for the contents of the message
-QByteArray formatMessage(QString type, QString channel, QString nick, QString contents)
+//flag will be set to a value based on why the messages failes to be formatted
+//1 if channel, 2 if nick, 3 if contents
+QByteArray formatMessage(QString type, QString channel, QString nick, QString contents, int &flag)
 {
-	QByteArray output;
-	output += type.toUtf8();
-	output += channel.toUtf8().leftJustified(64,'\0',true);
-	output += nick.toUtf8().leftJustified(64,'\0',true);
-	QByteArray holder =contents.toUtf8();
+    flag = 0;
 
-	if (holder.length()>256)
+    if (channel.toUtf8().length()>64)
+    {
+        flag = 1;
+        return QByteArray();
+    }
+    if (nick.toUtf8().length()>64)
+    {
+        flag = 2;
+        return QByteArray();
+    }
+    if (contents.toUtf8().length()>256)
+    {
+        flag = 3;
 		return QByteArray();
+    }
 
-	output += holder;
+    QByteArray output;
+    output += type.toUtf8();
+    output += channel.toUtf8().leftJustified(64,'\0',true);
+    output += nick.toUtf8().leftJustified(64,'\0',true);
+    output += contents.toUtf8();
 	output += '\0';
 	return output;
 }

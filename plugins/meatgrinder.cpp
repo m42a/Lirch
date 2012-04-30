@@ -253,7 +253,12 @@ void run(plugin_pipe p, string name)
 		}
 		else if (m.type == "query commands")
 		{
-			
+			auto internals = dynamic_cast<query_commands_message *>(m.getdata());
+			if(!internals)
+				continue;
+				
+			p.write(commands_list_message::create(text_replacements, handlers));
+			p.write(m.decrement_priority());
 		}
 		else
 		{

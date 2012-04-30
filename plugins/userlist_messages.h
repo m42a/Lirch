@@ -49,4 +49,16 @@ public:
 	QString channel;
 };
 
+class who_is_message : public message_data
+{
+public:
+    virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new who_is_message(*this));}
+    static message create(const QString &chan, const QString &nik) {return message_create("who_is", new who_is_message(chan,nik));}
+
+    who_is_message(const QString &chan, const QString &nik) : channel(chan), nick(nik) {}
+
+    QString channel;
+    QString nick;
+};
+
 #endif

@@ -23,7 +23,7 @@ enum class received_message_subtype
 };
 enum class received_status_message_subtype
 {
-	LEFT,HERE,WHOHERE,NICK
+    LEFT,HERE,WHOHERE,NICK,JOIN
 };
 
 
