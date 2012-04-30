@@ -483,6 +483,8 @@ void run(plugin_pipe p, string name)
 }
 
 //stores type in he first 4 bytes, channel in the 64 after that, then 64 for nick, and up to 256 for the contents of the message
+//flag will be set to a value based on why the messages failes to be formatted
+//1 if channel, 2 if nick, 3 if contents
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents, int &flag)
 {
     flag = 0;
