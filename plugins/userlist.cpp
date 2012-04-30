@@ -167,7 +167,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_status"));
 	p.write(registration_message::create(0, name, "list_channels"));
-	p.write(registration_message::create(0, name, "handlnicker_ready"));
+	p.write(registration_message::create(0, name, "handler_ready"));
 	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
