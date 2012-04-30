@@ -117,6 +117,7 @@ private slots:
     // MISC SLOTS
     void alert_user(QString);
     // TODO these need to query the userlist/antenna
+    void nick_changed(QString, bool);
     void ignore_changed(QString, bool);
 };
 

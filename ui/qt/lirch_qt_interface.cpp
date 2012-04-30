@@ -385,7 +385,10 @@ void LirchQtInterface::display(QString channel, QString contents) {
     }
 }
 
+#include <QDebug>
+
 void LirchQtInterface::userlist(QString channel, QString nick) {
+    qDebug() << "GOT: " << nick << " is in " << channel;
     auto entry = userlist_models.find(channel);
     if (entry != userlist_models.end()) {
         // TODO does this run in O(n)?
@@ -398,6 +401,13 @@ void LirchQtInterface::userlist(QString channel, QString nick) {
 
 void LirchQtInterface::nick(QString new_nick, bool permanent)
 {
+    if (permanent)
+    {
+       default_nick = new_nick;
+    }
+}
+
+void LirchQtInterface::nick_changed(QString new_nick, bool permanent) {
     client_pipe->send(nick_message::create(new_nick, permanent));
 }
 

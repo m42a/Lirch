@@ -30,7 +30,8 @@ void LirchClientPipe::send(message m) {
 
 // The client pipe signals on nick changes
 void LirchClientPipe::nick(changed_nick_message m) {
-    emit changed_nick(m.newNick);
+    // FIXME not always false?
+    emit nick_changed(m.newNick, false);
 }
 
 // The client_pipe signals on userlist updates
@@ -38,7 +39,7 @@ void LirchClientPipe::userlist(userlist_message m) {
     for (auto &entry : m.statuses) {
         QString nick = entry.second.nick;
         for (auto &channel : entry.second.channels) {
-            emit update_userlist(channel, nick);
+            emit userlist_updated(channel, nick);
         }
     }
 }
@@ -68,7 +69,7 @@ void LirchClientPipe::display(display_message m) {
     QString rep = tr("('%1','%2','%3')").arg(m.channel, m.nick, m.contents);
     qDebug() << tr("Mediator for '%1' forwarded '%2' display message: %3").arg(client_name, type, rep);
     #endif
-    emit received_display(m.channel, text);
+    emit display_received(m.channel, text);
 }
 
 // The client pipe signals the UI when it the plugin is run

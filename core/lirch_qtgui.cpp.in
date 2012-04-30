@@ -80,10 +80,12 @@ int main(int argc, char *argv[])
 	// The window is constructed here, show()'n later (see ui/qt)
 	LirchQtInterface main_window;
         // A small intermediate object is used to mediate
-        QObject::connect(&mediator,    SIGNAL(alert(QString, QString)),
+        QObject::connect(&mediator,    SIGNAL(display_received(QString, QString)),
                          &main_window, SLOT(display(QString, QString)));
-        QObject::connect(&mediator,    SIGNAL(announce(QString, QString)),
+        QObject::connect(&mediator,    SIGNAL(userlist_updated(QString, QString)),
                          &main_window, SLOT(userlist(QString, QString)));
+        QObject::connect(&mediator,    SIGNAL(nick_changed(QString, bool)),
+                         &main_window, SLOT(nick(QString, bool)));
         QObject::connect(&mediator,    SIGNAL(shutdown(QString)),
                          &main_window, SLOT(die(QString)));
         QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),

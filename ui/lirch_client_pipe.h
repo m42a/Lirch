@@ -47,9 +47,9 @@ signals:
     void run(LirchClientPipe *);
     void shutdown(QString);
     // For alerting the UI of an inbound message
-    void received_display(QString, QString);
-    void update_userlist(QString, QString);
-    void changed_nick(QString);
+    void display_received(QString, QString);
+    void userlist_updated(QString, QString);
+    void nick_changed(QString, bool);
 };
 
 #endif // LIRCH_CLIENT_PIPE_H

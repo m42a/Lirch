@@ -62,18 +62,18 @@ void run(plugin_pipe pipe, std::string name)
 	bool logging_disabled = settings.value("disabled", false).value<bool>();
 	
 	while (true) {
-		message front = pipe.blocking_read();
+		message msg = pipe.blocking_read();
 		//handle shutdown condition
-		if(front.type == LIRCH_MSG_TYPE_SHUTDOWN)
+		if (msg.type == LIRCH_MSG_TYPE_SHUTDOWN)
 		{
 			// Cleanup happens below
 			break;
 		}
 
 		//capture registration messages
-		else if(front.type == LIRCH_MSG_TYPE_REG_STAT)
+		else if (msg.type == LIRCH_MSG_TYPE_REG_STAT)
 		{
-			registration_status * internals = dynamic_cast<registration_status *>(front.getdata());
+			registration_status * internals = dynamic_cast<registration_status *>(msg.getdata());
 			// Make sure this is an affirmative response
 			if (internals && !internals->status)
 			{
@@ -86,13 +86,13 @@ void run(plugin_pipe pipe, std::string name)
 		}
 
 		//logs the display messages, provided logging is enabled
-		else if (front.type == LIRCH_MSG_TYPE_DISPLAY)
+		else if (msg.type == LIRCH_MSG_TYPE_DISPLAY)
 		{
-			display_message * internals = dynamic_cast<display_message *>(front.getdata());
+			display_message * internals = dynamic_cast<display_message *>(msg.getdata());
 			//if this is truly a display message, then we can use it
 			if (internals) {
 				//pass the message back along
-				pipe.write(front.decrement_priority());
+				pipe.write(msg.decrement_priority());
 
 				//check that we are supposed to be logging
 				if (logging_disabled) {
@@ -140,8 +140,8 @@ void run(plugin_pipe pipe, std::string name)
 		}
 
 		//change settings
-		else if (front.type == LIRCH_MSG_TYPE_LOGGING) {
-			logging_message * internals = dynamic_cast<logging_message *>(front.getdata());
+		else if (msg.type == LIRCH_MSG_TYPE_LOGGING) {
+			logging_message * internals = dynamic_cast<logging_message *>(msg.getdata());
 			if (internals) {
 				// SET_NONE tells us to disregard this
 				if (internals->has_option(logging_message::logging_option::SET_NONE)) {
@@ -182,7 +182,7 @@ void run(plugin_pipe pipe, std::string name)
 
 		else
 		{
-			pipe.write(front.decrement_priority());
+			pipe.write(msg.decrement_priority());
 		}
 	}
 
