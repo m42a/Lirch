@@ -58,9 +58,9 @@ class display_commands_message : public message_data
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_commands_message(*this));}
 	static message create(QString Channel, QStringList Arguments) {return message_create("display commands", new display_commands_message(Channel, Arguments));}
-	
+
 	display_commands_message(QString Channel, QStringList Arguments) : channel(Channel), arguments(Arguments) {}
-	
+
 	QString channel;
 	QStringList arguments;
 };
@@ -70,7 +70,7 @@ class query_commands_message : public message_data
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new query_commands_message(*this));}
 	static message create() {return message_create("query commands", nullptr);}
-	
+
 	query_commands_message() {};
 };
 #endif

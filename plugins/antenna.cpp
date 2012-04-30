@@ -48,17 +48,27 @@
 
 using namespace std;
 
-message sendBlock(QString str, QString)
+message sendBlock(QString str, QString channel)
 {
 	if (str.startsWith("/block "))
-		return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
+	{
+		if(!QHostAddress(str.section(' ',1)).isNull())
+			return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
+		return block_name_message::create(str.section(' ',1), channel,block_name_message_subtype::ADD);
+	}
+	if (str.startsWith("/block"))
+		return display_blocks_message::create(channel);
 	return empty_message::create();
 }
 
-message sendUnblock(QString str, QString)
+message sendUnblock(QString str, QString channel)
 {
 	if (str.startsWith("/unblock "))
-		return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
+	{
+		if(!QHostAddress(str.section(' ',1)).isNull())
+			return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
+		return block_name_message::create(str.section(' ',1), channel,block_name_message_subtype::REMOVE);
+	}
 	return empty_message::create();
 }
 
@@ -80,9 +90,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "changed_nick"));
 	p.write(registration_message::create(0, name, "sendable_notify"));
 	p.write(registration_message::create(0, name, "leave_channel"));
-
-	p.write(register_handler::create("/block", sendBlock));
-	p.write(register_handler::create("/unblock", sendUnblock));
+	p.write(registration_message::create(0, name, "display blocks"));
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
@@ -141,6 +149,14 @@ void run(plugin_pipe p, string name)
 					if (s->priority<2000)
 						p.write(registration_message::create(s->priority+1, name, s->type));
 				}
+				else
+				{
+					if (s->type=="handler_ready")
+					{
+						p.write(register_handler::create("/block", sendBlock));
+						p.write(register_handler::create("/unblock", sendUnblock));
+					}
+				}
 			}
 			else if(m.type=="handler_ready")
 			{
@@ -174,7 +190,18 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(block_status_message::create(castMessage->ip, blocklist.count(castMessage->ip)));
 				}
-			}			
+			}
+			else if(m.type=="display blocks")
+			{
+				auto castMessage=dynamic_cast<display_blocks_message *>(m.getdata());
+				p.write(m.decrement_priority());
+
+				if (!castMessage)
+					continue;
+
+				for(auto iter = blocklist.begin(); iter != blocklist.end(); iter++)
+					p.write(notify_message::create(castMessage->channel, iter->toString()+" is blocked"));
+			}
 			else if(m.type=="edict")
 			{
 				auto castMessage=dynamic_cast<edict_message *>(m.getdata());
@@ -233,7 +260,6 @@ void run(plugin_pipe p, string name)
 				p.write(m.decrement_priority());
 				if(!castMessage)
 					continue;
-					
 				p.write(block_list_message::create(blocklist));
 			}
 			else if(m.type=="who is here")

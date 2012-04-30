@@ -15,7 +15,7 @@ public:
 
 	// Map: nick -> user_status
 	userlist_message(QString n, const std::unordered_map<QString, user_status> &m) : currentNick(n), statuses(m) {}
-	
+
 	QString currentNick;
 	std::unordered_map<QString, user_status> statuses;
 };

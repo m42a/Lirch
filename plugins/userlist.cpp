@@ -12,16 +12,21 @@
 #include "lirch_constants.h"
 #include "nick_messages.h"
 #include "channel_messages.h"
+#include "blocker_messages.h"
+#include "parser.h"
 
 using namespace std;
 
 message sendNick(QString str, QString)
 {
-	if (str.startsWith("/nick "))
-	{
-		return nick_message::create(str.section(' ',1));
-	}
-	return empty_message::create();
+	auto parsedNick=parse(str);
+	if (parsedNick.size()<2 || parsedNick[0]!="/nick")
+		return empty_message::create();
+	if (parsedNick.size()>2 && parsedNick[1]=="--")
+		return nick_message::create(parsedNick[2]);
+	if (parsedNick.size()>2 && parsedNick[1]=="-default")
+		return nick_message::create(parsedNick[2], true);
+	return nick_message::create(parsedNick[1]);
 }
 
 class userlist_timer : public message_data
@@ -162,11 +167,11 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_status"));
 	p.write(registration_message::create(0, name, "list_channels"));
-	p.write(registration_message::create(0, name, "handler_ready"));
+	p.write(registration_message::create(0, name, "handlnicker_ready"));
 	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
-
+	p.write(registration_message::create(-30000, name, "block name"));
 
 	bool firstTime=true;
 
@@ -176,8 +181,6 @@ void run(plugin_pipe p, string name)
 
 	std::thread populate(populateDefaultChannel,p);
 	populate.detach();
-
-	p.write(register_handler::create("/nick", sendNick));
 
 	while (true)
 	{
@@ -205,9 +208,10 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(userlist_timer::create());
 				}
-				else if (s->type=="list_channels")
+				else if (s->type=="handler_ready")
 				{
 					p.write(register_handler::create("/list", sendList));
+					p.write(register_handler::create("/nick", sendNick));
 				}
 			}
 		}
@@ -236,7 +240,6 @@ void run(plugin_pipe p, string name)
 		else if (m.type=="handler_ready")
 		{
 			p.write(register_handler::create("/list", sendList));
-
 			p.write(register_handler::create("/nick", sendNick));
 		}
 		else if (m.type=="received" || m.type=="received_status")
@@ -251,7 +254,18 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 			setNick(p,userList,currentNick,s->nick,firstTime);
+
+			//The userlist is no longer a virgin
 			firstTime = false;
+
+			if (s->changeDefault)
+			{
+				QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
+				settings.beginGroup("UserData");
+				settings.setValue("nick", s->nick);
+				settings.sync();
+				settings.endGroup();
+			}
 		}
 		else if (m.type=="list_channels")
 		{
@@ -292,6 +306,21 @@ void run(plugin_pipe p, string name)
 			for(auto & person:userList)
 			{
 				person.second.channels.erase(s->channel);
+			}
+		}
+		else if(m.type == "block name")
+		{
+			auto s=dynamic_cast<block_name_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+
+			if(userList.count(s->name))
+			{
+				if(s->type == block_name_message_subtype::ADD)
+					p.write(block_message::create(block_message_subtype::ADD, userList.find(s->name)->second.ip));
+				else if(s->type == block_name_message_subtype::REMOVE)
+					p.write(block_message::create(block_message_subtype::REMOVE, userList.find(s->name)->second.ip));
 			}
 		}
 		else
