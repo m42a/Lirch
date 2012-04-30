@@ -173,7 +173,6 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(-30000, name, "nick"));
 	p.write(registration_message::create(-30000, name, "block name"));
 
-
 	bool firstTime=true;
 
 	unordered_map<QString, user_status> userList;
@@ -182,8 +181,6 @@ void run(plugin_pipe p, string name)
 
 	std::thread populate(populateDefaultChannel,p);
 	populate.detach();
-
-	p.write(register_handler::create("/nick", sendNick));
 
 	while (true)
 	{
@@ -211,9 +208,10 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(userlist_timer::create());
 				}
-				else if (s->type=="list_channels")
+				else if (s->type=="handler_ready")
 				{
 					p.write(register_handler::create("/list", sendList));
+					p.write(register_handler::create("/nick", sendNick));
 				}
 			}
 		}
@@ -242,7 +240,6 @@ void run(plugin_pipe p, string name)
 		else if (m.type=="handler_ready")
 		{
 			p.write(register_handler::create("/list", sendList));
-
 			p.write(register_handler::create("/nick", sendNick));
 		}
 		else if (m.type=="received" || m.type=="received_status")

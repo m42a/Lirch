@@ -92,10 +92,6 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(0, name, "display blocks"));
 
-
-	p.write(register_handler::create("/block", sendBlock));
-	p.write(register_handler::create("/unblock", sendUnblock));
-
 	//connect to multicast group
 	QUdpSocket udpSocket;
 	QHostAddress groupAddress(LIRCH_DEFAULT_ADDR);
@@ -152,6 +148,14 @@ void run(plugin_pipe p, string name)
 				{
 					if (s->priority<2000)
 						p.write(registration_message::create(s->priority+1, name, s->type));
+				}
+				else
+				{
+					if (s->type=="handler_ready")
+					{
+						p.write(register_handler::create("/block", sendBlock));
+						p.write(register_handler::create("/unblock", sendUnblock));
+					}
 				}
 			}
 			else if(m.type=="handler_ready")
