@@ -100,16 +100,18 @@ void run(plugin_pipe p, string name)
 			if (channel!="" && channel!=s->channel && s->channel!="")
 				continue;
 
-			string channel=s->channel.toLocal8Bit().constData();
+			string sub_channel=s->channel.toLocal8Bit().constData();
 			string nick=s->nick.toLocal8Bit().constData();
 			string contents=s->contents.toLocal8Bit().constData();
 
 			if(s->subtype==display_message_subtype::NORMAL)
-				cout << channel << ": <" << nick << "> " << contents << endl;
+				cout << sub_channel << ": <" << nick << "> " << contents << endl;
 			if(s->subtype==display_message_subtype::ME)
-				cout << channel << ": * " << nick << " " << contents << endl;
+				cout << sub_channel << ": * " << nick << " " << contents << endl;
 			if(s->subtype==display_message_subtype::NOTIFY)
-				cout << channel << ": ‼‽ " << contents << endl;
+				cout << sub_channel << ": ‼‽ " << contents << endl;
+			if(s->subtype==display_message_subtype::NOTIFY_CURRENT)
+				cout << channel.toLocal8Bit().constData() << ": ‼‼‽ " << contents << endl;
 		}
 		else if (m.type=="set_channel")
 		{

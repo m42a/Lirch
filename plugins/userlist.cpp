@@ -12,6 +12,7 @@
 #include "lirch_constants.h"
 #include "nick_messages.h"
 #include "channel_messages.h"
+#include "blocker_messages.h"
 #include "parser.h"
 
 using namespace std;
@@ -166,10 +167,11 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(30000, name, "received"));
 	p.write(registration_message::create(30000, name, "received_status"));
 	p.write(registration_message::create(0, name, "list_channels"));
-	p.write(registration_message::create(0, name, "handler_ready"));
+	p.write(registration_message::create(0, name, "handlnicker_ready"));
 	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
+	p.write(registration_message::create(-30000, name, "block name"));
 
 
 	bool firstTime=true;
@@ -307,6 +309,21 @@ void run(plugin_pipe p, string name)
 			for(auto & person:userList)
 			{
 				person.second.channels.erase(s->channel);
+			}
+		}
+		else if(m.type == "block name")
+		{
+			auto s=dynamic_cast<block_name_message *>(m.getdata());
+			if (!s)
+				continue;
+			p.write(m.decrement_priority());
+
+			if(userList.count(s->name))
+			{
+				if(s->type == block_name_message_subtype::ADD)
+					p.write(block_message::create(block_message_subtype::ADD, userList.find(s->name)->second.ip));
+				else if(s->type == block_name_message_subtype::REMOVE)
+					p.write(block_message::create(block_message_subtype::REMOVE, userList.find(s->name)->second.ip));
 			}
 		}
 		else
