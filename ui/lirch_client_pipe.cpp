@@ -14,6 +14,10 @@ bool LirchClientPipe::ready() const {
     return client_state == State::DURING;
 }
 
+QString LirchClientPipe::name() const {
+    return client_name;
+}
+
 #ifndef NDEBUG
 #include <QDebug>
 #endif
@@ -30,8 +34,7 @@ void LirchClientPipe::send(message m) {
 
 // The client pipe signals on nick changes
 void LirchClientPipe::nick(changed_nick_message m) {
-    // FIXME not always false?
-    emit nick_changed(m.newNick, false);
+    emit nick_changed(m.newNick, m.wasDefault);
 }
 
 // The client_pipe signals on userlist updates
@@ -43,41 +46,25 @@ void LirchClientPipe::userlist(userlist_message m) {
 		data[channel].insert(nick);
         }
     }
-    #ifndef NDEBUG
-    for (auto channel = data.begin(); channel != data.end(); ++channel) {
-        for (auto nick = channel.value().begin(); nick != channel.value().end(); ++nick) {
-            qDebug() << *nick;
-        }
-    }
-    #endif
     emit userlist_updated(data);
 }
 
 // The client pipe alerts the client of inbound messages
 void LirchClientPipe::display(display_message m) {
-    // FIXME type is just for debug
-    QString text, type;
+    QString text;
     switch (m.subtype) {
         case display_message_subtype::NORMAL:
             text = tr("<%1> %2").arg(m.nick, m.contents);
-            type = tr("/say");
             break;
         case display_message_subtype::ME:
             text = tr("*%1 %2").arg(m.nick, m.contents);
-            type = tr("/me");
             break;
         case display_message_subtype::NOTIFY:
             text = tr("!%1 %2").arg(m.nick, m.contents);
-            type = tr("/notify");
             break;
         default:
             text = tr("?%1 %2").arg(m.nick, m.contents);
-            type = tr("/unknown");
     }
-    #ifndef NDEBUG
-    QString rep = tr("('%1','%2','%3')").arg(m.channel, m.nick, m.contents);
-    qDebug() << tr("Mediator for '%1' forwarded '%2' display message: %3").arg(client_name, type, rep);
-    #endif
     emit display_received(m.channel, text);
 }
 

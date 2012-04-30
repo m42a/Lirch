@@ -30,6 +30,7 @@ public:
     explicit LirchClientPipe();
     virtual ~LirchClientPipe();
     void load(std::thread *);
+    QString name() const;
     // Used for querying the status on either end
     bool ready() const;
     // Called by the client when sending messages

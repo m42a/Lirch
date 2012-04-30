@@ -27,12 +27,13 @@ class changed_nick_message : public message_data
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new changed_nick_message(*this));}
 
-	static message create(const QString oldNick,const QString newNick) {return message_create("changed_nick", new changed_nick_message(oldNick,newNick));}
+	static message create(const QString oldNick,const QString newNick,bool wasDefault=false) {return message_create("changed_nick", new changed_nick_message(oldNick,newNick,wasDefault));}
 
-	changed_nick_message(const QString oldNik, const QString newNik) : oldNick(oldNik), newNick(newNik){}
+	changed_nick_message(const QString oldNik, const QString newNik,bool isDefault=false) : oldNick(oldNik), newNick(newNik), wasDefault(isDefault){}
 
 	QString oldNick;
 	QString newNick;
+	bool wasDefault;
 };
 
 #endif // NICK_MESSAGES_H

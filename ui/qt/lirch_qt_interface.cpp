@@ -54,14 +54,15 @@ LirchQtInterface::~LirchQtInterface()
     // Cleanup the UI
     delete ui;
     // Cleanup documents and models
-    //for (auto &entry : chat_documents) {
-    //    delete entry.second;
-    //}
-    //for (auto &entry : userlist_models) {
-    //    delete entry.second;
-    //}
+    for (auto &entry : chat_documents) {
+        delete entry;
+    }
+    for (auto &entry : userlist_models) {
+        delete entry;
+    }
 }
 
+// TODO remove the nick entirely?
 // settings-related (IMPORTANT: always edit these functions as a pair)
 
 void LirchQtInterface::loadSettings()
@@ -168,7 +169,9 @@ void LirchQtInterface::on_actionConnect_triggered(bool checked)
 
 void LirchQtInterface::on_actionNewChannel_triggered()
 {
-    alert_user(tr("The %1 feature is forthcoming.").arg("New > Private Channel"));
+    LirchQLineEditDialog channel_dialog;
+    connect(&channel_dialog, SIGNAL(submit(QString, bool)), this, SLOT(new_channel(QString, bool)));
+    channel_dialog.exec();
 }
 
 void LirchQtInterface::on_actionNewTransfer_triggered()
@@ -315,7 +318,8 @@ void LirchQtInterface::showEvent(QShowEvent *e)
 	// Connect to it
 	ui->actionConnect->setChecked(true);
 	// TODO get the textbox to focus on any Show
-	// ui->msgTextBox->setFocus(true);
+	//ui->msgTextBox->setFocus(true);
+	QTimer::singleShot(0, ui->msgTextBox, SLOT(selectAll()));
 	// Propagate
 	e->ignore();
 }
@@ -353,15 +357,17 @@ void LirchQtInterface::use(LirchClientPipe *pipe)
         this->show();
     } else {
         QMessageBox::information(this,
-                                 tr("Error"),
+                                 tr("Fatal Error"),
                                  tr("Client pipe failed to connect."));
+        QString fatal_msg = (pipe) ? pipe->name() : tr("(null)");
+        this->die(tr("failure between core and %1").arg(fatal_msg));
     }
 }
 
 void LirchQtInterface::die(QString msg)
 {
     QMessageBox::information(this,
-                             tr("Fatal Error"),
+                             tr("Fatal"),
                              tr("Details: '%1'").arg(msg));
     this->close();
 }
@@ -385,10 +391,8 @@ void LirchQtInterface::display(QString channel, QString contents) {
     }
 }
 
-#include <QDebug>
 
 void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
-	qDebug() << "ELEMENTS: " << data.size();
 	// For every channel
 	for (auto datum = data.begin(); datum != data.end(); ++datum) {
 		// Find the model if it exists
@@ -399,7 +403,6 @@ void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
 			// Copy all the items over
 			for (auto &item : datum.value()) {
 				(*model)->appendRow(new QStandardItem(item));
-				qDebug() << datum.key() << " has user " << item;
 			}
 			// Fire models updated
 		}
