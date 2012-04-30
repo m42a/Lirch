@@ -5,7 +5,9 @@
 #include <QDate>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QList>
 #include <QMainWindow>
+#include <QMap>
 #include <QMessageBox>
 #include <QSettings>
 #include <QShowEvent>
@@ -45,8 +47,8 @@ private:
     // Internals
     Ui::LirchQtInterface *ui;
     LirchClientPipe *client_pipe;
-    QTextDocument *default_chat_document;
-    QStandardItemModel *default_userlist_model;
+    QMap<QString, QTextDocument *> chat_documents;
+    QMap<QString, QStandardItemModel *> userlist_models;
     // Application settings
     QSettings settings;
     QString nick, default_nick;

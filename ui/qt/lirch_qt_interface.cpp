@@ -35,10 +35,12 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     client_pipe = nullptr;
 
     // TODO figure out the model
-    default_chat_document = new QTextDocument(tr("Default Channel"));
+    QTextDocument *default_chat_document = new QTextDocument();
+    chat_documents[LIRCH_DEFAULT_CHANNEL] = default_chat_document;
     ui->chatViewArea->setDocument(default_chat_document);
     // Set up models and attach them to views
-    default_userlist_model = new QStandardItemModel(0, 1);
+    QStandardItemModel *default_userlist_model = new QStandardItemModel(0, 1);
+    userlist_models[LIRCH_DEFAULT_CHANNEL] = default_userlist_model;
     ui->chatUserList->setModel(default_userlist_model);
 
     // Load up the settings and kick things off
@@ -49,9 +51,15 @@ LirchQtInterface::~LirchQtInterface()
 {
     // Save settings on destruction
     saveSettings();
-    delete default_chat_document;
-    delete default_userlist_model;
+    // Cleanup the UI
     delete ui;
+    // Cleanup documents and models
+    //for (auto &entry : chat_documents) {
+    //    delete entry.second;
+    //}
+    //for (auto &entry : userlist_models) {
+    //    delete entry.second;
+    //}
 }
 
 // settings-related (IMPORTANT: always edit these functions as a pair)
@@ -378,10 +386,15 @@ void LirchQtInterface::display(QString channel, QString contents) {
     }
 }
 
-void LirchQtInterface::userlist(QString, QString nick) {
-    // TODO the first argument is a channel
-    // TODO make this forget duplicates
-    default_userlist_model->appendRow(new QStandardItem(nick));
+void LirchQtInterface::userlist(QString channel, QString nick) {
+    auto entry = userlist_models.find(channel);
+    if (entry != userlist_models.end()) {
+        // TODO does this run in O(n)?
+	QList<QStandardItem *> results = entry.value()->findItems(nick);
+	if (results.size() == 1) {
+            entry.value()->appendRow(new QStandardItem(nick));
+	}
+    }
 }
 
 void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
@@ -402,7 +415,7 @@ void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
     if (block) {
         
     }
-    // TODO make these actually send
+    // TODO make this edit the model
     display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));
 }
 
