@@ -81,7 +81,7 @@ private:
 public slots:
     void die(QString = "unknown error");
     void display(QString, QString);
-    void userlist(QString, QString);
+    void userlist(QMap<QString, QSet<QString>>);
     void nick(QString, bool);
     void use(LirchClientPipe *);
 

@@ -387,16 +387,23 @@ void LirchQtInterface::display(QString channel, QString contents) {
 
 #include <QDebug>
 
-void LirchQtInterface::userlist(QString channel, QString nick) {
-    qDebug() << "GOT: " << nick << " is in " << channel;
-    auto entry = userlist_models.find(channel);
-    if (entry != userlist_models.end()) {
-        // TODO does this run in O(n)?
-	QList<QStandardItem *> results = entry.value()->findItems(nick);
-	if (results.size() == 1) {
-            entry.value()->appendRow(new QStandardItem(nick));
-	}
-    }
+void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
+	qDebug() << "ELEMENTS: " << data.size();
+	// For every channel
+	for (auto datum = data.begin(); datum != data.end(); ++datum) {
+		// Find the model if it exists
+		auto model = userlist_models.find(datum.key());
+		if (model != userlist_models.end()) {
+			// Forget this
+			(*model)->clear();
+			// Copy all the items over
+			for (auto &item : datum.value()) {
+				(*model)->appendRow(new QStandardItem(item));
+				qDebug() << datum.key() << " has user " << item;
+			}
+			// Fire models updated
+		}
+    	}
 }
 
 void LirchQtInterface::nick(QString new_nick, bool permanent)
@@ -413,12 +420,10 @@ void LirchQtInterface::nick_changed(QString new_nick, bool permanent) {
 
 void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
 {
-    QString status = "dummy";
     // TODO delegate to core (antenna will block/ignore)
     if (block) {
-        
+       //client_pipe->send 
     }
-    // TODO make this edit the model
-    display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));
+    display(tr("TODO"), tr("/ignore %1").arg(new_ignore));
 }
 

@@ -3,15 +3,18 @@
 #include <string>
 #include <thread>
 #include <vector>
-using namespace std;
 
 #include <QApplication>
+#include <QMap>
 #include <QObject>
+#include <QSet>
 #include <QString>
 
 #include "core/core_messages.h"
 #include "ui/lirch_client_pipe.h"
 #include "ui/qt/lirch_qt_interface.h"
+
+using namespace std;
 
 // For preloading
 
@@ -79,11 +82,12 @@ int main(int argc, char *argv[])
 	setlocale(LC_NUMERIC, "C");
 	// The window is constructed here, show()'n later (see ui/qt)
 	LirchQtInterface main_window;
+	qRegisterMetaType<QMap<QString, QSet<QString>>>("QMap<QString, QSet<QString>>");
         // A small intermediate object is used to mediate
         QObject::connect(&mediator,    SIGNAL(display_received(QString, QString)),
                          &main_window, SLOT(display(QString, QString)));
-        QObject::connect(&mediator,    SIGNAL(userlist_updated(QString, QString)),
-                         &main_window, SLOT(userlist(QString, QString)));
+        QObject::connect(&mediator,    SIGNAL(userlist_updated(QMap<QString, QSet<QString>>)),
+                         &main_window, SLOT(userlist(QMap<QString, QSet<QString>>)));
         QObject::connect(&mediator,    SIGNAL(nick_changed(QString, bool)),
                          &main_window, SLOT(nick(QString, bool)));
         QObject::connect(&mediator,    SIGNAL(shutdown(QString)),

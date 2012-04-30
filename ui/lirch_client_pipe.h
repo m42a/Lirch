@@ -2,7 +2,9 @@
 #define LIRCH_CLIENT_PIPE_H
 #include <thread>
 
+#include <QMap>
 #include <QObject>
+#include <QSet>
 #include <QString>
 
 #include "lirch_constants.h"
@@ -48,7 +50,7 @@ signals:
     void shutdown(QString);
     // For alerting the UI of an inbound message
     void display_received(QString, QString);
-    void userlist_updated(QString, QString);
+    void userlist_updated(QMap<QString, QSet<QString>>);
     void nick_changed(QString, bool);
 };
 

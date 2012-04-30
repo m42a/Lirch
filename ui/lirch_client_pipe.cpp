@@ -36,12 +36,21 @@ void LirchClientPipe::nick(changed_nick_message m) {
 
 // The client_pipe signals on userlist updates
 void LirchClientPipe::userlist(userlist_message m) {
+    QMap<QString, QSet<QString>> data;
     for (auto &entry : m.statuses) {
         QString nick = entry.second.nick;
         for (auto &channel : entry.second.channels) {
-            emit userlist_updated(channel, nick);
+		data[channel].insert(nick);
         }
     }
+    #ifndef NDEBUG
+    for (auto channel = data.begin(); channel != data.end(); ++channel) {
+        for (auto nick = channel.value().begin(); nick != channel.value().end(); ++nick) {
+            qDebug() << *nick;
+        }
+    }
+    #endif
+    emit userlist_updated(data);
 }
 
 // The client pipe alerts the client of inbound messages
