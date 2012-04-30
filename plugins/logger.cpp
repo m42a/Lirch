@@ -20,11 +20,12 @@ void run(plugin_pipe pipe, std::string name)
 {
 	// Register for certain message types
 	pipe.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_DISPLAY));
+	pipe.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_LOGGING));
 
 	// Maintain a record of open files (close on destruction)
 	map<QString, unique_ptr<ofstream>> open_files;
-	// Maintain a record of channel names not to log (ephemeral)
-	map<QString, bool> channel_blacklist;
+	// Maintain a record of channel names to log/not log (ephemeral)
+	map<QString, bool> channel_greylist;
 	
 	// Fetch the settings
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
@@ -47,8 +48,18 @@ void run(plugin_pipe pipe, std::string name)
 	// TODO consider this (it drags in a QtGui dependency)
 	// QDesktopServices::storageLocation(QDesktopServices::DataLocation)
 
+	// TODO figure out a better way to do this?
+	QChar double_exclamation_mark(0x203C);
+	QChar interrobang(0x203D);
+	QString buffer;
+	buffer += double_exclamation_mark;
+	buffer += interrobang;
+	buffer += " ";
+	QByteArray notify_prefix = buffer.toUtf8();
+
 	// Set the log directory
 	QString log_directory = settings.value("root_directory", default_log_directory.canonicalPath()).value<QString>();
+	bool logging_disabled = settings.value("disabled", false).value<bool>();
 	
 	while (true) {
 		message front = pipe.blocking_read();
@@ -79,15 +90,18 @@ void run(plugin_pipe pipe, std::string name)
 		{
 			display_message * internals = dynamic_cast<display_message *>(front.getdata());
 			//if this is truly a display message, then we can use it
-			if(internals)
-			{
-				//pass the message back along FIXME do this first? or last?
+			if (internals) {
+				//pass the message back along
 				pipe.write(front.decrement_priority());
 
-				//so long as it is not on the blocklist, we will log it
-				auto entry = channel_blacklist.find(internals->channel);
-				if (entry != channel_blacklist.end() && entry->second) {
-					// Skip this message, its channel was blacklisted
+				//check that we are supposed to be logging
+				if (logging_disabled) {
+					continue;
+				}
+
+				//check that this channel is not blacklisted
+				auto entry = channel_greylist.find(internals->channel);
+				if (entry != channel_greylist.end() && entry->second) {
 					continue;
 				}
 
@@ -97,9 +111,9 @@ void run(plugin_pipe pipe, std::string name)
 				//find the corresponding filestream
 				if (!open_files.count(channelname)) {
 					// Open a new file in the desired directory
-					string filepath = log_directory.append(channelname).append(".log").toStdString();
+					QString filepath = log_directory + "/" + channelname + ".log";
 					// Append to any pre-existing file
-					auto filestream = new ofstream(filepath.c_str(), fstream::app);
+					auto filestream = new ofstream(filepath.toUtf8().constData(), fstream::app);
 					// TODO what if open fails? or insert fails?
 					open_files[channelname] = unique_ptr<ofstream>(filestream);
 					*filestream << "~~~~~~~~" << endl;
@@ -116,12 +130,11 @@ void run(plugin_pipe pipe, std::string name)
 					*open_files[channelname] << "* " << nick.constData() << " " << contents.constData();
 					break;
 					case display_message_subtype::NOTIFY:
-					*open_files[channelname] << QString("‼‽ ").toUtf8().constData() << contents.constData();
+					*open_files[channelname] << notify_prefix.constData() << contents.constData();
 					break;
 					default:
 					*open_files[channelname] << "? " << contents.constData();
 				}
-				//flush the stream
 				*open_files[channelname] << endl;
 			}
 		}
@@ -134,27 +147,39 @@ void run(plugin_pipe pipe, std::string name)
 				if (internals->has_option(logging_message::logging_option::SET_NONE)) {
 					continue;
 				}
-				// SET_LDIR tells us to change the log directory on restart
-				if (internals->has_option(logging_message::logging_option::SET_LDIR)) {
-					// FIXME just setting log_directory won't update open_files
+				// SET_DIRECTORY tells us to change the log directory on restart
+				if (internals->has_option(logging_message::logging_option::SET_DIRECTORY)) {
+					// Just setting log_directory won't update open_files
 					settings.setValue("root_directory", internals->get_directory());
 				}
-				// SET_MODE sets the logger's mode (on/off)
+				// SET_MODE sets the logger's mode (on/off/default)
 				if (internals->has_option(logging_message::logging_option::SET_MODE)) {
-					// FIXME handle this
+					// Changing mode clears the channel list
+					channel_greylist.clear();
+					switch (internals->get_mode()) {
+					case logging_message::logging_mode::ON:
+						logging_disabled = false;
+						break;
+					case logging_message::logging_mode::OFF:
+						logging_disabled = true;
+						break;
+					default:
+						logging_disabled = false;
+						channel_greylist[LIRCH_DEFAULT_CHANNEL] = true;
+					}
 				}
-				// SET_FORM sets the logger's format
-				if (internals->has_option(logging_message::logging_option::SET_FORM)) {
-					// FIXME handle this
+				// SET_FORMAT sets the logger's format
+				if (internals->has_option(logging_message::logging_option::SET_FORMAT)) {
+					// FIXME save this once we have more formats
+					//log_format = internals->get_format();
 				}
-				// SET_CHAN enables/disables logging for specific channels
-				if (internals->has_option(logging_message::logging_option::SET_CHAN)) {
-					channel_blacklist.insert(internals->begin(), internals->end());
+				// SET_CHANNEL enables/disables logging for specific channels
+				if (internals->has_option(logging_message::logging_option::SET_CHANNELS)) {
+					channel_greylist.insert(internals->begin(), internals->end());
 				}
 			}
 		}
 
-		//pass it on
 		else
 		{
 			pipe.write(front.decrement_priority());
@@ -162,6 +187,6 @@ void run(plugin_pipe pipe, std::string name)
 	}
 
 	// FIXME is this proper usage?
-	settings.setValue("root_directory", log_directory);
+	settings.setValue("disabled", logging_disabled);
 	settings.endGroup();
 }

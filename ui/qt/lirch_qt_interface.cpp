@@ -34,9 +34,10 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // client_pipe facilitates communication with the core
     client_pipe = nullptr;
 
-    // Set up models and attach them to views
+    // TODO figure out the model
     default_chat_document = new QTextDocument(tr("Default Channel"));
     ui->chatViewArea->setDocument(default_chat_document);
+    // Set up models and attach them to views
     default_userlist_model = new QStandardItemModel(0, 1);
     ui->chatUserList->setModel(default_userlist_model);
 
@@ -256,7 +257,7 @@ void LirchQtInterface::on_actionWizard_triggered()
 			default_nick = nick;
 		}
 		logging_message::logging_options options;
-		options |= logging_message::logging_option::SET_LDIR;
+		options |= logging_message::logging_option::SET_DIRECTORY;
 		options |= logging_message::logging_option::SET_MODE;
 		logging_message log_data(options);
 		log_data.set_directory(setup_wizard.get_logging_directory());
@@ -377,7 +378,8 @@ void LirchQtInterface::display(QString channel, QString contents) {
     }
 }
 
-void LirchQtInterface::userlist(QString channel, QString nick) {
+void LirchQtInterface::userlist(QString, QString nick) {
+    // TODO the first argument is a channel
     // TODO make this forget duplicates
     default_userlist_model->appendRow(new QStandardItem(nick));
 }

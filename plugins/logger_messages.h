@@ -28,10 +28,10 @@ public:
 	// SET_FORM specifies changing the log format
 	enum logging_option {
 		SET_NONE = 0x0,
-		SET_LDIR = 0x1,
-		SET_CHAN = 0x2,
-		SET_MODE = 0x4,
-		SET_FORM = 0x8,
+		SET_DIRECTORY = 0x1,
+		SET_CHANNELS = 0x2,
+		SET_FORMAT = 0x4,
+		SET_MODE = 0x8,
 	};
 	// Generate flags to wrap the enum above
 	Q_DECLARE_FLAGS(logging_options, logging_option)

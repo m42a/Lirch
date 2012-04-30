@@ -122,12 +122,13 @@ void QuipPlugin::register_for_message_type(const QString &message_type, int with
 
 void run(plugin_pipe pipe, std::string internal_name)
 {
+	// TODO remove this line once race condition is fixed
+	pipe.write(register_handler::create(QObject::tr("/quip"), QuipPlugin::forward_quip_request));
 	// Construct a plugin object (used throughout)
 	QuipPlugin plugin(internal_name, pipe);
 	// Register for these message types with the following priorities:
 	plugin.register_for_message_type(QObject::tr(LIRCH_MESSAGE_TYPE_HANDLER_READY));
 	plugin.register_for_message_type(QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST));
-	pipe.write(register_handler::create(QObject::tr("/quip"), QuipPlugin::forward_quip_request));
 	// Begin a loop that will only exit when sent the shutdown command
 	while (plugin.has_not_received_shutdown_command());
 	{
