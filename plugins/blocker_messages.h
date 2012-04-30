@@ -63,7 +63,7 @@ public:
 	static message create(std::unordered_set<QHostAddress> block_list) {return message_create("block list", new block_list_message(block_list));}
 
 	block_list_message(std::unordered_set<QHostAddress> block_list) : blocklist(block_list) {}
-	
+
 	std::unordered_set<QHostAddress> blocklist;
 };
 

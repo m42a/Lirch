@@ -174,7 +174,7 @@ void run(plugin_pipe p, string name)
 				{
 					p.write(block_status_message::create(castMessage->ip, blocklist.count(castMessage->ip)));
 				}
-			}			
+			}
 			else if(m.type=="edict")
 			{
 				auto castMessage=dynamic_cast<edict_message *>(m.getdata());
@@ -233,7 +233,6 @@ void run(plugin_pipe p, string name)
 				p.write(m.decrement_priority());
 				if(!castMessage)
 					continue;
-					
 				p.write(block_list_message::create(blocklist));
 			}
 			else if(m.type=="who is here")

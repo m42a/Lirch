@@ -8,7 +8,7 @@
 #include <map>
 #include <memory>
 #include <iostream>
-#include <QSettings> 
+#include <QSettings>
 
 #include "core/message.h"
 #include "edict_messages.h"
@@ -26,11 +26,11 @@ void run(plugin_pipe pipe, std::string name)
 	bool shutdown = false;
 	pipe.write(registration_message::create(0, name, "display"));
 	map<QString, ofstream*> open_files;
-	
+
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
 	//settings.beginGroup("Logger");
 	//settings.setValue("Logger/root_directory", "/home/danieo2/Lirch/logs/");
-	
+
 	while(!shutdown)
 	{
 		message front = pipe.blocking_read();
@@ -117,8 +117,8 @@ void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &se
 	string root(settings.value("Logger/root_directory", LIRCH_DEFAULT_LOG_DIR).toString().toUtf8().data());
 	root += "/";
 	string filename(QUrl::toPercentEncoding(channel, "\0").data());
-	//sanatize(filename); 
- 	filename = root+filename+".txt";
+	//sanatize(filename);
+	filename = root+filename+".txt";
 	ofstream * newFile = new ofstream();
 	newFile->open(filename.c_str(), fstream::app);
 	*newFile <<"~~~~~~~~"<<endl;

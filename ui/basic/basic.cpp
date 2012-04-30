@@ -67,7 +67,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(-30000, name, "handler_ready"));
 	p.write(registration_message::create(-30000, name, "only"));
 	p.write(registration_message::create(-30000, name, "query_channel"));
-	
+
 	while (true)
 	{
 		message m=p.blocking_read();

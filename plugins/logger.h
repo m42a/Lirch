@@ -17,4 +17,4 @@ public:
 	QString directory_root;
 };
 
-#endif 
+#endif

@@ -14,7 +14,7 @@ public:
 	static message create(QString n, const std::unordered_map<QString, user_status> &m) {return message_create("userlist", new userlist_message(n, m));}
 
 	userlist_message(QString n, const std::unordered_map<QString, user_status> &m) : currentNick(n), statuses(m) {}
-	
+
 	QString currentNick;
 	std::unordered_map<QString, user_status> statuses;
 };

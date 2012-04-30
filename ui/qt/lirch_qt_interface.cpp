@@ -353,7 +353,7 @@ void LirchQtInterface::ignore_changed(const QString &new_ignore, bool block)
     QString status = "dummy";
     // TODO delegate to core (antenna will block/ignore)
     if (block) {
-        
+
     }
     // TODO make these actually send
     display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));
