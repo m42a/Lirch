@@ -174,7 +174,9 @@ void runplugin(plugin_pipe &p, const string &name)
 					if(s->subtype==display_message_subtype::ME)
 						wprintu(channel_windows[message_channel], "* %s %s\n", nick.c_str(), contents.c_str());
 					if(s->subtype==display_message_subtype::NOTIFY)
-						wprintu(channel_windows[message_channel], "‼‽ %s\n", contents.c_str());
+						wprintu(channel_windows[message_channel], QString((QChar[]){0x203C, 0x203D, ' ', '%', 's', '\n', 0}).toLocal8Bit().constData(), contents.c_str());
+					if(s->subtype==display_message_subtype::NOTIFY_CURRENT)
+						wprintu(channel_windows[message_channel], QString((QChar[]){0x203C, 0x203C, 0x203D, ' ', '%', 's', '\n', 0}).toLocal8Bit().constData(), contents.c_str());
 				}
 			}
 			else if (m.type=="set_channel")

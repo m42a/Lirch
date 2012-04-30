@@ -109,9 +109,9 @@ void run(plugin_pipe p, string name)
 			if(s->subtype==display_message_subtype::ME)
 				cout << sub_channel << ": * " << nick << " " << contents << endl;
 			if(s->subtype==display_message_subtype::NOTIFY)
-				cout << sub_channel << ": ‼‽ " << contents << endl;
+				cout << sub_channel << QString((QChar[]){':', ' ', 0x203C, 0x203D, ' ', 0}).toLocal8Bit().constData() << contents << endl;
 			if(s->subtype==display_message_subtype::NOTIFY_CURRENT)
-				cout << channel.toLocal8Bit().constData() << ": ‼‼‽ " << contents << endl;
+				cout << channel.toLocal8Bit().constData() << QString((QChar[]){':', ' ', 0x203C, 0x203C, 0x203D, ' ', 0}).toLocal8Bit().constData() << contents << endl;
 		}
 		else if (m.type=="set_channel")
 		{
