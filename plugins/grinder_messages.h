@@ -6,6 +6,8 @@
 #include <QtCore/QString>
 #include <QtCore/QRegExp>
 #include <QStringList>
+#include <unordered_map>
+#include <set>
 
 
 #include "core/message.h"
@@ -72,5 +74,18 @@ public:
 	static message create() {return message_create("query commands", nullptr);}
 	
 	query_commands_message() {};
+	
 };
+
+class commands_list_message : public message_data
+{
+public:
+	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new commands_list_message(*this));}
+	static message create(std::unordered_multimap<QString, std::pair<QRegExp, QString> > & tr, std::unordered_map<QString, std::function<message (QString, QString)>> & h) {return message_create("query commands", new commands_list_message(tr, h));}
+	
+	commands_list_message(std::unordered_multimap<QString, std::pair<QRegExp, QString> > & tr, std::unordered_map<QString, std::function<message (QString, QString)>> & h) : text_replacements(tr), handlers(h) {};
+	std::unordered_multimap<QString, std::pair<QRegExp, QString>> text_replacements;
+	std::unordered_map<QString, std::function<message (QString, QString)>> handlers;
+};
+
 #endif
