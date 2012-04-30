@@ -74,6 +74,7 @@ void LirchQtInterface::loadSettings()
     settings.beginGroup("QtMainWindow");
     resize(settings.value("size", QSize(640, 480)).toSize());
     move(settings.value("position", QPoint(100, 100)).toPoint());
+    ui->chatLayout->restoreState(settings.value("splitter").toByteArray());
     settings.endGroup();
     settings.beginGroup("ChatView");
     settings.beginGroup("Messages");
@@ -92,6 +93,7 @@ void LirchQtInterface::saveSettings()
     settings.beginGroup("QtMainWindow");
     settings.setValue("size", size());
     settings.setValue("position", pos());
+    settings.setValue("splitter", ui->chatLayout->saveState());
     settings.endGroup();
     settings.beginGroup("ChatView");
     settings.beginGroup("Messages");
