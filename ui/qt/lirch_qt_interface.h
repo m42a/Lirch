@@ -24,6 +24,7 @@
 #include "plugins/edict_messages.h"
 #include "plugins/display_messages.h"
 #include "plugins/logger_messages.h"
+#include "plugins/nick_messages.h"
 
 namespace Ui {
     class LirchQtInterface;
@@ -51,7 +52,7 @@ private:
     QMap<QString, QStandardItemModel *> userlist_models;
     // Application settings
     QSettings settings;
-    QString nick, default_nick;
+    QString default_nick;
     bool show_message_timestamps;
     bool show_ignored_messages;
 
@@ -81,6 +82,7 @@ public slots:
     void die(QString = "unknown error");
     void display(QString, QString);
     void userlist(QString, QString);
+    void nick(QString, bool);
     void use(LirchClientPipe *);
 
 protected slots:
@@ -116,7 +118,6 @@ private slots:
     void alert_user(QString);
     // TODO these need to query the userlist/antenna
     void ignore_changed(QString, bool);
-    void nick_changed(QString, bool);
 };
 
 #endif // LIRCH_QT_INTERFACE_H

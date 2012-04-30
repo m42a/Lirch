@@ -11,13 +11,14 @@
 #include <QString>
 #include "core/message.h"
 
-
+// Oliver, no more of these. *slap*
 enum class display_message_subtype
 {
 	NORMAL,ME,NOTIFY,NOTIFY_CURRENT
 };
 
 
+// These are created for the massuese
 class display_message : public message_data
 {
 public:

@@ -62,7 +62,7 @@
           <attribute name="title">
            <string>File Transfers</string>
           </attribute>
-          <layout class="QVBoxLayout" name="fileTransfersLayout">
+          <layout class="QHBoxLayout" name="fileTransfersLayout">
            <item>
             <widget class="QLabel" name="fileTransfersLabel">
              <property name="text">

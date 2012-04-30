@@ -10,6 +10,7 @@
 #include "core/message_view.h"
 #include "plugins/display_messages.h"
 #include "plugins/edict_messages.h"
+#include "plugins/nick_messages.h"
 #include "plugins/userlist_messages.h"
 
 class LirchClientPipe : public QObject {
@@ -34,6 +35,7 @@ public:
     // A client is notified when these are called
     void display(display_message);
     void userlist(userlist_message);
+    void nick(changed_nick_message);
     // These each change the state
     void open(plugin_pipe, QString);
     void close(QString = tr("unknown reason"));
@@ -45,8 +47,9 @@ signals:
     void run(LirchClientPipe *);
     void shutdown(QString);
     // For alerting the UI of an inbound message
-    void alert(QString, QString);
-    void announce(QString, QString);
+    void received_display(QString, QString);
+    void update_userlist(QString, QString);
+    void changed_nick(QString);
 };
 
 #endif // LIRCH_CLIENT_PIPE_H

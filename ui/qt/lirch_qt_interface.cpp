@@ -68,7 +68,7 @@ void LirchQtInterface::loadSettings()
 {
     // Make sure to document any changes in the settings schema (change below and on wiki)
     settings.beginGroup("UserData");
-    nick = settings.value("nick", default_nick).value<QString>();
+    default_nick = settings.value("nick", LIRCH_DEFAULT_NICK).value<QString>();
     settings.endGroup();
     settings.beginGroup("QtMainWindow");
     resize(settings.value("size", QSize(640, 480)).toSize());
@@ -260,7 +260,7 @@ void LirchQtInterface::on_actionWizard_triggered()
 {
 	LirchSetupWizard setup_wizard;
 	if (setup_wizard.exec()) {
-		nick = setup_wizard.get_nick();
+		QString nick = setup_wizard.get_nick();
 		if (setup_wizard.nick_is_default()) {
 			default_nick = nick;
 		}
@@ -369,7 +369,6 @@ void LirchQtInterface::die(QString msg)
 void LirchQtInterface::display(QString channel, QString contents) {
     // TODO get this using the QDocument model
     QString timestamp = "[" + QTime::currentTime().toString() + "] ";
-    // FIXME Something funny is going on here
     if (channel.isEmpty()) {
         ui->chatViewArea->append("At " + timestamp + "/recv'd mangled message");
         return;
@@ -397,15 +396,9 @@ void LirchQtInterface::userlist(QString channel, QString nick) {
     }
 }
 
-void LirchQtInterface::nick_changed(QString new_nick, bool permanent)
+void LirchQtInterface::nick(QString new_nick, bool permanent)
 {
-    // TODO delegate to core (userlist needs to approve)
-    nick = new_nick;
-    if (permanent) {
-        default_nick = new_nick;
-    }
-    // TODO make these actually send
-    display(tr("internal"), tr("/nick %1").arg(nick));
+    client_pipe->send(nick_message::create(new_nick, permanent));
 }
 
 void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
@@ -413,7 +406,7 @@ void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
     QString status = "dummy";
     // TODO delegate to core (antenna will block/ignore)
     if (block) {
-
+        
     }
     // TODO make this edit the model
     display(tr("internal"), tr("/ignore %1 (%2)").arg(new_ignore, status));

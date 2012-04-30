@@ -6,6 +6,7 @@ void run(plugin_pipe p, std::string name) {
     // Register for the messages that pertain to the GUI
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_DISPLAY));
     p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_USERLIST));
+    p.write(registration_message::create(LIRCH_MSG_PRI_REG_MAX, name, LIRCH_MSG_TYPE_CHANGED_NICK));
     extern LirchClientPipe mediator;
     mediator.open(p, QString::fromStdString(name));
 
@@ -40,6 +41,12 @@ void run(plugin_pipe p, std::string name) {
             auto data = dynamic_cast<userlist_message *>(m.getdata());
             if (data) {
                 mediator.userlist(*data);
+            }
+            p.write(m.decrement_priority());
+        } else if (m.type == LIRCH_MSG_TYPE_CHANGED_NICK) {
+            auto data = dynamic_cast<changed_nick_message *>(m.getdata());
+            if (data) {
+                mediator.nick(*data);
             }
             p.write(m.decrement_priority());
         } else {

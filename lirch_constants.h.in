@@ -18,13 +18,14 @@
 #define LIRCH_MSG_PRI_REG_MIN     9000
 #define LIRCH_MSG_PRI_REG_MAX     32766
 
-#define LIRCH_MSG_TYPE_SHUTDOWN   "shutdown"
-#define LIRCH_MSG_TYPE_EDICT      "edict"
-#define LIRCH_MSG_TYPE_RAW_EDICT  "raw_edict"
-#define LIRCH_MSG_TYPE_DISPLAY    "display"
-#define LIRCH_MSG_TYPE_REG_STAT   "registration_status"
-#define LIRCH_MSG_TYPE_LOGGING    "logging"
-#define LIRCH_MSG_TYPE_USERLIST   "userlist"
+#define LIRCH_MSG_TYPE_SHUTDOWN     "shutdown"
+#define LIRCH_MSG_TYPE_EDICT        "edict"
+#define LIRCH_MSG_TYPE_RAW_EDICT    "raw_edict"
+#define LIRCH_MSG_TYPE_DISPLAY      "display"
+#define LIRCH_MSG_TYPE_REG_STAT     "registration_status"
+#define LIRCH_MSG_TYPE_LOGGING      "logging"
+#define LIRCH_MSG_TYPE_USERLIST     "userlist"
+#define LIRCH_MSG_TYPE_CHANGED_NICK "changed_nick"
 
 // DEFAULTS
 
