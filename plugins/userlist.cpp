@@ -19,9 +19,17 @@ message sendNick(QString str, QString)
 {
 	if (str.startsWith("/nick "))
 	{
-		return nick_message::create(str.section(' ',1));
+        return nick_message::create(str.section(' ',1));
 	}
 	return empty_message::create();
+}
+message sendWhois(QString str, QString channel)
+{
+    if (str.startsWith("/whois "))
+    {
+        return who_is_message::create(channel, str.section(' ',1));
+    }
+    return empty_message::create();
 }
 
 class userlist_timer : public message_data
@@ -176,6 +184,7 @@ void run(plugin_pipe p, string name)
 	p.write(registration_message::create(0, name, "leave_channel"));
 	p.write(registration_message::create(0, name, "set_channel"));
 	p.write(registration_message::create(-30000, name, "nick"));
+    p.write(registration_message::create(-30000, name, "who_is"));
 
 
 	bool firstTime=true;
@@ -188,6 +197,7 @@ void run(plugin_pipe p, string name)
 	populate.detach();
 
 	p.write(register_handler::create("/nick", sendNick));
+    p.write(register_handler::create("/whois", sendWhois));
 
 	while (true)
 	{
@@ -248,6 +258,8 @@ void run(plugin_pipe p, string name)
 			p.write(register_handler::create("/list", sendList));
 
 			p.write(register_handler::create("/nick", sendNick));
+
+            p.write(register_handler::create("/whois", sendWhois));
 		}
 		else if (m.type=="received" || m.type=="received_status")
 		{
@@ -275,7 +287,7 @@ void run(plugin_pipe p, string name)
 					QStringList channelList;
 					for (auto &c : i.second.channels)
 						channelList.append(c);
-					p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), ctime(&i.second.lastseen), channelList.join(" "))));
+                    p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), QDateTime::fromTime_t(i.second.lastseen).toString(), channelList.join(" "))));
 				}
 			}
 		}
@@ -300,7 +312,23 @@ void run(plugin_pipe p, string name)
 			{
 				person.second.channels.erase(s->channel);
 			}
-		}
+        }
+        else if (m.type == "who_is")
+        {
+            auto s=dynamic_cast<who_is_message *>(m.getdata());
+            if (!s)
+                continue;
+            p.write(m.decrement_priority());
+
+            if (userList.count(s->nick)==0)
+                continue;
+
+            QStringList channelList;
+            for (auto &c : userList[s->nick].channels)
+                channelList.append(c);
+
+            p.write(notify_message::create(s->channel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(userList[s->nick].nick, userList[s->nick].ip.toString(), QDateTime::fromTime_t(userList[s->nick].lastseen).toString(), channelList.join(" "))));
+        }
 		else
 			p.write(m.decrement_priority());
 	}
