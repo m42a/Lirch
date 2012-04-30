@@ -1,22 +1,32 @@
 .
-|-- bin/
+|-- bin
+|   |-- blirch
+|   |-- clirch
 |   |-- lirch
 |   |-- lirch-core-tester
 |   `-- qlirch
-|-- lib/
+|-- CPackConfig.cmake
+|-- CPackSourceConfig.cmake
+|-- CTestTestfile.cmake
+|-- lib
 |   |-- libantenna.so
 |   |-- libenvelope.a
+|   |-- liblinuxtester.so
 |   |-- liblirch-basic.so
 |   |-- liblirch-client.a
 |   |-- liblirch-core.a
-|   |-- liblirch-ncurses.so
+|   |-- liblirch-curses.so
+|   |-- liblirch-gui.so
 |   |-- liblirch-qt-interface.a
-|   |-- liblirch-qt.so
 |   |-- liblogger.so
 |   |-- libmasseuse.so
 |   |-- libmeatgrinder.so
+|   |-- libquip.so
+|   |-- libsettingstest.so
 |   |-- libtimer.so
 |   `-- libuserlist.so
-`-- log/
+|-- lirch_constants.h
+|-- log
+`-- Makefile
 
-3 directories, 16 files
+3 directories, 26 files
