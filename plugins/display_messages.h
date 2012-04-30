@@ -14,7 +14,7 @@
 
 enum class display_message_subtype
 {
-	NORMAL,ME,NOTIFY
+	NORMAL,ME,NOTIFY,NOTIFY_CURRENT
 };
 
 

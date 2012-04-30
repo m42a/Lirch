@@ -84,13 +84,14 @@ void run(plugin_pipe pipe, std::string name)
 				//actually writes the message to the log file
 				*open_files[channelname]<<output<<endl;
 			}
-			else if(front.type == "set logger directory")
+			
+		}
+		else if(front.type == "set logger directory")
+		{
+			set_logger_directory_message * internals = dynamic_cast<set_logger_directory_message *>(front.getdata());
+			if(internals)
 			{
-				set_logger_directory_message * internals = dynamic_cast<set_logger_directory_message *>(front.getdata());
-				if(internals)
-				{
-					settings.setValue("Logger/root_directory", internals->directory_root);
-				}
+				settings.setValue("Logger/root_directory", internals->directory_root);
 			}
 		}
 		else
@@ -117,8 +118,9 @@ void openLog(QString channel, map<QString, ofstream*> &open_files, QSettings &se
 	string root(settings.value("Logger/root_directory", LIRCH_DEFAULT_LOG_DIR).toString().toUtf8().data());
 	root += "/";
 	string filename(QUrl::toPercentEncoding(channel, "\0").data());
-	//sanatize(filename); 
- 	filename = root+filename+".txt";
+	//sanatize(filename);
+	filename += ".txt";
+	filename = root.append(filename);
 	ofstream * newFile = new ofstream();
 	newFile->open(filename.c_str(), fstream::app);
 	*newFile <<"~~~~~~~~"<<endl;

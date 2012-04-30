@@ -15,18 +15,24 @@
 #include <QString>
 #include "core/message.h"
 
+enum class notify_message_subtype
+{
+	NORMAL, CURRENT_CHANNEL
+};
+
 class notify_message : public message_data
 {
 public:
 	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new notify_message(*this));}
 
 	//notify messages have only one conent, string to be displayed
-	static message create(const QString &chan, const QString &con) {return message_create("notify", new notify_message(chan,con));}
+	static message create(const QString &chan, const QString &con, const notify_message_subtype & sub = notify_message_subtype::CURRENT_CHANNEL) {return message_create("notify", new notify_message(chan,con,sub));}
 
-	notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
+	notify_message(const QString &chan, const QString &con, const notify_message_subtype & sub = notify_message_subtype::CURRENT_CHANNEL) : channel(chan), contents(con), type(sub) {}
 
 	QString channel;
 	QString contents;
+	notify_message_subtype type;
 };
 
 class sendable_notify_message : public message_data
