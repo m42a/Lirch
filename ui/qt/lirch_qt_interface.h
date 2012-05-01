@@ -14,6 +14,7 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
+#include <QSystemTrayIcon>
 #include <QTextDocument>
 #include <QTime>
 #include <QTimer>
@@ -21,6 +22,7 @@
 
 #include "lirch_constants.h"
 #include "ui/lirch_client_pipe.h"
+#include "plugins/blocker_messages.h"
 #include "plugins/edict_messages.h"
 #include "plugins/display_messages.h"
 #include "plugins/logger_messages.h"
@@ -50,6 +52,7 @@ private:
     LirchClientPipe *client_pipe;
     QMap<QString, QTextDocument *> chat_documents;
     QMap<QString, QStandardItemModel *> userlist_models;
+    QSystemTrayIcon *system_tray_icon;
     // Application settings
     QSettings settings;
     QString default_nick;
@@ -79,7 +82,7 @@ private:
     // chatArea draws (alternating) -----/_____ b/t messages?
 
 public slots:
-    void die(QString = "unknown error");
+    void die(QString = "unknown error", bool = true);
     void display(QString, QString);
     void userlist(QMap<QString, QSet<QString>>);
     void nick(QString, bool);
@@ -116,9 +119,9 @@ private slots:
 
     // MISC SLOTS
     void alert_user(QString);
-    // TODO these need to query the userlist/antenna
-    void nick_changed(QString, bool);
-    void ignore_changed(QString, bool);
+    void request_nick_change(QString, bool);
+    void request_block_ignore(QString, bool);
+    void request_new_channel(QString, bool);
 };
 
 #endif // LIRCH_QT_INTERFACE_H

@@ -34,14 +34,20 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // client_pipe facilitates communication with the core
     client_pipe = nullptr;
 
-    // TODO figure out the model
-    QTextDocument *default_chat_document = new QTextDocument();
+    // TODO figure out the tab model
+    QTextDocument *default_chat_document = new QTextDocument(this);
     chat_documents[LIRCH_DEFAULT_CHANNEL] = default_chat_document;
     ui->chatViewArea->setDocument(default_chat_document);
     // Set up models and attach them to views
-    QStandardItemModel *default_userlist_model = new QStandardItemModel(0, 1);
+    QStandardItemModel *default_userlist_model = new QStandardItemModel(0, 1, this);
     userlist_models[LIRCH_DEFAULT_CHANNEL] = default_userlist_model;
     ui->chatUserList->setModel(default_userlist_model);
+
+    // Setup system tray TODO settings and QIcon for this?
+    system_tray_icon = nullptr;
+    if (QSystemTrayIcon::isSystemTrayAvailable()) {
+        system_tray_icon = new QSystemTrayIcon(this);
+    }
 
     // Load up the settings and kick things off
     loadSettings();
@@ -53,16 +59,8 @@ LirchQtInterface::~LirchQtInterface()
     saveSettings();
     // Cleanup the UI
     delete ui;
-    // Cleanup documents and models
-    for (auto &entry : chat_documents) {
-        delete entry;
-    }
-    for (auto &entry : userlist_models) {
-        delete entry;
-    }
 }
 
-// TODO remove the nick entirely?
 // settings-related (IMPORTANT: always edit these functions as a pair)
 
 void LirchQtInterface::loadSettings()
@@ -71,11 +69,15 @@ void LirchQtInterface::loadSettings()
     settings.beginGroup("UserData");
     default_nick = settings.value("nick", LIRCH_DEFAULT_NICK).value<QString>();
     settings.endGroup();
+    // Load persisted view state
     settings.beginGroup("QtMainWindow");
     resize(settings.value("size", QSize(640, 480)).toSize());
     move(settings.value("position", QPoint(100, 100)).toPoint());
     ui->chatLayout->restoreState(settings.value("splitter").toByteArray());
+    ui->actionViewSendButton->setChecked(settings.value("show_msgSendButton", true).value<bool>());
+    ui->actionViewUserList->setChecked(settings.value("show_chatUserList", true).value<bool>());
     settings.endGroup();
+    // Load persisted model settings
     settings.beginGroup("ChatView");
     settings.beginGroup("Messages");
     show_ignored_messages = settings.value("show_ignored_messages", false).value<bool>();
@@ -94,6 +96,8 @@ void LirchQtInterface::saveSettings()
     settings.setValue("size", size());
     settings.setValue("position", pos());
     settings.setValue("splitter", ui->chatLayout->saveState());
+    settings.setValue("show_msgSendButton", ui->actionViewSendButton->isChecked());
+    settings.setValue("show_chatUserList", ui->actionViewUserList->isChecked());
     settings.endGroup();
     settings.beginGroup("ChatView");
     settings.beginGroup("Messages");
@@ -103,7 +107,7 @@ void LirchQtInterface::saveSettings()
     settings.endGroup();
 }
 
-// event-related
+// EVENT RELATED
 
 void LirchQtInterface::changeEvent(QEvent *e)
 {
@@ -171,9 +175,11 @@ void LirchQtInterface::on_actionConnect_triggered(bool checked)
 
 void LirchQtInterface::on_actionNewChannel_triggered()
 {
-    LirchQLineEditDialog channel_dialog;
-    connect(&channel_dialog, SIGNAL(submit(QString, bool)), this, SLOT(new_channel(QString, bool)));
-    channel_dialog.exec();
+	LirchQLineEditDialog channel_dialog;
+	connect(
+		&channel_dialog, SIGNAL(submit(QString, bool)),
+		this, SLOT(request_new_channel(QString, bool)));
+	channel_dialog.exec();
 }
 
 void LirchQtInterface::on_actionNewTransfer_triggered()
@@ -181,35 +187,37 @@ void LirchQtInterface::on_actionNewTransfer_triggered()
     alert_user(tr("The %1 feature is forthcoming.").arg("New > File Transfer"));
 }
 
-// log-related
+// log-related (TODO make a UI for this)
 
 void LirchQtInterface::on_actionSaveLog_triggered()
 {
-    QMessageBox::information(this,
-                             tr("Confirmation"),
-                             tr("Log saved: %1/default.log").arg(LIRCH_DEFAULT_LOG_DIR));
+	QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
+	QMessageBox::information(this,
+		tr("Confirmation"),
+		tr("Log saved: %1").arg(filename));
 }
 
 void LirchQtInterface::on_actionOpenLog_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
-    // TODO make it pop up a tab
+	QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
 }
 
-// EDIT MENU
+// EDIT MENU (TODO these UIs need work)
 
 void LirchQtInterface::on_actionEditNick_triggered()
 {
-    LirchQLineEditDialog nick_dialog;
-    connect(&nick_dialog, SIGNAL(submit(QString, bool)), this, SLOT(nick_changed(QString, bool)));
-    nick_dialog.exec();
+	LirchQLineEditDialog nick_dialog;
+	connect(&nick_dialog, SIGNAL(submit(QString, bool)),
+		this, SLOT(request_nick_change(QString, bool)));
+	nick_dialog.exec();
 }
 
 void LirchQtInterface::on_actionEditIgnored_triggered()
 {
-    LirchQLineEditDialog ignore_dialog;
-    connect(&ignore_dialog, SIGNAL(submit(QString, bool)), this, SLOT(ignore_changed(QString, bool)));
-    ignore_dialog.exec();
+	LirchQLineEditDialog ignore_dialog;
+	connect(&ignore_dialog, SIGNAL(submit(QString, bool)),
+		this, SLOT(request_block_ignore(QString, bool)));
+	ignore_dialog.exec();
 }
 
 // VIEW MENU
@@ -309,7 +317,7 @@ void LirchQtInterface::on_actionAbout_triggered()
 	}
 }
 
-// INTERNAL SLOTS
+// INTERNAL SLOTS (re-implemented protected functions)
 
 // TODO does this happen on any show? if so, don't connect
 void LirchQtInterface::showEvent(QShowEvent *e)
@@ -317,63 +325,72 @@ void LirchQtInterface::showEvent(QShowEvent *e)
 	// TODO first-time QWizard to determine if these happen:
 	// The first tab is always the default channel
 	ui->actionViewDefault->trigger();
-	// Connect to it
+	// Fire the connect action
 	ui->actionConnect->setChecked(true);
-	// TODO get the textbox to focus on any Show
-	//ui->msgTextBox->setFocus(true);
-	QTimer::singleShot(0, ui->msgTextBox, SLOT(selectAll()));
+	// Get the textbox to focus on any Show
+	ui->msgTextBox->setFocus(Qt::ActiveWindowFocusReason);
 	// Propagate
 	e->ignore();
 }
 
 void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
+	// Any close request is accepted when the core is shutdown
+	if (client_pipe == nullptr || !client_pipe->ready()) {
+		e->accept();
+	}
 	// Confirm the close (potentially ignore)
-	if (client_pipe == nullptr || !client_pipe->ready() ||
-		QMessageBox::question(this,
-			tr("Close Prompt"),
-			tr("Are you sure you want to quit %1?").arg(LIRCH_PRODUCT_NAME),
-			QMessageBox::Yes,
-			QMessageBox::No,
-			QMessageBox::NoButton) == QMessageBox::Yes) {
+	auto result = QMessageBox::question(this,
+		tr("Close Prompt"),
+		tr("Are you sure you want to quit %1?").arg(LIRCH_PRODUCT_NAME),
+		QMessageBox::Yes,
+		QMessageBox::No,
+		QMessageBox::NoButton);
+        if (result == QMessageBox::Yes) {
 		e->accept();
 	} else {
 		e->ignore();
 	}
 }
 
+// UTILITY FUNCTIONS
+
+// Provides a method for conveniently alerting the user
 void LirchQtInterface::alert_user(QString msg)
 {
 	// Empty alerts trigger fatal errors to encourage proper alerts
 	if (msg.isEmpty()) {
-		die(tr("Empty user alert message."));
+		die(tr("Empty user alert message."), false);
 	} else {
 		QMessageBox::information(this, tr("Alert"), msg);
 	}
 }
 
+// For loading a particular client pipe
 void LirchQtInterface::use(LirchClientPipe *pipe)
 {
-    if (pipe != nullptr && pipe->ready()) {
-        client_pipe = pipe;
-        this->show();
-    } else {
-        QMessageBox::information(this,
-                                 tr("Fatal Error"),
-                                 tr("Client pipe failed to connect."));
-        QString fatal_msg = (pipe) ? pipe->name() : tr("(null)");
-        this->die(tr("failure between core and %1").arg(fatal_msg));
-    }
+	if (pipe != nullptr && pipe->ready()) {
+		client_pipe = pipe;
+		this->show();
+	} else {
+		QString fatal_msg = (pipe) ? pipe->name() : tr("(null)");
+		this->die(tr("failure between core and %1").arg(fatal_msg), false);
+	}
 }
 
-void LirchQtInterface::die(QString msg)
+// For killing the GUI nicely 
+void LirchQtInterface::die(QString msg, bool silent_but_deadly)
 {
-    QMessageBox::information(this,
-                             tr("Fatal"),
-                             tr("Details: '%1'").arg(msg));
-    this->close();
+	if (!silent_but_deadly) {
+		QMessageBox::information(this,
+			tr("Fatal"),
+			tr("Details: '%1'").arg(msg));
+	}
+	// TODO send a display message for logger with reason
+	this->close();
 }
 
+// Occurs when display messages are received
 void LirchQtInterface::display(QString channel, QString contents) {
     // TODO get this using the QDocument model
     QString timestamp = "[" + QTime::currentTime().toString() + "] ";
@@ -393,7 +410,7 @@ void LirchQtInterface::display(QString channel, QString contents) {
     }
 }
 
-
+// Occurs when userlist messages are received
 void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
 	// For every channel
 	for (auto datum = data.begin(); datum != data.end(); ++datum) {
@@ -411,6 +428,7 @@ void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
     	}
 }
 
+// Occurs when changed_nick messages are received
 void LirchQtInterface::nick(QString new_nick, bool permanent)
 {
     if (permanent)
@@ -419,16 +437,26 @@ void LirchQtInterface::nick(QString new_nick, bool permanent)
     }
 }
 
-void LirchQtInterface::nick_changed(QString new_nick, bool permanent) {
+// MESSAGE EMITTERS
+
+void LirchQtInterface::request_nick_change(QString new_nick, bool permanent) {
     client_pipe->send(nick_message::create(new_nick, permanent));
 }
 
-void LirchQtInterface::ignore_changed(QString new_ignore, bool block)
+void LirchQtInterface::request_block_ignore(QString name, bool block)
 {
-    // TODO delegate to core (antenna will block/ignore)
+    block_message_subtype request_type = block_message_subtype::ADD;
     if (block) {
-       //client_pipe->send 
+       // TODO cleanly convert the input into an IP address
+       // FIXME should be able to lookup from last userlist
+       client_pipe->send(block_message::create(request_type, QHostAddress(name)));
+    } else {
+       // TODO add nick to ignored, emit signal?
+       //QSet<QString> ignored_users;
+       //ignored_users.insert(name);
     }
-    display(tr("TODO"), tr("/ignore %1").arg(new_ignore));
 }
 
+void LirchQtInterface::request_new_channel(QString name, bool) {
+    ui->chatTabWidget->addTab(new LirchQLineEditDialog(), name);
+}

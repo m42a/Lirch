@@ -73,7 +73,14 @@
           </layout>
          </widget>
         </widget>
-        <widget class="QListView" name="chatUserList"/>
+        <widget class="QListView" name="chatUserList">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>100</height>
+          </size>
+         </property>
+        </widget>
        </widget>
       </item>
       <item>
