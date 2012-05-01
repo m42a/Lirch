@@ -50,11 +50,7 @@
           </attribute>
           <layout class="QVBoxLayout" name="defaultChannelLayout">
            <item>
-            <widget class="QTextEdit" name="chatViewArea">
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
+            <widget class="QTextBrowser" name="chatViewArea"/>
            </item>
           </layout>
          </widget>
@@ -62,11 +58,62 @@
           <attribute name="title">
            <string>File Transfers</string>
           </attribute>
-          <layout class="QHBoxLayout" name="fileTransfersLayout">
+          <layout class="QVBoxLayout" name="fileTransfersLayout">
            <item>
-            <widget class="QLabel" name="fileTransfersLabel">
+            <widget class="QLabel" name="all_transfers_label">
              <property name="text">
-              <string>Version Two!</string>
+              <string>All Transfers</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="all_progress">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="value">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="downloads_label">
+             <property name="text">
+              <string>Downloads</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="downloads_progress">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="value">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="uploads_label">
+             <property name="text">
+              <string>Uploads</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="uploads_progress">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="value">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="file_transfer_note">
+             <property name="text">
+              <string>Note: File Transfer is a forthcoming feature.</string>
              </property>
             </widget>
            </item>
@@ -76,8 +123,8 @@
         <widget class="QListView" name="chatUserList">
          <property name="minimumSize">
           <size>
-           <width>100</width>
-           <height>100</height>
+           <width>160</width>
+           <height>400</height>
           </size>
          </property>
         </widget>
