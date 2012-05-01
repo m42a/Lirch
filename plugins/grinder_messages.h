@@ -9,8 +9,9 @@
 #include <unordered_map>
 #include <set>
 
-
 #include "core/message.h"
+#include "QString_hash.h"
+
 enum class register_replacer_subtype
 {
 	ADD,REMOVE
