@@ -25,6 +25,7 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	tab.setLayout(layout);
 	// Select the new window
 	action->setChecked(true);
+	cursor->insertText("[" + QTime::currentTime().toString() + "] Welcome to Lirch!");
 }
 
 void LirchChannel::show_message(const DisplayMessage &message, bool show_timestamp) {

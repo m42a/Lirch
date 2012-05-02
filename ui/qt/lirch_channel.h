@@ -49,12 +49,6 @@ class LirchChannel : public QObject {
 	};
 	void show_message(const DisplayMessage &, bool);
 public:
-	// TODO ALL OF BELOW REMOVED
-	explicit LirchChannel(QObject * = nullptr) { }
-	explicit LirchChannel(const LirchChannel &) : QObject() { }
-	virtual ~LirchChannel() { }
-	LirchChannel &operator=(const LirchChannel &) { return *this; }
-	// TODO ALL OF ABOVE REMOVED
 	explicit LirchChannel(const QString &, Ui::LirchQtInterface *);
 	// Manipulate the data models
 	void update_users(const QSet<QString> &);
