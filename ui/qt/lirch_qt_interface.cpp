@@ -28,8 +28,6 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     ui->setupUi(this);
     // Add a variety of UI enhancements (select on focus and quit action)
     ui->msgTextBox->installEventFilter(this);
-    // TODO can this be done in the .ui instead?
-    connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
 
     // client_pipe facilitates communication with the core
     client_pipe = nullptr;

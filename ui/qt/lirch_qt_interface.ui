@@ -196,6 +196,7 @@
       <string>&amp;Tabs</string>
      </property>
      <addaction name="actionViewTransfers"/>
+     <addaction name="separator"/>
     </widget>
     <addaction name="menuViewTab"/>
     <addaction name="actionViewUserList"/>
@@ -392,12 +393,28 @@
    <slot>click()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>413</x>
-     <y>378</y>
+     <x>424</x>
+     <y>468</y>
     </hint>
     <hint type="destinationlabel">
-     <x>552</x>
-     <y>373</y>
+     <x>628</x>
+     <y>468</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionQuit</sender>
+   <signal>triggered()</signal>
+   <receiver>LirchQtInterface</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>10</x>
+     <y>22</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>14</x>
+     <y>30</y>
     </hint>
    </hints>
   </connection>
