@@ -1,32 +1,31 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
-#include <QBoxLayout>
+/*
+#include <unordered_map>
+#include <unordered_set>
+*/
+#include <QSet>
+#include <QMap>
+
 #include <QCloseEvent>
 #include <QDate>
 #include <QDesktopServices>
 #include <QFileDialog>
-#include <QList>
-#include <QListView>
 #include <QMainWindow>
-#include <QMap>
 #include <QMessageBox>
 #include <QSettings>
 #include <QShowEvent>
-#include <QStandardItem>
-#include <QStandardItemModel>
 #include <QString>
 #include <QSystemTrayIcon>
-#include <QTextBrowser>
-#include <QTextDocument>
-#include <QTextFrame>
-#include <QTextFrameFormat>
 #include <QTime>
 #include <QTimer>
 #include <QUrl>
 
 #include "lirch_constants.h"
 #include "ui/lirch_client_pipe.h"
+#include "ui/qt/lirch_channel.h"
+//#include "plugins/QString_hash.h"
 #include "plugins/blocker_messages.h"
 #include "plugins/edict_messages.h"
 #include "plugins/display_messages.h"
@@ -35,15 +34,14 @@
 
 namespace Ui {
     class LirchQtInterface;
-    class Channel;
 }
 
 class LirchQtInterface : public QMainWindow {
     Q_OBJECT
-    friend class LirchClientPipe;
 public:
-    explicit LirchQtInterface(QWidget *parent = 0);
+    explicit LirchQtInterface(QWidget *parent = nullptr);
     virtual ~LirchQtInterface();
+    // TODO filter switch-tab events
     bool eventFilter(QObject *object, QEvent *event);
 
 protected:
@@ -58,7 +56,7 @@ private:
     LirchClientPipe *client_pipe;
     QSystemTrayIcon *system_tray_icon;
     // Model data (Channels package appropriate data)
-    QMap<QString, Ui::Channel> channels;
+    QMap<QString, LirchChannel *> channels;
     QSet<QString> ignored_users;
     // Application settings
     QSettings settings;
@@ -111,7 +109,6 @@ private slots:
     void on_actionEditNick_triggered();
     void on_actionEditIgnored_triggered();
     // View Menu
-    void on_actionViewDefault_triggered();
     void on_actionViewTransfers_triggered();
     void on_actionViewIgnored_toggled(bool);
     void on_actionViewTimestamps_toggled(bool);

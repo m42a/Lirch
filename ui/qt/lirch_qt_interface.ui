@@ -195,8 +195,6 @@
      <property name="title">
       <string>&amp;Tabs</string>
      </property>
-     <addaction name="actionViewDefault"/>
-     <addaction name="separator"/>
      <addaction name="actionViewTransfers"/>
     </widget>
     <addaction name="menuViewTab"/>
@@ -343,14 +341,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+`</string>
-   </property>
-  </action>
-  <action name="actionViewDefault">
-   <property name="text">
-    <string>&amp;Default Channel</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+0</string>
    </property>
   </action>
   <action name="actionViewTimestamps">
