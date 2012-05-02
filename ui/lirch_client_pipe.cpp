@@ -2,7 +2,14 @@
 
 // These are rather trivial
 LirchClientPipe::LirchClientPipe() :
-    client_state(State::BEFORE), core_thread(nullptr) { }
+    client_state(State::BEFORE), core_thread(nullptr)
+{
+    QChar double_exclamation_mark(0x203C);
+    QChar interrobang(0x203D);
+    notify_prefix += double_exclamation_mark;
+    notify_prefix += interrobang;
+}
+
 LirchClientPipe::~LirchClientPipe() { }
 
 void LirchClientPipe::load(std::thread *t) {
@@ -60,7 +67,7 @@ void LirchClientPipe::display(display_message m) {
             text = tr("*%1 %2").arg(m.nick, m.contents);
             break;
         case display_message_subtype::NOTIFY:
-            text = tr("!%1 %2").arg(m.nick, m.contents);
+            text = notify_prefix + tr(" %1 %2").arg(m.nick, m.contents);
             break;
         default:
             text = tr("?%1 %2").arg(m.nick, m.contents);

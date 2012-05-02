@@ -1,5 +1,7 @@
 // TODO left:
 // 1) Tabs need to produce grab_focus on click
+// 2) We need to be able to click on links
+// 3) Make /channel and /leave work
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -131,6 +133,8 @@ bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 		}
 	} else if (object == ui->chatTabWidget) {
 		// FIXME intercept tab changes
+	} else {
+		// FIXME intercept link clicks
 	}
 	return QMainWindow::eventFilter(object, event);
 }
@@ -387,7 +391,6 @@ void LirchQtInterface::on_actionAbout_triggered()
 void LirchQtInterface::showEvent(QShowEvent *e)
 {
 	if (first_time_run) {
-		first_time_run = false;
 		ui->actionWizard->trigger();
 	}
 	auto itr = channels.find(tr(LIRCH_DEFAULT_CHANNEL));
@@ -471,6 +474,10 @@ void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 		return;
 	}
 	auto &channel = itr.value();
+	// These are for sanitation
+	text.replace(QRegExp("&(?!amp;)"), "&amp;");
+	text.replace(QRegExp("<"), "&lt;");
+	text.replace(QRegExp(">"), "&gt;");
 	// This regex wraps links sent in display messages
 	text.replace(QRegExp("\\b(http://.*)\\b"), "<a href=\"\\1\">\\1</a>");
 	// Show the message in the view

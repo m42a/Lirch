@@ -26,6 +26,8 @@ class LirchClientPipe : public QObject {
     plugin_pipe client_pipe;
     // In order to join with the core thread, we need this
     std::thread *core_thread;
+    // This is just for compliance
+    QString notify_prefix;
 public:
     explicit LirchClientPipe();
     virtual ~LirchClientPipe();
