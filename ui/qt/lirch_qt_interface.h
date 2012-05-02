@@ -1,19 +1,14 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
-/*
-#include <unordered_map>
-#include <unordered_set>
-*/
-#include <QSet>
-#include <QMap>
-
 #include <QCloseEvent>
 #include <QDate>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QMap>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QSet>
 #include <QSettings>
 #include <QShowEvent>
 #include <QString>
@@ -25,7 +20,6 @@
 #include "lirch_constants.h"
 #include "ui/lirch_client_pipe.h"
 #include "ui/qt/lirch_channel.h"
-//#include "plugins/QString_hash.h"
 #include "plugins/blocker_messages.h"
 #include "plugins/edict_messages.h"
 #include "plugins/display_messages.h"

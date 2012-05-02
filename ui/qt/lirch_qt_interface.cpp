@@ -119,16 +119,16 @@ void LirchQtInterface::changeEvent(QEvent *e)
 
 bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 {
-    if (object == ui->msgTextBox) {
-        // Filter FocusIn events on the text box to select all text therein
-        if (event->type() == QEvent::FocusIn) {
-            // FIXME there has to be a better way to do this
-            QTimer::singleShot(0, object, SLOT(selectAll()));
-            return true;
-        }
-        return false;
-    }
-    return QMainWindow::eventFilter(object, event);
+	// FIXME there has to be a better way to do this
+	if (object == ui->msgTextBox) {
+		// Filter FocusIn events on the text box to select all text therein
+		if (event->type() == QEvent::FocusIn) {
+			QTimer::singleShot(0, object, SLOT(selectAll()));
+		}
+	} else if (object == ui->chatTabWidget) {
+		qDebug() << "DEBUG!";
+	}
+	return QMainWindow::eventFilter(object, event);
 }
 
 void LirchQtInterface::on_msgSendButton_clicked()

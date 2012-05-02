@@ -12,8 +12,6 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	users = new QStandardItemModel(0, 1, &tab);
 	// TODO add QMenuItem with show action
 	action = ui->menuViewTab->addAction(name, this, SLOT(grab_focus()));
-	action->setCheckable(true);
-	//action->setChecked(true);
 	// Create a view and set its model
 	QTextBrowser *browser = new QTextBrowser(&tab);
 	document = new QTextDocument(browser);
@@ -24,7 +22,7 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	layout->addWidget(browser);
 	tab.setLayout(layout);
 	// Select the new window
-	action->setChecked(true);
+	action->trigger();
 	cursor->insertText("[" + QTime::currentTime().toString() + "] Welcome to Lirch!");
 }
 
