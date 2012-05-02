@@ -92,6 +92,7 @@ bool QuipPlugin::has_not_received_shutdown_command()
 	{
 		// Registration statuses might need to be echoed
 		handle_registration_reply(dynamic_cast<registration_status *>(message_data.get()));
+		return true;
 	}
 	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST))
 	{

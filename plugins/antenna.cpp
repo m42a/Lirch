@@ -142,7 +142,6 @@ void run(plugin_pipe p, string name)
 			else if (m.type=="registration_status")
 			{
 				auto s=dynamic_cast<registration_status *>(m.getdata());
-				p.write(m.decrement_priority());
 				if (!s)
 					continue;
 				//Retry 2000 times until we succeed
