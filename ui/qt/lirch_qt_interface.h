@@ -45,6 +45,7 @@ protected:
     void changeEvent(QEvent *e);
 
 private:
+    bool first_time;
     // Utility functions (for settings)
     void loadSettings();
     void saveSettings();

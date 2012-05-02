@@ -1,6 +1,6 @@
-// 1) Proper Wizard hookup (issue with QWizardPage fields) 
+// 1) Proper Wizard hookup (issue with QWizardPage fields) and first run
 // 2) Clean up Tab Management (get switching tabs to fire events)
-// 3) Client logging facilities and URL clicking
+// 3) Join/leave messages and URL clicking
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -10,54 +10,54 @@
 // QT UI
 
 LirchQtInterface::LirchQtInterface(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::LirchQtInterface),
-    settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME)
+	QMainWindow(parent),
+	ui(new Ui::LirchQtInterface),
+	settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME)
 {
-    // Initialize the UI
-    ui->setupUi(this);
-    // Add a variety of UI enhancements (select on focus and quit action)
-    ui->msgTextBox->installEventFilter(this);
+	// Initialize the UI
+	ui->setupUi(this);
+	// Add a variety of UI enhancements (select on focus and quit action)
+	ui->msgTextBox->installEventFilter(this);
 
-    // client_pipe facilitates communication with the core
-    client_pipe = nullptr;
+	// client_pipe facilitates communication with the core
+	client_pipe = nullptr;
 
-    // Change some colors
-    QPalette palette;
-    QColor light_red(0xFF, 0xCC, 0xCC);
-    palette.setColor(QPalette::Base, light_red);
-    ui->msgTextBox->setPalette(palette);
-    QColor light_blue(0xCC, 0xCC, 0xFF);
-    palette.setColor(QPalette::Base, light_blue);
-    ui->chatUserList->setPalette(palette);
+	// Change some colors
+	QPalette palette;
+	QColor light_red(0xFF, 0xCC, 0xCC);
+	palette.setColor(QPalette::Base, light_red);
+	ui->msgTextBox->setPalette(palette);
+	QColor light_blue(0xCC, 0xCC, 0xFF);
+	palette.setColor(QPalette::Base, light_blue);
+	ui->chatUserList->setPalette(palette);
 
-    // Add in the default channel where it is meant to go
-    QString default_channel_name = tr(LIRCH_DEFAULT_CHANNEL);
-    LirchChannel *channel = new LirchChannel(default_channel_name, ui);
-    channels.insert(default_channel_name, channel);
+	// Add in the default channel where it is meant to go
+	QString default_channel_name = tr(LIRCH_DEFAULT_CHANNEL);
+	LirchChannel *channel = new LirchChannel(default_channel_name, ui);
+	channels.insert(default_channel_name, channel);
 
-    // Setup system tray TODO settings and QIcon for this?
-    system_tray_icon = nullptr;
-    if (QSystemTrayIcon::isSystemTrayAvailable()) {
-        system_tray_icon = new QSystemTrayIcon(this);
-	QMenu *tray_icon_menu = new QMenu(this);
-	tray_icon_menu->addAction(ui->actionQuit);
-	system_tray_icon->setIcon(this->windowIcon());
-	system_tray_icon->setContextMenu(tray_icon_menu);
-    	system_tray_icon->setToolTip(tr("Lirch %1").arg(LIRCH_VERSION_STRING));
-    	//system_tray_icon->show();
-    }
+	// Setup system tray TODO settings and QIcon for this?
+	system_tray_icon = nullptr;
+	if (QSystemTrayIcon::isSystemTrayAvailable()) {
+		system_tray_icon = new QSystemTrayIcon(this);
+		QMenu *tray_icon_menu = new QMenu(this);
+		tray_icon_menu->addAction(ui->actionQuit);
+		system_tray_icon->setIcon(this->windowIcon());
+		system_tray_icon->setContextMenu(tray_icon_menu);
+		system_tray_icon->setToolTip(tr("Lirch %1").arg(LIRCH_VERSION_STRING));
+		//system_tray_icon->show();
+	}
 
-    // Load up the settings and kick things off
-    loadSettings();
+	// Load up the settings and kick things off
+	loadSettings();
 }
 
 LirchQtInterface::~LirchQtInterface()
 {
-    // Save settings on destruction
-    saveSettings();
-    // Cleanup the UI
-    delete ui;
+	// Save settings on destruction
+	saveSettings();
+	// Cleanup the UI
+	delete ui;
 }
 
 // settings-related (IMPORTANT: always edit these functions as a pair)
@@ -75,6 +75,7 @@ void LirchQtInterface::loadSettings()
     ui->chatLayout->restoreState(settings.value("splitter").toByteArray());
     ui->actionViewSendButton->setChecked(settings.value("show_msgSendButton", true).value<bool>());
     ui->actionViewUserList->setChecked(settings.value("show_chatUserList", true).value<bool>());
+    first_time = settings.value("first_time", true).value<bool>();
     settings.endGroup();
     // Load persisted model settings
     settings.beginGroup("ChatView");
@@ -97,6 +98,7 @@ void LirchQtInterface::saveSettings()
     settings.setValue("splitter", ui->chatLayout->saveState());
     settings.setValue("show_msgSendButton", ui->actionViewSendButton->isChecked());
     settings.setValue("show_chatUserList", ui->actionViewUserList->isChecked());
+    settings.setValue("first_time", false);
     settings.endGroup();
     settings.beginGroup("ChatView");
     settings.beginGroup("Messages");
@@ -110,14 +112,14 @@ void LirchQtInterface::saveSettings()
 
 void LirchQtInterface::changeEvent(QEvent *e)
 {
-    QMainWindow::changeEvent(e);
-    switch (e->type()) {
-    case QEvent::LanguageChange:
-        ui->retranslateUi(this);
-        break;
-    default:
-        break;
-    }
+	QMainWindow::changeEvent(e);
+	switch (e->type()) {
+		case QEvent::LanguageChange:
+			ui->retranslateUi(this);
+			break;
+		default:
+			break;
+	}
 }
 
 bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
@@ -129,7 +131,7 @@ bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 			QTimer::singleShot(0, object, SLOT(selectAll()));
 		}
 	} else if (object == ui->chatTabWidget) {
-		// TODO intercept tab changes
+		// FIXME intercept tab changes
 	}
 	return QMainWindow::eventFilter(object, event);
 }
@@ -142,13 +144,8 @@ void LirchQtInterface::on_msgSendButton_clicked()
 	if (text.isEmpty()) {
 		return;
 	}
-	// TODO modify to have connected state
+	// FIXME modify to have connected state
 	request_edict_send(text, true);
-	// TODO here is the failure condition, when does this happen?
-	// QMessageBox::warning(this,
-	//                     tr("Unimplemented Feature"),
-	//                     tr("'%1' could not be sent.").arg(text),
-	//                     QMessageBox::Ok);
 	// Don't forget to clear the text from the box
 	ui->msgTextBox->clear();
 }
@@ -182,7 +179,7 @@ void LirchQtInterface::on_actionNewTransfer_triggered()
 	alert_user(tr("The %1 feature is forthcoming.").arg("New > File Transfer"));
 }
 
-// log-related (TODO make a UI for this)
+// log-related
 
 void LirchQtInterface::on_actionSaveLog_triggered()
 {
@@ -331,7 +328,6 @@ void LirchQtInterface::on_actionViewTransfers_triggered()
 
 void LirchQtInterface::on_actionWizard_triggered()
 {
-	// TODO connect fields
 	LirchSetupWizard setup_wizard;
 	if (setup_wizard.exec()) {
 		QString nick = setup_wizard.get_nick();
@@ -382,7 +378,10 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 void LirchQtInterface::showEvent(QShowEvent *e)
 {
-	// TODO first-time QWizard to determine if these happen:
+	if (first_time) {
+		first_time = false;
+		ui->actionWizard->trigger();
+	}
 	auto itr = channels.find(tr(LIRCH_DEFAULT_CHANNEL));
 	if (itr != channels.end()) {
 		auto &channel = itr.value();
@@ -502,7 +501,7 @@ void LirchQtInterface::nick(QString new_nick, bool permanent)
 }
 
 void LirchQtInterface::request_new_channel(QString name, bool) {
-	// TODO validate field
+	// FIXME field is not validated
 	LirchChannel *channel = new LirchChannel(name, ui);
 	channels.insert(name, channel);
 }
@@ -530,10 +529,8 @@ void LirchQtInterface::request_block_ignore(QString name, bool block)
 {
 	block_message_subtype request_type = block_message_subtype::ADD;
 	if (block) {
-		// FIXME should be able to lookup from last userlist
 		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
 	} else {
-		// FIXME field should be trimmed before return
 		ignored_users.insert(name);
 	}
 }
@@ -542,10 +539,8 @@ void LirchQtInterface::request_unblock_unignore(QString name, bool block)
 {
 	block_message_subtype request_type = block_message_subtype::REMOVE;
 	if (block) {
-		// FIXME should be able to lookup from last userlist
 		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
 	} else {
-		// FIXME field should be trimmed before return
 		ignored_users.remove(name);
 	}
 }
