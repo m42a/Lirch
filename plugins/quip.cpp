@@ -131,7 +131,4 @@ void run(plugin_pipe pipe, std::string internal_name)
 	plugin.register_for_message_type(QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST));
 	// Begin a loop that will only exit when sent the shutdown command
 	while (plugin.has_not_received_shutdown_command());
-	{
-		pipe.write(done_message::create(internal_name));
-	}
 }
