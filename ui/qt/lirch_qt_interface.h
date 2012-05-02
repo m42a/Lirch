@@ -24,6 +24,7 @@
 #include "ui/lirch_client_pipe.h"
 #include "ui/qt/lirch_channel.h"
 #include "plugins/blocker_messages.h"
+#include "plugins/channel_messages.h"
 #include "plugins/edict_messages.h"
 #include "plugins/display_messages.h"
 #include "plugins/logger_messages.h"
@@ -45,7 +46,6 @@ protected:
     void changeEvent(QEvent *e);
 
 private:
-    bool first_time;
     // Utility functions (for settings)
     void loadSettings();
     void saveSettings();
@@ -59,6 +59,7 @@ private:
     // Application settings
     QSettings settings;
     QString default_nick;
+    bool first_time_run;
     bool show_message_timestamps;
     bool show_ignored_messages;
 

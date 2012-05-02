@@ -1,6 +1,5 @@
 // TODO left:
 // 1) Tabs need to produce grab_focus on click
-// 2) Join/leave messages and URL clicking
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -75,7 +74,7 @@ void LirchQtInterface::loadSettings()
 	ui->chatLayout->restoreState(settings.value("splitter").toByteArray());
 	ui->actionViewSendButton->setChecked(settings.value("show_msgSendButton", true).value<bool>());
 	ui->actionViewUserList->setChecked(settings.value("show_chatUserList", true).value<bool>());
-	first_time = settings.value("first_time", true).value<bool>();
+	first_time_run = settings.value("first_time_run", true).value<bool>();
 	settings.endGroup();
 	// Load persisted model settings
 	settings.beginGroup("ChatView");
@@ -98,7 +97,7 @@ void LirchQtInterface::saveSettings()
 	settings.setValue("splitter", ui->chatLayout->saveState());
 	settings.setValue("show_msgSendButton", ui->actionViewSendButton->isChecked());
 	settings.setValue("show_chatUserList", ui->actionViewUserList->isChecked());
-	settings.setValue("first_time", false);
+	settings.setValue("first_time_run", false);
 	settings.endGroup();
 	settings.beginGroup("ChatView");
 	settings.beginGroup("Messages");
@@ -154,11 +153,16 @@ void LirchQtInterface::on_msgSendButton_clicked()
 
 void LirchQtInterface::on_actionConnect_triggered(bool checked)
 {
-	// TODO actual delegation to core (core forwards to antenna)
+	auto end = channels.end();
 	if (checked) {
-		// FIXME send leave message
+		for (auto itr = channels.begin(); itr != end; ++itr) {
+			client_pipe->send(set_channel_message::create(itr.key()));
+		}
 	} else {
-		// FIXME send join message
+		for (auto itr = channels.begin(); itr != end; ++itr) {
+			client_pipe->send(leave_channel_message::create(itr.key()));
+			itr.value()->add_message(tr("Disconnected"), true, false);
+		}
 	}
 }
 
@@ -382,8 +386,8 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 void LirchQtInterface::showEvent(QShowEvent *e)
 {
-	if (first_time) {
-		first_time = false;
+	if (first_time_run) {
+		first_time_run = false;
 		ui->actionWizard->trigger();
 	}
 	auto itr = channels.find(tr(LIRCH_DEFAULT_CHANNEL));
@@ -463,7 +467,7 @@ void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 	bool ignore_message = (ignored_users.find(nick) != ignored_users.end());
 	// Find the tab's QTextBrowser's document (model) we desire
 	auto itr = channels.find(channel_name);
-	if (itr == channels.end()) {
+	if (itr == channels.end() || !ui->actionConnect->isChecked()) {
 		return;
 	}
 	auto &channel = itr.value();
