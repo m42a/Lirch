@@ -117,6 +117,9 @@
            <height>400</height>
           </size>
          </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
         </widget>
        </widget>
       </item>
@@ -409,8 +412,8 @@
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>10</x>
-     <y>22</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
      <x>14</x>

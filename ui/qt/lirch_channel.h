@@ -2,31 +2,33 @@
 #define LIRCH_CHANNEL_H
 
 #include <QAction>
+#include <QColor>
 #include <QListView>
 #include <QObject>
+#include <QPalette>
 #include <QSet>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
 #include <QTabWidget>
+#include <QTextBlock>
+#include <QTextBlockFormat>
 #include <QTextBrowser>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextFormat>
-#include <QTextFrame>
-#include <QTextFrameFormat>
 #include <QTime>
 #include <QWidget>
 
 #include "ui/qt/ui_lirch_qt_interface.h"
 
-static QTextFrameFormat frame_format;
+static QTextBlockFormat block_format;
 
 class LirchChannel : public QObject {
 	Q_OBJECT
 	// Representation:
 	QString name;
-	QWidget tab;
+	QWidget *tab;
 	struct DisplayMessage;
 	QList<DisplayMessage> messages;
 

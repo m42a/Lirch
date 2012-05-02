@@ -2,12 +2,14 @@
 #define LIRCH_QT_INTERFACE_H
 
 #include <QCloseEvent>
+#include <QColor>
 #include <QDate>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QMap>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QPalette>
 #include <QSet>
 #include <QSettings>
 #include <QShowEvent>

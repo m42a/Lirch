@@ -32,6 +32,15 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // client_pipe facilitates communication with the core
     client_pipe = nullptr;
 
+    // Change some colors
+    QPalette palette;
+    QColor light_red(0xFF, 0xCC, 0xCC);
+    palette.setColor(QPalette::Base, light_red);
+    ui->msgTextBox->setPalette(palette);
+    QColor light_blue(0xCC, 0xCC, 0xFF);
+    palette.setColor(QPalette::Base, light_blue);
+    ui->chatUserList->setPalette(palette);
+
     // Add in the default channel where it is meant to go
     QString default_channel_name = tr(LIRCH_DEFAULT_CHANNEL);
     LirchChannel *channel = new LirchChannel(default_channel_name, ui);
