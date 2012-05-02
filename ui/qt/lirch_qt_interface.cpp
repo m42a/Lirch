@@ -1,16 +1,6 @@
-// TODO (not in order of importance)
-// 1) Ugh, fix the layout somehow?
-// 2) Setup Wizard
-//    a) Nick menu
-//    b) Ignore/Block menu
-// 3) Tab Management (use QTabWidget or QWidget container?)
-//    !) Representation of each chatView
-//    ?) Default presentation
-//    a) Integration with Menus
-//    b) Integration with User Lists
-// 4) Message Pipe interactions
-//    a) Channel creation
-//    b) Polling for participants
+// 1) Proper Wizard hookup (issue with QWizardPage fields) 
+// 2) Clean up Tab Management (get switching tabs to fire events)
+// 3) Client logging facilities and URL clicking
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -216,11 +206,21 @@ void LirchQtInterface::on_actionEditNick_triggered()
 void LirchQtInterface::on_actionEditIgnored_triggered()
 {
 	LirchQLineEditDialog ignore_dialog;
-	ignore_dialog.setWindowTitle("Ignore/Block");
+	ignore_dialog.setWindowTitle("Add Ignore/Block");
 	ignore_dialog.setLabelText(tr("Block"));
 	connect(&ignore_dialog, SIGNAL(submitted(QString, bool)),
 		this, SLOT(request_block_ignore(QString, bool)));
 	ignore_dialog.exec();
+}
+
+void LirchQtInterface::on_actionEditListening_triggered()
+{
+	LirchQLineEditDialog unignore_dialog;
+	unignore_dialog.setWindowTitle("Remove Ignore/Block");
+	unignore_dialog.setLabelText(tr("Block"));
+	connect(&unignore_dialog, SIGNAL(submitted(QString, bool)),
+		this, SLOT(request_unblock_unignore(QString, bool)));
+	unignore_dialog.exec();
 }
 
 // VIEW MENU
@@ -466,6 +466,8 @@ void LirchQtInterface::request_nick_change(QString new_nick, bool permanent) {
 	client_pipe->send(nick_message::create(new_nick, permanent));
 }
 
+// FIXME do this more elegantly
+
 void LirchQtInterface::request_block_ignore(QString name, bool block)
 {
 	block_message_subtype request_type = block_message_subtype::ADD;
@@ -475,6 +477,18 @@ void LirchQtInterface::request_block_ignore(QString name, bool block)
 	} else {
 		// FIXME field should be trimmed before return
 		ignored_users.insert(name);
+	}
+}
+
+void LirchQtInterface::request_unblock_unignore(QString name, bool block)
+{
+	block_message_subtype request_type = block_message_subtype::REMOVE;
+	if (block) {
+		// FIXME should be able to lookup from last userlist
+		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
+	} else {
+		// FIXME field should be trimmed before return
+		ignored_users.remove(name);
 	}
 }
 

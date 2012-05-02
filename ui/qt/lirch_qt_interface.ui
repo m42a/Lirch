@@ -215,6 +215,7 @@
     <addaction name="actionEditNick"/>
     <addaction name="separator"/>
     <addaction name="actionEditIgnored"/>
+    <addaction name="actionEditListening"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -261,10 +262,18 @@
   </action>
   <action name="actionEditIgnored">
    <property name="text">
-    <string>&amp;Ignored...</string>
+    <string>&amp;Ignore/Block</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="actionEditListening">
+   <property name="text">
+    <string>&amp;Unignore/Unblock</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
    </property>
   </action>
   <action name="actionViewIgnored">

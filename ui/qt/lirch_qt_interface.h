@@ -104,6 +104,7 @@ private slots:
     // Edit Menu
     void on_actionEditNick_triggered();
     void on_actionEditIgnored_triggered();
+    void on_actionEditListening_triggered();
     // View Menu
     void on_actionViewTransfers_triggered();
     void on_actionViewIgnored_toggled(bool);
@@ -122,6 +123,7 @@ private slots:
     void request_new_channel(QString, bool);
     void request_nick_change(QString, bool);
     void request_block_ignore(QString, bool);
+    void request_unblock_unignore(QString, bool);
     void request_edict_send(QString, bool);
 };
 
