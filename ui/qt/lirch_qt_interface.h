@@ -119,6 +119,7 @@ private slots:
 
     // MISC SLOTS
     void alert_user(QString);
+    void request_new_channel(QString, bool);
     void request_nick_change(QString, bool);
     void request_block_ignore(QString, bool);
     void request_edict_send(QString, bool);

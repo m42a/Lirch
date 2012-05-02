@@ -3,29 +3,32 @@
 
 #include <QDialog>
 #include <QString>
+#include <QTimer>
 
 namespace Ui {
-    class LirchQLineEditDialog;
+	class LirchQLineEditDialog;
 }
 
 class LirchQLineEditDialog : public QDialog {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    LirchQLineEditDialog(QWidget *parent = 0);
-    ~LirchQLineEditDialog();
+	explicit LirchQLineEditDialog(QWidget * = 0);
+	virtual ~LirchQLineEditDialog();
+	void setLineEditText(const QString &);
+	void setLabelText(const QString &);
+	void includeCheckbox(bool);
 
 protected:
-    void changeEvent(QEvent *e);
+	void changeEvent(QEvent *);
 
 private:
-    Ui::LirchQLineEditDialog *ui;
+	Ui::LirchQLineEditDialog *ui;
 
 signals:
-    void submit(QString, bool);
+	void submitted(QString, bool);
 
 private slots:
-    void on_buttonBox_rejected();
-    void on_buttonBox_accepted();
+	void accept();
 };
 
 #endif // LIRCH_QLINEEDIT_DIALOG_H

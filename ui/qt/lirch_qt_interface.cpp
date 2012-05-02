@@ -133,7 +133,7 @@ bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 			QTimer::singleShot(0, object, SLOT(selectAll()));
 		}
 	} else if (object == ui->chatTabWidget) {
-		qDebug() << "DEBUG!";
+		// TODO intercept tab changes
 	}
 	return QMainWindow::eventFilter(object, event);
 }
@@ -173,10 +173,12 @@ void LirchQtInterface::on_actionConnect_triggered(bool checked)
 
 void LirchQtInterface::on_actionNewChannel_triggered()
 {
-	QString channel_name = QTime::currentTime().toString();
-	// FIXME get channel name interactively, send /join
-	LirchChannel *channel = new LirchChannel(channel_name, ui);
-	channels.insert(channel_name, channel);
+	LirchQLineEditDialog channel_dialog;
+	channel_dialog.setWindowTitle(tr("New Channel"));
+	channel_dialog.includeCheckbox(false);
+	connect(&channel_dialog, SIGNAL(submitted(QString, bool)),
+		this, SLOT(request_new_channel(QString, bool)));
+	channel_dialog.exec();
 }
 
 void LirchQtInterface::on_actionNewTransfer_triggered()
@@ -203,7 +205,10 @@ void LirchQtInterface::on_actionOpenLog_triggered()
 void LirchQtInterface::on_actionEditNick_triggered()
 {
 	LirchQLineEditDialog nick_dialog;
-	connect(&nick_dialog, SIGNAL(submit(QString, bool)),
+	nick_dialog.setWindowTitle(tr("Edit Nick"));
+	nick_dialog.setLineEditText(default_nick);
+	nick_dialog.setLabelText(tr("Default"));
+	connect(&nick_dialog, SIGNAL(submitted(QString, bool)),
 		this, SLOT(request_nick_change(QString, bool)));
 	nick_dialog.exec();
 }
@@ -211,7 +216,9 @@ void LirchQtInterface::on_actionEditNick_triggered()
 void LirchQtInterface::on_actionEditIgnored_triggered()
 {
 	LirchQLineEditDialog ignore_dialog;
-	connect(&ignore_dialog, SIGNAL(submit(QString, bool)),
+	ignore_dialog.setWindowTitle("Ignore/Block");
+	ignore_dialog.setLabelText(tr("Block"));
+	connect(&ignore_dialog, SIGNAL(submitted(QString, bool)),
 		this, SLOT(request_block_ignore(QString, bool)));
 	ignore_dialog.exec();
 }
@@ -385,7 +392,7 @@ void LirchQtInterface::die(QString msg, bool silent_but_deadly)
 			tr("Fatal"),
 			tr("Details: '%1'").arg(msg));
 	}
-	// TODO send a display message for logger with reason
+	// FIXME send a display message for logger with reason?
 	this->close();
 }
 
@@ -398,7 +405,7 @@ void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 		return;
 	}
 	auto &channel = itr.value();
-	// This regex wraps links sent in display messages TODO fix
+	// This regex wraps links sent in display messages
 	text.replace(QRegExp("\\b(http://.*)\\b"), "<a href=\"\\1\">\\1</a>");
 	// Show the message in the view
 	channel->add_message(text, show_message_timestamps, ignore_message);
@@ -411,9 +418,18 @@ void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
 		// Find the model if it exists
 		auto itr = channels.find(datum.key());
 		if (itr != channels.end()) {
+			QSet<QString> users;
+			// Tag users
+			for (auto &name : datum.value()) {
+				if (ignored_users.contains(name)) {
+					users.insert(name + tr(" (ignored)"));
+				} else {
+					users.insert(name);
+				}
+			}
+			// Update the channel
 			auto &channel = *itr;
-			// Copy all the items over
-			channel->update_users(datum.value());
+			channel->update_users(users);
 		}
     	}
 }
@@ -427,12 +443,19 @@ void LirchQtInterface::nick(QString new_nick, bool permanent)
 	}
 }
 
+void LirchQtInterface::request_new_channel(QString name, bool) {
+	// TODO validate field
+	LirchChannel *channel = new LirchChannel(name, ui);
+	channels.insert(name, channel);
+}
+
 // MESSAGE EMITTERS
 
 void LirchQtInterface::request_edict_send(QString text, bool current)
 {
 	if (current) {
-		QString channel_name = ui->chatTabWidget->tabText(ui->chatTabWidget->currentIndex());
+		auto tab_widget = ui->chatTabWidget;
+		QString channel_name = tab_widget->tabText(tab_widget->currentIndex());
 		// The core will pass this raw edict to the meatgrinder
 		client_pipe->send(raw_edict_message::create(text, channel_name));
 	}
@@ -447,11 +470,10 @@ void LirchQtInterface::request_block_ignore(QString name, bool block)
 {
 	block_message_subtype request_type = block_message_subtype::ADD;
 	if (block) {
-		// TODO cleanly convert the input into an IP address
 		// FIXME should be able to lookup from last userlist
 		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
 	} else {
-		// TODO emit signal to redraw?
+		// FIXME field should be trimmed before return
 		ignored_users.insert(name);
 	}
 }
