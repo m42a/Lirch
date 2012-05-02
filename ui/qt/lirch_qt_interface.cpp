@@ -40,6 +40,12 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     system_tray_icon = nullptr;
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         system_tray_icon = new QSystemTrayIcon(this);
+	QMenu *tray_icon_menu = new QMenu(this);
+	tray_icon_menu->addAction(ui->actionQuit);
+	system_tray_icon->setIcon(this->windowIcon());
+	system_tray_icon->setContextMenu(tray_icon_menu);
+    	system_tray_icon->setToolTip(tr("Lirch %1").arg(LIRCH_VERSION_STRING));
+    	//system_tray_icon->show();
     }
 
     // Load up the settings and kick things off
