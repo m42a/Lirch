@@ -1,6 +1,6 @@
-// 1) Proper Wizard hookup (issue with QWizardPage fields) and first run
-// 2) Clean up Tab Management (get switching tabs to fire events)
-// 3) Join/leave messages and URL clicking
+// TODO left:
+// 1) Tabs need to produce grab_focus on click
+// 2) Join/leave messages and URL clicking
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -64,48 +64,48 @@ LirchQtInterface::~LirchQtInterface()
 
 void LirchQtInterface::loadSettings()
 {
-    // Make sure to document any changes in the settings schema (change below and on wiki)
-    settings.beginGroup("UserData");
-    default_nick = settings.value("nick", LIRCH_DEFAULT_NICK).value<QString>();
-    settings.endGroup();
-    // Load persisted view state
-    settings.beginGroup("QtMainWindow");
-    resize(settings.value("size", QSize(640, 480)).toSize());
-    move(settings.value("position", QPoint(100, 100)).toPoint());
-    ui->chatLayout->restoreState(settings.value("splitter").toByteArray());
-    ui->actionViewSendButton->setChecked(settings.value("show_msgSendButton", true).value<bool>());
-    ui->actionViewUserList->setChecked(settings.value("show_chatUserList", true).value<bool>());
-    first_time = settings.value("first_time", true).value<bool>();
-    settings.endGroup();
-    // Load persisted model settings
-    settings.beginGroup("ChatView");
-    settings.beginGroup("Messages");
-    show_ignored_messages = settings.value("show_ignored_messages", false).value<bool>();
-    show_message_timestamps = settings.value("show_message_timestamps", true).value<bool>();
-    settings.endGroup();
-    settings.endGroup();
+	// Make sure to document any changes in the settings schema (change below and on wiki)
+	settings.beginGroup("UserData");
+	default_nick = settings.value("nick", LIRCH_DEFAULT_NICK).value<QString>();
+	settings.endGroup();
+	// Load persisted view state
+	settings.beginGroup("QtMainWindow");
+	resize(settings.value("size", QSize(640, 480)).toSize());
+	move(settings.value("position", QPoint(100, 100)).toPoint());
+	ui->chatLayout->restoreState(settings.value("splitter").toByteArray());
+	ui->actionViewSendButton->setChecked(settings.value("show_msgSendButton", true).value<bool>());
+	ui->actionViewUserList->setChecked(settings.value("show_chatUserList", true).value<bool>());
+	first_time = settings.value("first_time", true).value<bool>();
+	settings.endGroup();
+	// Load persisted model settings
+	settings.beginGroup("ChatView");
+	settings.beginGroup("Messages");
+	show_ignored_messages = settings.value("show_ignored_messages", false).value<bool>();
+	show_message_timestamps = settings.value("show_message_timestamps", true).value<bool>();
+	settings.endGroup();
+	settings.endGroup();
 }
 
 void LirchQtInterface::saveSettings()
 {
-    // Make sure to document any changes in the settings schema (change above and on wiki)
-    settings.beginGroup("UserData");
-    settings.setValue("nick", default_nick);
-    settings.endGroup();
-    settings.beginGroup("QtMainWindow");
-    settings.setValue("size", size());
-    settings.setValue("position", pos());
-    settings.setValue("splitter", ui->chatLayout->saveState());
-    settings.setValue("show_msgSendButton", ui->actionViewSendButton->isChecked());
-    settings.setValue("show_chatUserList", ui->actionViewUserList->isChecked());
-    settings.setValue("first_time", false);
-    settings.endGroup();
-    settings.beginGroup("ChatView");
-    settings.beginGroup("Messages");
-    settings.setValue("show_ignored_messages", show_ignored_messages);
-    settings.setValue("show_message_timestamps", show_message_timestamps);
-    settings.endGroup();
-    settings.endGroup();
+	// Make sure to document any changes in the settings schema (change above and on wiki)
+	settings.beginGroup("UserData");
+	settings.setValue("nick", default_nick);
+	settings.endGroup();
+	settings.beginGroup("QtMainWindow");
+	settings.setValue("size", size());
+	settings.setValue("position", pos());
+	settings.setValue("splitter", ui->chatLayout->saveState());
+	settings.setValue("show_msgSendButton", ui->actionViewSendButton->isChecked());
+	settings.setValue("show_chatUserList", ui->actionViewUserList->isChecked());
+	settings.setValue("first_time", false);
+	settings.endGroup();
+	settings.beginGroup("ChatView");
+	settings.beginGroup("Messages");
+	settings.setValue("show_ignored_messages", show_ignored_messages);
+	settings.setValue("show_message_timestamps", show_message_timestamps);
+	settings.endGroup();
+	settings.endGroup();
 }
 
 // EVENT RELATED
@@ -330,10 +330,14 @@ void LirchQtInterface::on_actionWizard_triggered()
 {
 	LirchSetupWizard setup_wizard;
 	if (setup_wizard.exec()) {
+		// Configure the nick
 		QString nick = setup_wizard.get_nick();
-		if (setup_wizard.nick_is_default()) {
+		bool permanent = setup_wizard.nick_is_default();
+		if (permanent) {
 			default_nick = nick;
 		}
+		request_nick_change(nick, permanent);
+		// Also configure the logger
 		logging_message::logging_options options;
 		options |= logging_message::logging_option::SET_DIRECTORY;
 		options |= logging_message::logging_option::SET_MODE;
@@ -454,7 +458,8 @@ void LirchQtInterface::die(QString msg, bool silent_but_deadly)
 }
 
 // Occurs when display messages are received
-void LirchQtInterface::display(QString channel_name, QString nick, QString text) {
+void LirchQtInterface::display(QString channel_name, QString nick, QString text)
+{
 	bool ignore_message = (ignored_users.find(nick) != ignored_users.end());
 	// Find the tab's QTextBrowser's document (model) we desire
 	auto itr = channels.find(channel_name);
@@ -469,7 +474,8 @@ void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 }
 
 // Occurs when userlist messages are received
-void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
+void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data)
+{
 	// For every channel
 	for (auto datum = data.begin(); datum != data.end(); ++datum) {
 		// Find the model if it exists
@@ -500,7 +506,8 @@ void LirchQtInterface::nick(QString new_nick, bool permanent)
 	}
 }
 
-void LirchQtInterface::request_new_channel(QString name, bool) {
+void LirchQtInterface::request_new_channel(QString name, bool)
+{
 	// FIXME field is not validated
 	LirchChannel *channel = new LirchChannel(name, ui);
 	channels.insert(name, channel);
@@ -518,7 +525,8 @@ void LirchQtInterface::request_edict_send(QString text, bool current)
 	}
 }
 
-void LirchQtInterface::request_nick_change(QString new_nick, bool permanent) {
+void LirchQtInterface::request_nick_change(QString new_nick, bool permanent)
+{
 	// The core will pass this request to the userlist
 	client_pipe->send(nick_message::create(new_nick, permanent));
 }

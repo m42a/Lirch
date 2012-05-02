@@ -18,6 +18,7 @@ class LirchSetupWizard : public QWizard {
 public:
     LirchSetupWizard(QWidget *parent = 0);
     ~LirchSetupWizard();
+
     // Field Accessors
     QString get_nick() const;
     bool nick_is_default() const;

@@ -41,7 +41,7 @@ void LirchQLineEditDialog::changeEvent(QEvent *e)
 	}
 }
 
-void LirchQLineEditDialog::accept()
+void LirchQLineEditDialog::on_buttonBox_accepted()
 {
 	emit submitted(ui->lineEdit->text().trimmed(), ui->checkBox->checkState());
 }

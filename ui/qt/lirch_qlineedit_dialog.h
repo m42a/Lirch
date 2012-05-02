@@ -28,7 +28,7 @@ signals:
 	void submitted(QString, bool);
 
 private slots:
-	void accept();
+	void on_buttonBox_accepted();
 };
 
 #endif // LIRCH_QLINEEDIT_DIALOG_H
