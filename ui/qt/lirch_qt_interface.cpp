@@ -186,17 +186,69 @@ void LirchQtInterface::on_actionNewTransfer_triggered()
 
 void LirchQtInterface::on_actionSaveLog_triggered()
 {
-	alert_user(tr("The %1 feature is forthcoming.").arg("New > Save Log"));
-	//QString filename = QFileDialog::getSaveFileName(this, tr("Save Log File"), "./", tr("Logs (*.log)"));
+	QString filename = QFileDialog::getSaveFileName(this, tr("Save Log File"), "./", tr("Logs (*.log)"));
+	if (!filename.isEmpty()) {
+		// Begin the save process, get all necessary data
+		QFile *file = new QFile(filename);
+		auto tab_widget = ui->chatTabWidget;
+		auto itr = channels.find(tab_widget->tabText(tab_widget->currentIndex()));
+		if (itr != channels.end() && file->open(QIODevice::WriteOnly | QIODevice::Text)) {
+			auto channel = itr.value();
+			// Give the user some feedback with a widget
+			QWidget *feedback = new QWidget(this, Qt::Dialog);
+			feedback->setWindowModality(Qt::ApplicationModal);
+			QProgressBar *progress_bar = new QProgressBar(feedback);
+			QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
+			layout->addWidget(progress_bar);
+			feedback->setLayout(layout);
+			// While we save the file in a thread
+			QThread *saving_thread = new QThread(this);
+			channel->prepare_persist(file);
+			channel->moveToThread(saving_thread);
+			// Begin, feeding back progress 
+			connect(channel, SIGNAL(progress(int)), progress_bar, SLOT(setValue(int)));
+			connect(saving_thread, SIGNAL(started()), channel, SLOT(persist()));
+			connect(saving_thread, SIGNAL(started()), feedback, SLOT(show()));
+			connect(channel, SIGNAL(persisted()), saving_thread, SLOT(quit()));
+			connect(saving_thread, SIGNAL(finished()), feedback, SLOT(close()));
+			connect(saving_thread, SIGNAL(finished()), file, SLOT(deleteLater()));
+			connect(saving_thread, SIGNAL(finished()), saving_thread, SLOT(deleteLater()));
+			saving_thread->start();
+		} else {
+			QMessageBox::information(this, tr("Error"), tr("Cannot save file: '%1'").arg(filename));
+			delete file;
+		}
+	}
 }
 
 void LirchQtInterface::on_actionOpenLog_triggered()
 {
-	alert_user(tr("The %1 feature is forthcoming.").arg("New > Open Log"));
-	//QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
+	QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
+	if (!filename.isEmpty()) {
+		QFile file(filename);
+		if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			// Pop up a simple viewer
+			QWidget *viewer = new QWidget(this, Qt::Dialog);
+			viewer->setWindowTitle(tr("Log Viewer"));
+			QTextEdit *notepad = new QTextEdit(viewer);
+			// Pull UTF-8 from the file
+			QTextStream reader(&file);
+			reader.setCodec("UTF-8");
+			while (!reader.atEnd()) {
+				notepad->append(reader.readLine());
+			}
+			// Stick it all in a box
+			QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
+			layout->addWidget(notepad);
+			viewer->setLayout(layout);
+			viewer->show();
+		} else {
+			QMessageBox::information(this, tr("Error"), tr("Cannot read file: '%1'").arg(filename));
+		}
+	}
 }
 
-// EDIT MENU (TODO these UIs need work)
+// EDIT MENU
 
 void LirchQtInterface::on_actionEditNick_triggered()
 {
@@ -235,20 +287,20 @@ void LirchQtInterface::on_actionEditListening_triggered()
 
 void LirchQtInterface::on_actionViewUserList_toggled(bool checked)
 {
-    if (checked) {
-        ui->chatUserList->show();
-    } else {
-        ui->chatUserList->hide();
-    }
+	if (checked) {
+		ui->chatUserList->show();
+	} else {
+		ui->chatUserList->hide();
+	}
 }
 
 void LirchQtInterface::on_actionViewSendButton_toggled(bool checked)
 {
-    if (checked) {
-        ui->msgSendButton->show();
-    } else {
-        ui->msgSendButton->hide();
-    }
+	if (checked) {
+		ui->msgSendButton->show();
+	} else {
+		ui->msgSendButton->hide();
+	}
 }
 
 void LirchQtInterface::on_actionViewTimestamps_toggled(bool checked)

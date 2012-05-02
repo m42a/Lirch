@@ -15,6 +15,7 @@
 #include <QShowEvent>
 #include <QString>
 #include <QSystemTrayIcon>
+#include <QThread>
 #include <QTime>
 #include <QTimer>
 #include <QUrl>

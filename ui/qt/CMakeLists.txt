@@ -36,13 +36,11 @@ set(lirch_qt_interface_HEADERS
   lirch_channel.h
   lirch_qt_interface.h
   lirch_qlineedit_dialog.h
-  lirch_qtabwidget.h
   lirch_setup_wizard.h)
 set(lirch_qt_interface_SOURCES
   lirch_channel.cpp
   lirch_qt_interface.cpp
   lirch_qlineedit_dialog.cpp
-  lirch_qtabwidget.cpp
   lirch_setup_wizard.cpp)
 # These need to have some strings replaced
 configure_file(lirch_qt_interface.ui "${LIRCH_QT_DIR}/lirch_qt_interface.ui")

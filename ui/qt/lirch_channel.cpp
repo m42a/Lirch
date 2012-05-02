@@ -5,13 +5,13 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	name(channel_name),
 	tab(new QWidget),
 	tabs(ui->chatTabWidget),
-	list(ui->chatUserList)
+	list(ui->chatUserList),
+	stream(nullptr)
 {
 	// TODO Check to see if tab is duplicated
 	int index = tabs->currentIndex();
 	tabs->insertTab(index, tab, name);
 	users = new QStandardItemModel(0, 1, tab);
-	// TODO add QMenuItem with show action
 	action = ui->menuViewTab->addAction(name, this, SLOT(grab_focus()));
 	// Create a view and set its model
 	QTextBrowser *browser = new QTextBrowser(tab);
@@ -28,6 +28,12 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	tab->setLayout(layout);
 	// Select the new window
 	action->trigger();
+}
+
+LirchChannel::~LirchChannel() {
+	if (stream) {
+		delete stream;
+	}
 }
 
 void LirchChannel::show_message(const DisplayMessage &message, bool show_timestamp) {
@@ -56,13 +62,33 @@ void LirchChannel::add_message(const QString& text, bool show_timestamp, bool ig
 	}
 }
 
+void LirchChannel::prepare_persist(QFile * file) {
+	if (stream) {
+		delete stream;
+	}
+	stream = new QTextStream(file);
+	stream->setCodec("UTF-8");
+}
+
+void LirchChannel::persist() const {
+	if (stream) {
+		int num_blocks = document->blockCount();
+		QTextBlock block = document->begin();
+		for (int i = 0; i < num_blocks; ++i) {
+			endl(*stream << block.text());
+			emit progress(i * 100 / num_blocks);
+			block = block.next();
+		}
+		emit progress(100);
+		emit persisted();
+	}
+}
+
 void LirchChannel::grab_focus() const {
 	int index = tabs->indexOf(tab);
 	if (index != -1) {
 		tabs->setCurrentIndex(index);
 		list->setModel(users);
-	} else {
-		// TODO debug message
 	}
 }
 

@@ -3,6 +3,7 @@
 
 #include <QAction>
 #include <QColor>
+#include <QFile>
 #include <QListView>
 #include <QObject>
 #include <QPalette>
@@ -17,6 +18,7 @@
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextFormat>
+#include <QTextStream>
 #include <QTime>
 #include <QWidget>
 
@@ -42,6 +44,8 @@ class LirchChannel : public QObject {
 	// These are misc properties
 	QAction *action;
 	QTextCursor *cursor;
+	QTextStream *stream;
+
 	// Helper struct and function
 	struct DisplayMessage {
 		QString timestamp, text;
@@ -52,14 +56,25 @@ class LirchChannel : public QObject {
 	void show_message(const DisplayMessage &, bool);
 public:
 	explicit LirchChannel(const QString &, Ui::LirchQtInterface *);
+	virtual ~LirchChannel();
+
 	// Manipulate the data models
 	void update_users(const QSet<QString> &);
 	void add_message(const QString &, bool = false, bool = false);
+	void prepare_persist(QFile *);
+
 public slots:
 	// Called by the action above
 	void grab_focus() const;
 	// Called by the UI's reload signal
 	void reload_messages(bool = false, bool = false);
+	// Called by external processes
+	void persist() const;
+
+signals:
+	// Used for feedback on persits
+	void progress(int) const;
+	void persisted() const;
 };
 
 #endif // LIRCH_CHANNEL_H
