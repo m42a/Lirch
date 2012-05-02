@@ -50,7 +50,7 @@ signals:
     void run(LirchClientPipe *);
     void shutdown(QString);
     // For alerting the UI of an inbound message
-    void display_received(QString, QString);
+    void display_received(QString, QString, QString);
     void userlist_updated(QMap<QString, QSet<QString>>);
     void nick_changed(QString, bool);
 };

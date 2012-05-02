@@ -18,6 +18,75 @@
 #include "ui/qt/lirch_qtabwidget.h"
 #include "ui/qt/lirch_setup_wizard.h"
 
+class Ui::Channel {
+	// A channel has a name and an associated tab
+	QString name;
+	QWidget *tab;
+	// These reference the UI
+	QTabWidget *tabs;
+	QListView *list;
+	// These reference data models
+	QTextDocument *messages;
+	QTextCursor *cursor;
+	QTextFrameFormat frame_format;
+	QStandardItemModel *users;
+public:
+	Channel(const QString &channel_name, Ui::LirchQtInterface *ui) :
+		name(channel_name),
+		tabs(ui->chatTabWidget),
+		list(ui->chatUserList)
+	{
+		// TODO Check to see if tab is duplicated
+		tab = new QWidget(tabs);
+		tab->setWindowTitle("#" + name);
+		int index = tabs->currentIndex();
+		tabs->insertTab(index, tab, name);
+		// TODO add QMenuItem with show action
+		users = new QStandardItemModel(0, 1, tab);
+		// Create a view and set its model
+		QTextBrowser *browser = new QTextBrowser(tab);
+		messages = new QTextDocument(browser);
+		cursor = new QTextCursor(messages);
+		browser->setDocument(messages);
+		// Set up the layout with this view
+		QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
+		layout->addWidget(browser);
+		tab->setLayout(layout);
+	}
+	void update_users(const QSet<QString> &new_users) {
+		users->clear();
+		for (auto &new_user : new_users) {
+			users->appendRow(new QStandardItem(new_user));
+		}
+	}
+	// TODO make message reception do something to the tabs
+	void add_message(const QString& message, bool show_timestamp = false, bool ignore_message = false) {
+		qDebug() << message + " (stamp:" + show_timestamp + ",ignore:" + ignore_message + ")";
+		// TODO package data into frames FIXME subclass QTextFrame to track hidden fields
+		if (!ignore_message) {
+			QTextFrame *message_frame = cursor->insertFrame(frame_format);
+			QString timestamp = "[ " + QTime::currentTime().toString() + "] ";
+			if (show_timestamp) {
+				message_frame->firstCursorPosition().insertText(timestamp + message);
+			} else {
+				message_frame->firstCursorPosition().insertText(message);
+			}
+		}
+	}
+	void grab_focus() const {
+		int index = tabs->indexOf(tab);
+		if (index != -1) {
+			tabs->setCurrentIndex(index);
+			list->setModel(users);
+		} else {
+			// TODO debug message
+		}
+	}
+	void reload_messages(bool show_ignored = false, bool show_timestamps = false) {
+		// TODO once hidden fields are stored, we can turn them off and on	
+	}
+};
+
 // QT UI
 
 LirchQtInterface::LirchQtInterface(QWidget *parent) :
@@ -34,14 +103,10 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
     // client_pipe facilitates communication with the core
     client_pipe = nullptr;
 
-    // TODO figure out the tab model
-    QTextDocument *default_chat_document = new QTextDocument(this);
-    chat_documents[LIRCH_DEFAULT_CHANNEL] = default_chat_document;
-    ui->chatViewArea->setDocument(default_chat_document);
-    // Set up models and attach them to views
-    QStandardItemModel *default_userlist_model = new QStandardItemModel(0, 1, this);
-    userlist_models[LIRCH_DEFAULT_CHANNEL] = default_userlist_model;
-    ui->chatUserList->setModel(default_userlist_model);
+    // Add in the default channel where it is meant to go
+    QString default_channel_name = tr(LIRCH_DEFAULT_CHANNEL);
+    Ui::Channel default_channel(default_channel_name, ui);
+    channels.insert(default_channel_name, default_channel);
 
     // Setup system tray TODO settings and QIcon for this?
     system_tray_icon = nullptr;
@@ -121,7 +186,6 @@ void LirchQtInterface::changeEvent(QEvent *e)
     }
 }
 
-
 bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 {
     if (object == ui->msgTextBox) {
@@ -138,48 +202,44 @@ bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 
 void LirchQtInterface::on_msgSendButton_clicked()
 {
-    // Get the text to send
-    QString text = ui->msgTextBox->text();
-    // Ignore empty case
-    if (text.isEmpty()) {
-        return;
-    }
-
-    // The core will pass this raw edict to the meatgrinder
-    client_pipe->send(raw_edict_message::create(text, LIRCH_DEFAULT_CHANNEL));
-
-    // TODO here is the failure condition, when does this happen?
-    // QMessageBox::warning(this,
-    //                     tr("Unimplemented Feature"),
-    //                     tr("'%1' could not be sent.").arg(text),
-    //                     QMessageBox::Ok);
-
-    // Don't forget to clear the text from the box
-    ui->msgTextBox->clear();
+	// Get the text to send
+	QString text = ui->msgTextBox->text();
+	// Ignore empty case
+	if (text.isEmpty()) {
+		return;
+	}
+	// TODO modify to have connected state
+	request_edict_send(text, true);
+	// TODO here is the failure condition, when does this happen?
+	// QMessageBox::warning(this,
+	//                     tr("Unimplemented Feature"),
+	//                     tr("'%1' could not be sent.").arg(text),
+	//                     QMessageBox::Ok);
+	// Don't forget to clear the text from the box
+	ui->msgTextBox->clear();
 }
 
 // FILE MENU
 
 void LirchQtInterface::on_actionConnect_triggered(bool checked)
 {
-    // TODO actual delegation to core (core forwards to antenna)
-    QString timestamp = QTime::currentTime().toString();
-    if (checked) {
-        ui->chatViewArea->append("At [" + timestamp + "]: /join'd #default");
-    } else {
-        ui->chatViewArea->append("At [" + timestamp + "]: /part'd #default");
-    }
+	// TODO actual delegation to core (core forwards to antenna)
+	if (checked) {
+		// FIXME send leave message
+	} else {
+		// FIXME send join message
+	}
 }
 
 // new-related
 
 void LirchQtInterface::on_actionNewChannel_triggered()
 {
-	LirchQLineEditDialog channel_dialog;
-	connect(
-		&channel_dialog, SIGNAL(submit(QString, bool)),
-		this, SLOT(request_new_channel(QString, bool)));
-	channel_dialog.exec();
+	// FIXME get channel name interactively, send /join
+	QString name = QTime::currentTime().toString();
+	Ui::Channel channel(name, ui);
+	channels.insert(name, channel);
+	channel.grab_focus();
 }
 
 void LirchQtInterface::on_actionNewTransfer_triggered()
@@ -191,10 +251,7 @@ void LirchQtInterface::on_actionNewTransfer_triggered()
 
 void LirchQtInterface::on_actionSaveLog_triggered()
 {
-	QString filename = QFileDialog::getOpenFileName(this, tr("Open Log File"), "./", tr("Logs (*.log)"));
-	QMessageBox::information(this,
-		tr("Confirmation"),
-		tr("Log saved: %1").arg(filename));
+	QString filename = QFileDialog::getSaveFileName(this, tr("Save Log File"), "./", tr("Logs (*.log)"));
 }
 
 void LirchQtInterface::on_actionOpenLog_triggered()
@@ -242,24 +299,37 @@ void LirchQtInterface::on_actionViewSendButton_toggled(bool checked)
     }
 }
 
+// TODO make these use a helper function
+
 void LirchQtInterface::on_actionViewTimestamps_toggled(bool checked)
 {
-    show_message_timestamps = checked;
+	show_message_timestamps = checked;
+	auto itr = channels.find(ui->chatTabWidget->tabText(ui->chatTabWidget->currentIndex()));
+	if (itr != channels.end()) {
+		auto &channel = itr.value();
+		channel.reload_messages(show_message_timestamps, show_ignored_messages);
+	}
 }
 
 void LirchQtInterface::on_actionViewIgnored_toggled(bool checked)
 {
-    show_ignored_messages = checked;
+	show_ignored_messages = checked;
+	auto itr = channels.find(ui->chatTabWidget->tabText(ui->chatTabWidget->currentIndex()));
+	if (itr != channels.end()) {
+		auto &channel = itr.value();
+		channel.reload_messages(show_message_timestamps, show_ignored_messages);
+	}
 }
 
 // tab-related
 
 void LirchQtInterface::on_actionViewDefault_triggered()
 {
-    int index = ui->chatTabWidget->indexOf(ui->defaultChannelTab);
-    if (index != -1) {
-        ui->chatTabWidget->setCurrentIndex(index);
-    }
+	auto itr = channels.find(tr(LIRCH_DEFAULT_CHANNEL));
+	if (itr != channels.end()) {
+		auto &channel = itr.value();
+		channel.grab_focus();
+	}
 }
 
 void LirchQtInterface::on_actionViewTransfers_triggered()
@@ -319,7 +389,6 @@ void LirchQtInterface::on_actionAbout_triggered()
 
 // INTERNAL SLOTS (re-implemented protected functions)
 
-// TODO does this happen on any show? if so, don't connect
 void LirchQtInterface::showEvent(QShowEvent *e)
 {
 	// TODO first-time QWizard to determine if these happen:
@@ -337,6 +406,7 @@ void LirchQtInterface::closeEvent(QCloseEvent *e)
 {
 	// Any close request is accepted when the core is shutdown
 	if (client_pipe == nullptr || !client_pipe->ready()) {
+		// FIXME race condition on /q and /quit
 		e->accept();
 	}
 	// Confirm the close (potentially ignore)
@@ -391,23 +461,18 @@ void LirchQtInterface::die(QString msg, bool silent_but_deadly)
 }
 
 // Occurs when display messages are received
-void LirchQtInterface::display(QString channel, QString contents) {
-    // TODO get this using the QDocument model
-    QString timestamp = "[" + QTime::currentTime().toString() + "] ";
-    if (channel.isEmpty()) {
-        ui->chatViewArea->append("At " + timestamp + "/recv'd mangled message");
-        return;
-    }
-    if (channel != tr(LIRCH_DEFAULT_CHANNEL)) {
-        ui->chatViewArea->append("At " + timestamp + "/recv'd message on channel: " + channel);
-    }
-
-    // Show the message in the view
-    if (show_message_timestamps) {
-        ui->chatViewArea->append(timestamp + contents);
-    } else {
-        ui->chatViewArea->append(contents);
-    }
+void LirchQtInterface::display(QString nick, QString channel_name, QString text) {
+	bool ignore_message = (ignored_users.find(nick) == ignored_users.end());
+	// Find the tab's QTextBrowser's document (model) we desire
+	auto itr = channels.find(channel_name);
+	if (itr == channels.end()) {
+		return;
+	}
+	auto &channel = itr.value();
+	// This regex wraps links sent in display messages TODO fix
+	text.replace(QRegExp("\\b(http://.*)\\b"), "<a href=\"\\1\">\\1</a>");
+	// Show the message in the view
+	channel.add_message(text, show_message_timestamps, ignore_message);
 }
 
 // Occurs when userlist messages are received
@@ -415,15 +480,10 @@ void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
 	// For every channel
 	for (auto datum = data.begin(); datum != data.end(); ++datum) {
 		// Find the model if it exists
-		auto model = userlist_models.find(datum.key());
-		if (model != userlist_models.end()) {
-			// Forget this
-			(*model)->clear();
+		auto channel = channels.find(datum.key());
+		if (channel != channels.end()) {
 			// Copy all the items over
-			for (auto &item : datum.value()) {
-				(*model)->appendRow(new QStandardItem(item));
-			}
-			// Fire models updated
+			channel->update_users(datum.value());
 		}
     	}
 }
@@ -431,32 +491,38 @@ void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data) {
 // Occurs when changed_nick messages are received
 void LirchQtInterface::nick(QString new_nick, bool permanent)
 {
-    if (permanent)
-    {
-       default_nick = new_nick;
-    }
+	if (permanent)
+	{
+		default_nick = new_nick;
+	}
 }
 
 // MESSAGE EMITTERS
 
+void LirchQtInterface::request_edict_send(QString text, bool current)
+{
+	if (current) {
+		QString channel_name = ui->chatTabWidget->tabText(ui->chatTabWidget->currentIndex());
+		// The core will pass this raw edict to the meatgrinder
+		client_pipe->send(raw_edict_message::create(text, channel_name));
+	}
+}
+
 void LirchQtInterface::request_nick_change(QString new_nick, bool permanent) {
-    client_pipe->send(nick_message::create(new_nick, permanent));
+	// The core will pass this request to the userlist
+	client_pipe->send(nick_message::create(new_nick, permanent));
 }
 
 void LirchQtInterface::request_block_ignore(QString name, bool block)
 {
-    block_message_subtype request_type = block_message_subtype::ADD;
-    if (block) {
-       // TODO cleanly convert the input into an IP address
-       // FIXME should be able to lookup from last userlist
-       client_pipe->send(block_message::create(request_type, QHostAddress(name)));
-    } else {
-       // TODO add nick to ignored, emit signal?
-       //QSet<QString> ignored_users;
-       //ignored_users.insert(name);
-    }
+	block_message_subtype request_type = block_message_subtype::ADD;
+	if (block) {
+		// TODO cleanly convert the input into an IP address
+		// FIXME should be able to lookup from last userlist
+		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
+	} else {
+		// TODO emit signal to redraw?
+		ignored_users.insert(name);
+	}
 }
 
-void LirchQtInterface::request_new_channel(QString name, bool) {
-    ui->chatTabWidget->addTab(new LirchQLineEditDialog(), name);
-}

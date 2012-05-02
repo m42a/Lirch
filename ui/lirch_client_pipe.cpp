@@ -65,7 +65,10 @@ void LirchClientPipe::display(display_message m) {
         default:
             text = tr("?%1 %2").arg(m.nick, m.contents);
     }
-    emit display_received(m.channel, text);
+    #ifndef NDEBUG
+    qDebug() << tr("Mediator forwarded display message (%1, %2, %3)").arg(m.channel, m.nick, m.contents);
+    #endif
+    emit display_received(m.channel, m.nick, text);
 }
 
 // The client pipe signals the UI when it the plugin is run

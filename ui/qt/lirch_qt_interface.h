@@ -1,11 +1,13 @@
 #ifndef LIRCH_QT_INTERFACE_H
 #define LIRCH_QT_INTERFACE_H
 
+#include <QBoxLayout>
 #include <QCloseEvent>
 #include <QDate>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QList>
+#include <QListView>
 #include <QMainWindow>
 #include <QMap>
 #include <QMessageBox>
@@ -15,7 +17,10 @@
 #include <QStandardItemModel>
 #include <QString>
 #include <QSystemTrayIcon>
+#include <QTextBrowser>
 #include <QTextDocument>
+#include <QTextFrame>
+#include <QTextFrameFormat>
 #include <QTime>
 #include <QTimer>
 #include <QUrl>
@@ -30,6 +35,7 @@
 
 namespace Ui {
     class LirchQtInterface;
+    class Channel;
 }
 
 class LirchQtInterface : public QMainWindow {
@@ -50,9 +56,10 @@ private:
     // Internals
     Ui::LirchQtInterface *ui;
     LirchClientPipe *client_pipe;
-    QMap<QString, QTextDocument *> chat_documents;
-    QMap<QString, QStandardItemModel *> userlist_models;
     QSystemTrayIcon *system_tray_icon;
+    // Model data (Channels package appropriate data)
+    QMap<QString, Ui::Channel> channels;
+    QSet<QString> ignored_users;
     // Application settings
     QSettings settings;
     QString default_nick;
@@ -83,7 +90,7 @@ private:
 
 public slots:
     void die(QString = "unknown error", bool = true);
-    void display(QString, QString);
+    void display(QString, QString, QString);
     void userlist(QMap<QString, QSet<QString>>);
     void nick(QString, bool);
     void use(LirchClientPipe *);
@@ -121,7 +128,7 @@ private slots:
     void alert_user(QString);
     void request_nick_change(QString, bool);
     void request_block_ignore(QString, bool);
-    void request_new_channel(QString, bool);
+    void request_edict_send(QString, bool);
 };
 
 #endif // LIRCH_QT_INTERFACE_H

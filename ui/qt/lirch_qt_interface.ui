@@ -44,16 +44,6 @@
          <property name="movable">
           <bool>true</bool>
          </property>
-         <widget class="QWidget" name="defaultChannelTab">
-          <attribute name="title">
-           <string>Chat View</string>
-          </attribute>
-          <layout class="QVBoxLayout" name="defaultChannelLayout">
-           <item>
-            <widget class="QTextBrowser" name="chatViewArea"/>
-           </item>
-          </layout>
-         </widget>
          <widget class="QWidget" name="fileTransfersTab">
           <attribute name="title">
            <string>File Transfers</string>
