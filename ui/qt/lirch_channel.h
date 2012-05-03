@@ -31,29 +31,35 @@ class LirchChannel : public QObject {
 	// Representation:
 	QString name;
 	QWidget *tab;
-	struct DisplayMessage;
+	QAction *action;
+	struct DisplayMessage {
+		QString timestamp, text;
+		bool ignored;
+		// For convenience
+		DisplayMessage(
+			const QString &what = QString(),
+			const QString &when = QTime::currentTime().toString(),
+			bool hidden = false) :
+			timestamp(when), text(what), ignored(hidden) { }
+	};
 	QList<DisplayMessage> messages;
 
 	// These reference the UI
 	QTabWidget *tabs;
 	QListView *list;
+	QMenu *menu;
+
 	// These reference data models
+	QTextBrowser *browser;
 	QTextDocument *document;
 	QStandardItemModel *users;
 
 	// These are misc properties
-	QAction *action;
 	QTextCursor *cursor;
 	QTextStream *stream;
 
-	// Helper struct and function
-	struct DisplayMessage {
-		QString timestamp, text;
-		bool ignored;
-		DisplayMessage(const QString &what = QString(), const QString &when = QTime::currentTime().toString(), bool hidden = false) :
-			timestamp(when), text(what), ignored(hidden) { }
-	};
-	void show_message(const DisplayMessage &, bool);
+	// Helper function to print a (stamped?) TextBlock at the cursor
+	void show_message(const DisplayMessage &, bool = false);
 public:
 	explicit LirchChannel(const QString &, Ui::LirchQtInterface *);
 	virtual ~LirchChannel();
@@ -65,7 +71,8 @@ public:
 
 public slots:
 	// Called by the action above
-	void grab_focus() const;
+	void grab_tab_focus() const;
+	void grab_user_list() const;
 	// Called by the UI's reload signal
 	void reload_messages(bool = false, bool = false);
 	// Called by external processes

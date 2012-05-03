@@ -1,8 +1,7 @@
 // TODO left:
-// 1) Tabs need to produce grab_focus on click
 // 2) We need to be able to click on links
-// 3) Make /channel and /leave work
 // 4) Make /q and /quit should exit without prompt
+// 6) New ignores fire a redraw
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -20,6 +19,7 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
 	ui->setupUi(this);
 	// Add a variety of UI enhancements (select on focus and quit action)
 	ui->msgTextBox->installEventFilter(this);
+	connect(ui->chatTabWidget, SIGNAL(currentChanged(int)), this, SLOT(tab_changed(int)));
 
 	files = new QFileSystemModel(this);
 	// client_pipe facilitates communication with the core
@@ -27,8 +27,8 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
 
 	// Change some colors
 	QPalette palette;
-	QColor light_red(0xFF, 0xCC, 0xCC);
-	palette.setColor(QPalette::Base, light_red);
+	QColor light_yellow(0xFF, 0xFF, 0x99);
+	palette.setColor(QPalette::Base, light_yellow);
 	ui->msgTextBox->setPalette(palette);
 	QColor light_blue(0xCC, 0xCC, 0xFF);
 	palette.setColor(QPalette::Base, light_blue);
@@ -43,11 +43,19 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
 	system_tray_icon = nullptr;
 	if (QSystemTrayIcon::isSystemTrayAvailable()) {
 		system_tray_icon = new QSystemTrayIcon(this);
+		// System Tray Menu
 		QMenu *tray_icon_menu = new QMenu(this);
+		QString label = tr("Minimize To Tray");
+		QKeySequence sequence(Qt::CTRL + Qt::Key_M);
+		QAction *show_hide = tray_icon_menu->addAction(label, this, SLOT(setVisible(bool)), sequence);
+		// TODO work on getting menu functional
+		show_hide->setCheckable(true);
+		//show_hide->setChecked(true);
 		tray_icon_menu->addAction(ui->actionQuit);
-		system_tray_icon->setIcon(this->windowIcon());
 		system_tray_icon->setContextMenu(tray_icon_menu);
-		system_tray_icon->setToolTip(tr("Lirch %1").arg(LIRCH_VERSION_STRING));
+		// Assorted options
+		system_tray_icon->setIcon(this->windowIcon());
+		system_tray_icon->setToolTip(tr("%1 %2").arg(LIRCH_PRODUCT_NAME, LIRCH_VERSION_STRING));
 		//system_tray_icon->show();
 	}
 
@@ -59,6 +67,10 @@ LirchQtInterface::~LirchQtInterface()
 {
 	// Save settings on destruction
 	saveSettings();
+	// Remove all the tabs
+	for (auto &channel : channels) {
+		delete channel;
+	}
 	// Cleanup the UI
 	delete ui;
 }
@@ -110,11 +122,11 @@ void LirchQtInterface::changeEvent(QEvent *e)
 {
 	QMainWindow::changeEvent(e);
 	switch (e->type()) {
-		case QEvent::LanguageChange:
-			ui->retranslateUi(this);
-			break;
-		default:
-			break;
+	case QEvent::LanguageChange:
+		ui->retranslateUi(this);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -126,8 +138,6 @@ bool LirchQtInterface::eventFilter(QObject *object, QEvent *event)
 		if (event->type() == QEvent::FocusIn) {
 			QTimer::singleShot(0, object, SLOT(selectAll()));
 		}
-	} else if (object == ui->chatTabWidget) {
-		// FIXME intercept tab changes
 	} else {
 		// FIXME intercept link clicks
 	}
@@ -143,7 +153,7 @@ void LirchQtInterface::on_msgSendButton_clicked()
 		return;
 	}
 	// FIXME modify to have connected state
-	request_edict_send(text, true);
+	request_edict_send(text, ui->actionConnect->isChecked());
 	// Don't forget to clear the text from the box
 	ui->msgTextBox->clear();
 }
@@ -160,6 +170,7 @@ void LirchQtInterface::on_actionConnect_triggered(bool checked)
 	} else {
 		for (auto itr = channels.begin(); itr != end; ++itr) {
 			client_pipe->send(leave_channel_message::create(itr.key()));
+			// TODO better message
 			itr.value()->add_message(tr("Disconnected"), true, false);
 		}
 	}
@@ -271,19 +282,17 @@ void LirchQtInterface::on_actionEditIgnored_triggered()
 	ignore_dialog.exec();
 }
 
-void LirchQtInterface::on_actionEditListening_triggered()
+void LirchQtInterface::on_actionEditShown_triggered()
 {
 	LirchQLineEditDialog unignore_dialog;
 	unignore_dialog.setWindowTitle("Remove Ignore/Block");
-	unignore_dialog.setLabelText(tr("Block"));
+	unignore_dialog.setLabelText(tr("Unblock"));
 	connect(&unignore_dialog, SIGNAL(submitted(QString, bool)),
 		this, SLOT(request_unblock_unignore(QString, bool)));
 	unignore_dialog.exec();
 }
 
 // VIEW MENU
-
-// TODO is there some built-in stuff for things like these?
 
 void LirchQtInterface::on_actionViewUserList_toggled(bool checked)
 {
@@ -324,7 +333,6 @@ void LirchQtInterface::on_actionViewTransfers_triggered()
 	int index = ui->chatTabWidget->indexOf(ui->fileTransfersTab);
 	if (index != -1) {
 		ui->chatTabWidget->setCurrentIndex(index);
-		ui->chatUserList->setModel(files);
 	}
 }
 
@@ -365,7 +373,7 @@ void LirchQtInterface::on_actionAbout_triggered()
 		LIRCH_BUILD_HASH,
 		LIRCH_COPYRIGHT_YEAR,
 		LIRCH_COMPANY_NAME));
-	about_box.setInformativeText("Do you want to report a bug?");
+	about_box.setInformativeText(tr("Do you want to report a bug?"));
 	about_box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 	about_box.setDefaultButton(QMessageBox::No);
 	if (about_box.exec() == QMessageBox::Yes) {
@@ -389,11 +397,6 @@ void LirchQtInterface::showEvent(QShowEvent *e)
 	if (first_time_run) {
 		ui->actionWizard->trigger();
 	}
-	auto itr = channels.find(tr(LIRCH_DEFAULT_CHANNEL));
-	if (itr != channels.end()) {
-		auto &channel = itr.value();
-		channel->grab_focus();
-	}
 	// Fire the connect action
 	ui->actionConnect->setChecked(true);
 	// Get the textbox to focus on any Show
@@ -416,7 +419,7 @@ void LirchQtInterface::closeEvent(QCloseEvent *e)
 		QMessageBox::Yes,
 		QMessageBox::No,
 		QMessageBox::NoButton);
-        if (result == QMessageBox::Yes) {
+	if (result == QMessageBox::Yes) {
 		e->accept();
 	} else {
 		e->ignore();
@@ -436,6 +439,23 @@ void LirchQtInterface::alert_user(QString msg)
 	}
 }
 
+void LirchQtInterface::tab_changed(int index) {
+	if (index != -1) {
+		auto tab_widget = ui->chatTabWidget;
+		QMap<QString, LirchChannel *>::iterator itr, end = channels.end();
+		// Set the userlist's model when we achieve focus
+		if (tab_widget->currentWidget() == ui->fileTransfersTab) {
+			ui->chatUserList->setModel(files);
+		} else if ((itr = channels.find(tab_widget->tabText(index))) != end) {
+			// Or be a little more clever
+			auto channel = itr.value();
+			channel->grab_user_list();
+		} else {
+			// FIXME should never happen
+		}
+	}
+}
+
 // For loading a particular client pipe
 void LirchQtInterface::use(LirchClientPipe *pipe)
 {
@@ -443,8 +463,8 @@ void LirchQtInterface::use(LirchClientPipe *pipe)
 		client_pipe = pipe;
 		this->show();
 	} else {
-		QString fatal_msg = (pipe) ? pipe->name() : tr("(null)");
-		this->die(tr("failure between core and %1").arg(fatal_msg), false);
+		QString plugin_name = (pipe) ? pipe->name() : tr("(null)");
+		this->die(tr("failure between core and %1").arg(plugin_name), false);
 	}
 }
 
@@ -516,24 +536,50 @@ void LirchQtInterface::userlist(QMap<QString, QSet<QString>> data)
 // Occurs when changed_nick messages are received
 void LirchQtInterface::nick(QString new_nick, bool permanent)
 {
+	// Only change the nick when this change is meant to be permanent
 	if (permanent)
 	{
 		default_nick = new_nick;
 	}
 }
 
-void LirchQtInterface::request_new_channel(QString name, bool)
-{
-	// FIXME field is not validated
-	LirchChannel *channel = new LirchChannel(name, ui);
-	channels.insert(name, channel);
+void LirchQtInterface::focus(QString channel) {
+	auto itr = channels.find(channel);
+	if (itr != channels.end()) {
+		// Give the desired tab focus
+		auto channel = itr.value();
+		channel->grab_tab_focus();
+	} else {
+		// Make a new channel, otherwise
+		request_new_channel(channel, ui->actionConnect->isChecked());
+	}
+}
+
+void LirchQtInterface::leave(QString channel) {
+	auto itr = channels.find(channel);
+	if (itr != channels.end()) {
+		LirchChannel *channel = itr.value();
+		channels.erase(itr);
+		// Causes cleanup after removal from the tab widget
+		delete channel;
+	}
 }
 
 // MESSAGE EMITTERS
 
-void LirchQtInterface::request_edict_send(QString text, bool current)
+void LirchQtInterface::request_new_channel(QString name, bool connected)
 {
-	if (current) {
+	if (connected) {
+		// FIXME field is not validated
+		LirchChannel *channel = new LirchChannel(name, ui);
+		channels.insert(name, channel);
+		client_pipe->send(set_channel_message::create(name));
+	}
+}
+
+void LirchQtInterface::request_edict_send(QString text, bool connected)
+{
+	if (connected) {
 		auto tab_widget = ui->chatTabWidget;
 		QString channel_name = tab_widget->tabText(tab_widget->currentIndex());
 		// The core will pass this raw edict to the meatgrinder
@@ -541,10 +587,10 @@ void LirchQtInterface::request_edict_send(QString text, bool current)
 	}
 }
 
-void LirchQtInterface::request_nick_change(QString new_nick, bool permanent)
+void LirchQtInterface::request_nick_change(QString new_nick, bool make_default)
 {
 	// The core will pass this request to the userlist
-	client_pipe->send(nick_message::create(new_nick, permanent));
+	client_pipe->send(nick_message::create(new_nick, make_default));
 }
 
 // FIXME do this more elegantly
@@ -553,6 +599,7 @@ void LirchQtInterface::request_block_ignore(QString name, bool block)
 {
 	block_message_subtype request_type = block_message_subtype::ADD;
 	if (block) {
+		// FIXME field is not validated
 		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
 	} else {
 		ignored_users.insert(name);
@@ -563,6 +610,7 @@ void LirchQtInterface::request_unblock_unignore(QString name, bool block)
 {
 	block_message_subtype request_type = block_message_subtype::REMOVE;
 	if (block) {
+		// FIXME field is not validated
 		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
 	} else {
 		ignored_users.remove(name);

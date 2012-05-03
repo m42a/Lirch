@@ -93,6 +93,8 @@ public slots:
     void userlist(QMap<QString, QSet<QString>>);
     void nick(QString, bool);
     void use(LirchClientPipe *);
+    void focus(QString);
+    void leave(QString);
 
 protected slots:
     void closeEvent(QCloseEvent *);
@@ -109,7 +111,7 @@ private slots:
     // Edit Menu
     void on_actionEditNick_triggered();
     void on_actionEditIgnored_triggered();
-    void on_actionEditListening_triggered();
+    void on_actionEditShown_triggered();
     // View Menu
     void on_actionViewTransfers_triggered();
     void on_actionViewIgnored_toggled(bool);
@@ -125,6 +127,9 @@ private slots:
 
     // MISC SLOTS
     void alert_user(QString);
+    void tab_changed(int);
+
+    // MESSAGE SLOTS
     void request_new_channel(QString, bool);
     void request_nick_change(QString, bool);
     void request_block_ignore(QString, bool);

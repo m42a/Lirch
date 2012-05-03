@@ -6,15 +6,16 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	tab(new QWidget),
 	tabs(ui->chatTabWidget),
 	list(ui->chatUserList),
+	menu(ui->menuViewTab),
+	users(new QStandardItemModel(0, 1, list)),
 	stream(nullptr)
 {
 	// TODO Check to see if tab is duplicated
 	int index = tabs->currentIndex();
 	tabs->insertTab(index, tab, name);
-	users = new QStandardItemModel(0, 1, tab);
-	action = ui->menuViewTab->addAction(name, this, SLOT(grab_focus()));
+	action = menu->addAction(name, this, SLOT(grab_tab_focus()));
 	// Create a view and set its model
-	QTextBrowser *browser = new QTextBrowser(tab);
+	browser = new QTextBrowser(tab);
 	QPalette palette;
         QColor light_green(0xCC, 0xFF, 0xCC);
 	palette.setColor(QPalette::Base, light_green);
@@ -34,6 +35,14 @@ LirchChannel::~LirchChannel() {
 	if (stream) {
 		delete stream;
 	}
+	// Remove the action/tab pair
+	menu->removeAction(action);
+	int index = tabs->indexOf(tab);
+	if (index != -1) {
+		tabs->removeTab(index);
+	}
+	// This triggers deletion of action, browser, document, and cursor
+	delete tab;
 }
 
 void LirchChannel::show_message(const DisplayMessage &message, bool show_timestamp) {
@@ -41,6 +50,8 @@ void LirchChannel::show_message(const DisplayMessage &message, bool show_timesta
 		cursor->insertText("[" + message.timestamp + "] ");
 	}
 	cursor->insertHtml(message.text);
+	browser->ensureCursorVisible();
+	// TODO make this insert between lines
 	cursor->insertBlock(block_format);
 }
 
@@ -80,16 +91,19 @@ void LirchChannel::persist() const {
 			block = block.next();
 		}
 		emit progress(100);
-		emit persisted();
 	}
+	emit persisted();
 }
 
-void LirchChannel::grab_focus() const {
+void LirchChannel::grab_tab_focus() const {
 	int index = tabs->indexOf(tab);
 	if (index != -1) {
 		tabs->setCurrentIndex(index);
-		list->setModel(users);
 	}
+}
+
+void LirchChannel::grab_user_list() const {
+	list->setModel(users);
 }
 
 // TODO make ignore list per-channel (need to edit add_message)
