@@ -152,14 +152,14 @@ message setNick(const unordered_map<QString, user_status> &userList, QString &cu
 	if (userList.count(nick_msg.nick) && nick_msg.nick!=LIRCH_DEFAULT_NICK)
 	{
 		if (firstTime)
-			return notify_message::create("",QObject::tr("Default nick taken.  You will be Spartacus."));
+			return notify_message::create("",QObject::tr("Default nick taken.  You will be spartacus."));
 		return notify_message::create("",QObject::tr("Nick taken.  Keeping old nick."));
 	}
 	// Case when the nick is too long
 	if (nick_msg.nick.toUtf8().size() > 64)
 	{
 		if (firstTime)
-			return notify_message::create("",QObject::tr("Default nick too long.  You will be Spartacus."));
+			return notify_message::create("",QObject::tr("Default nick too long.  You will be spartacus."));
 		return notify_message::create("",QObject::tr("Nick too long.  Keeping old nick."));
 	}
 	// General case
