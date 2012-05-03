@@ -503,8 +503,8 @@ void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 	text.replace(QRegExp("<"), "&lt;");
 	text.replace(QRegExp(">"), "&gt;");
 	text.replace(QRegExp("\\n"), "<br />");
-	// This regex wraps links sent in display messages
-	text.replace(QRegExp("\\b(.*://.*)\\b"), "<a href=\"\\1\">\\1</a>");
+	// This regex wraps links sent in display messages.  The nbsp prevents links from traversing line boundaries (I don't know why that happens, but this fixes it)
+	text.replace(QRegExp("([]A-Za-z0-9._~:/?#@!$&'()*+,;%=[-]+:[]A-Za-z0-9._~:/?#@!$&'()*+,;%=[-]+)", Qt::CaseSensitive, QRegExp::RegExp2), "<a href=\"\\1\">\\1</a>&nbsp;");
 	// Show the message in the view
 	channel->add_message(text, show_message_timestamps, ignore_message);
 }
