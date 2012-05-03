@@ -3,34 +3,36 @@
 
 // GLOBALS && CORE
 
-#define LIRCH_VERSION_STRING "v@LIRCH_VERSION_STRING@"
-#define LIRCH_BUILD_HASH     "@LIRCH_BUILD_HASH@"
+#define LIRCH_VERSION_STRING  "v@LIRCH_VERSION_STRING@"
+#define LIRCH_BUILD_HASH      "@LIRCH_BUILD_HASH@"
 
-#define LIRCH_COMPANY_NAME   "The Addams Family"
-#define LIRCH_PRODUCT_NAME   "lirch"
-#define LIRCH_COPYRIGHT_YEAR "2012"
+#define LIRCH_COMPANY_NAME    "The Addams Family"
+#define LIRCH_PRODUCT_NAME    "lirch"
+#define LIRCH_COPYRIGHT_YEAR  "2012"
 
 // MESSAGES
 
-#define LIRCH_MSG_MIN_PRI        -32766
-#define LIRCH_MSG_MAX_PRI         32766
+#define LIRCH_MSG_MIN_PRI    -32766
+#define LIRCH_MSG_MAX_PRI     32766
 
-#define LIRCH_MSG_PRI_REG_MIN     9000
-#define LIRCH_MSG_PRI_REG_MAX     32766
+#define LIRCH_MSG_PRI_REG_MIN  9000
+#define LIRCH_MSG_PRI_REG_MAX 32766
 
-#define LIRCH_MSG_TYPE_SHUTDOWN     "shutdown"
-#define LIRCH_MSG_TYPE_EDICT        "edict"
-#define LIRCH_MSG_TYPE_RAW_EDICT    "raw_edict"
-#define LIRCH_MSG_TYPE_DISPLAY      "display"
-#define LIRCH_MSG_TYPE_REG_STAT     "registration_status"
-#define LIRCH_MSG_TYPE_LOGGING      "logging"
-#define LIRCH_MSG_TYPE_USERLIST     "userlist"
-#define LIRCH_MSG_TYPE_CHANGED_NICK "changed_nick"
+#define LIRCH_MSG_TYPE_SHUTDOWN            "shutdown"
+#define LIRCH_MSG_TYPE_EDICT               "edict"
+#define LIRCH_MSG_TYPE_RAW_EDICT           "raw_edict"
+#define LIRCH_MSG_TYPE_DISPLAY             "display"
+#define LIRCH_MSG_TYPE_REG_STAT            "registration_status"
+#define LIRCH_MSG_TYPE_LOGGING             "logging"
+#define LIRCH_MSG_TYPE_USERLIST            "userlist"
+#define LIRCH_MSG_TYPE_CHANGED_NICK        "changed_nick"
+#define LIRCH_MSG_TYPE_SET_CHANNEL         "set_channel"
+#define LIRCH_MSG_TYPE_LEAVE_CHANNEL       "leave_channel"
 
 // DEFAULTS
 
-#define LIRCH_DEFAULT_ADDR "234.0.0.234"
-#define LIRCH_DEFAULT_PORT 45454
+#define LIRCH_DEFAULT_ADDR    "234.0.0.234"
+#define LIRCH_DEFAULT_PORT     45454
 
 #define LIRCH_DEFAULT_LOG_DIR "@LIRCH_LOG_DIRECTORY@"
 
