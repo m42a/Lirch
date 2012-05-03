@@ -64,13 +64,13 @@ void LirchClientPipe::display(display_message m) {
             text = tr("<%1> %2").arg(m.nick, m.contents);
             break;
         case display_message_subtype::ME:
-            text = tr("*%1 %2").arg(m.nick, m.contents);
+            text = tr("* %1 %2").arg(m.nick, m.contents);
             break;
         case display_message_subtype::NOTIFY:
             text = notify_prefix + tr(" %1 %2").arg(m.nick, m.contents);
             break;
         default:
-            text = tr("?%1 %2").arg(m.nick, m.contents);
+            text = tr("? %1 %2").arg(m.nick, m.contents);
     }
     emit display_received(m.channel, m.nick, text);
 }
