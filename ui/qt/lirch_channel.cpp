@@ -29,6 +29,8 @@ LirchChannel::LirchChannel(const QString &channel_name, Ui::LirchQtInterface *ui
 	tab->setLayout(layout);
 	// Select the new window
 	action->trigger();
+	// TODO this should happen, but doesn't:
+	grab_user_list();
 }
 
 LirchChannel::~LirchChannel() {

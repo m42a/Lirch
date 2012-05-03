@@ -502,9 +502,9 @@ void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 	text.replace(QRegExp("&(?!amp;)"), "&amp;");
 	text.replace(QRegExp("<"), "&lt;");
 	text.replace(QRegExp(">"), "&gt;");
-	text.replace(QRegExp("\\n"), "<br>");
+	text.replace(QRegExp("\\n"), "<br />");
 	// This regex wraps links sent in display messages
-	text.replace(QRegExp("\\b(http://.*)\\b"), "<a href=\"\\1\">\\1</a>");
+	text.replace(QRegExp("\\b(.*://.*)\\b"), "<a href=\"\\1\">\\1</a>");
 	// Show the message in the view
 	channel->add_message(text, show_message_timestamps, ignore_message);
 }
