@@ -2,6 +2,7 @@
 // 1) Tabs need to produce grab_focus on click
 // 2) We need to be able to click on links
 // 3) Make /channel and /leave work
+// 4) Make /q and /quit should exit without prompt
 
 #include "ui/qt/lirch_qt_interface.h"
 #include "ui/qt/ui_lirch_qt_interface.h"
@@ -20,6 +21,7 @@ LirchQtInterface::LirchQtInterface(QWidget *parent) :
 	// Add a variety of UI enhancements (select on focus and quit action)
 	ui->msgTextBox->installEventFilter(this);
 
+	files = new QFileSystemModel(this);
 	// client_pipe facilitates communication with the core
 	client_pipe = nullptr;
 
@@ -65,10 +67,6 @@ LirchQtInterface::~LirchQtInterface()
 
 void LirchQtInterface::loadSettings()
 {
-	// Make sure to document any changes in the settings schema (change below and on wiki)
-	settings.beginGroup("UserData");
-	default_nick = settings.value("nick", LIRCH_DEFAULT_NICK).value<QString>();
-	settings.endGroup();
 	// Load persisted view state
 	settings.beginGroup("QtMainWindow");
 	resize(settings.value("size", QSize(640, 480)).toSize());
@@ -90,9 +88,6 @@ void LirchQtInterface::loadSettings()
 void LirchQtInterface::saveSettings()
 {
 	// Make sure to document any changes in the settings schema (change above and on wiki)
-	settings.beginGroup("UserData");
-	settings.setValue("nick", default_nick);
-	settings.endGroup();
 	settings.beginGroup("QtMainWindow");
 	settings.setValue("size", size());
 	settings.setValue("position", pos());
@@ -329,6 +324,7 @@ void LirchQtInterface::on_actionViewTransfers_triggered()
 	int index = ui->chatTabWidget->indexOf(ui->fileTransfersTab);
 	if (index != -1) {
 		ui->chatTabWidget->setCurrentIndex(index);
+		ui->chatUserList->setModel(files);
 	}
 }
 
@@ -467,6 +463,14 @@ void LirchQtInterface::die(QString msg, bool silent_but_deadly)
 // Occurs when display messages are received
 void LirchQtInterface::display(QString channel_name, QString nick, QString text)
 {
+	// Any displays that would get sent to a blank channel get sent to every open channel
+	if (channel_name.isEmpty()) {
+		auto end = channels.end();
+		for (auto itr = channels.begin(); itr != end; ++itr) {
+			display(itr.key(), nick, text);
+		}
+		return;
+	}
 	bool ignore_message = (ignored_users.find(nick) != ignored_users.end());
 	// Find the tab's QTextBrowser's document (model) we desire
 	auto itr = channels.find(channel_name);

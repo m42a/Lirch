@@ -6,6 +6,7 @@
 #include <QDate>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QFileSystemModel>
 #include <QMap>
 #include <QMainWindow>
 #include <QMessageBox>
@@ -56,6 +57,7 @@ private:
     // Model data (Channels package appropriate data)
     QMap<QString, LirchChannel *> channels;
     QSet<QString> ignored_users;
+    QFileSystemModel *files;
     // Application settings
     QSettings settings;
     QString default_nick;

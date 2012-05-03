@@ -30,20 +30,23 @@ void run(plugin_pipe pipe, std::string name)
 	// Fetch the settings
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
 	settings.beginGroup("Logging");
+	// Set the log directory
+	QString log_directory = settings.value("root_directory", LIRCH_DEFAULT_LOG_DIR).value<QString>();
+	bool logging_disabled = settings.value("disabled", false).value<bool>();
 
 	// Determine the default log directory
-	QDir default_log_directory;
-	// FIXME current method: use the build-configured directory if possible; otherwise, make a subdir in settings
-	QFileInfo probe(LIRCH_DEFAULT_LOG_DIR);
-	if (probe.isDir() && probe.isWritable()) {
-		default_log_directory = QDir(probe.absoluteFilePath());
-	} else {
+	QFileInfo probe(log_directory);
+	if (!probe.isDir()) {
 		// Setup a log folder in the settings dir
 		probe.setFile(settings.fileName());
-		default_log_directory = probe.dir();
+		QDir directory = probe.dir();
 		// Won't fail if log already exists
-		default_log_directory.mkdir(LIRCH_PRODUCT_NAME);
-		default_log_directory.cd(LIRCH_PRODUCT_NAME);
+		directory.mkdir(LIRCH_PRODUCT_NAME);
+		directory.cd(LIRCH_PRODUCT_NAME);
+		log_directory = directory.canonicalPath();
+		if (log_directory.isEmpty()) {
+			log_directory = LIRCH_DEFAULT_LOG_DIR;
+		}
 	}
 	// TODO consider this (it drags in a QtGui dependency)
 	// QDesktopServices::storageLocation(QDesktopServices::DataLocation)
@@ -57,10 +60,6 @@ void run(plugin_pipe pipe, std::string name)
 	buffer += " ";
 	QByteArray notify_prefix = buffer.toUtf8();
 
-	// Set the log directory
-	QString log_directory = settings.value("root_directory", default_log_directory.canonicalPath()).value<QString>();
-	bool logging_disabled = settings.value("disabled", false).value<bool>();
-	
 	while (true) {
 		message msg = pipe.blocking_read();
 		//handle shutdown condition
@@ -94,14 +93,17 @@ void run(plugin_pipe pipe, std::string name)
 				//pass the message back along
 				pipe.write(msg.decrement_priority());
 
-				//check that we are supposed to be logging
-				if (logging_disabled) {
-					continue;
+				bool log = !logging_disabled;
+
+				//see if this channel is listed
+				auto entry = channel_greylist.find(internals->channel);
+				if (entry != channel_greylist.end()) {
+					// If so, this overrides the default setting
+					log = entry->second;
 				}
 
-				//check that this channel is not blacklisted
-				auto entry = channel_greylist.find(internals->channel);
-				if (entry != channel_greylist.end() && entry->second) {
+				//check that we are supposed to be logging
+				if (!log || internals->channel.isEmpty()) {
 					continue;
 				}
 
@@ -111,31 +113,38 @@ void run(plugin_pipe pipe, std::string name)
 				//find the corresponding filestream
 				if (!open_files.count(channelname)) {
 					// Open a new file in the desired directory
-					QString filepath = log_directory + "/" + channelname + ".log";
+					QDir directory_path(log_directory);
 					// Append to any pre-existing file
-					auto filestream = new ofstream(filepath.toUtf8().constData(), fstream::app);
-					// TODO what if open fails? or insert fails?
-					open_files[channelname] = unique_ptr<ofstream>(filestream);
-					*filestream << "~~~~~~~~" << endl;
+					auto filestream = new ofstream(directory_path.absoluteFilePath(channelname + ".log").toUtf8().constData(), fstream::app);
+					// If open fails, just skip it
+					if (filestream->is_open()) {
+						open_files[channelname] = unique_ptr<ofstream>(filestream);
+						// Session separator
+						*filestream << "~~~~~~~~" << endl;
+					} else {
+						delete filestream;
+						continue;
+					}
 				}
 
 				auto nick = internals->nick.toUtf8();
 				auto contents = internals->contents.toUtf8();
+				auto &stream = *open_files[channelname];
 				//log the message contents in a manner which matches the message type
 				switch (internals->subtype) {
-					case display_message_subtype::NORMAL:
-					*open_files[channelname] << "<" << nick.constData() << "> " << contents.constData();
+				case display_message_subtype::NORMAL:
+					stream << "<" << nick.constData() << "> " << contents.constData();
 					break;
-					case display_message_subtype::ME:
-					*open_files[channelname] << "* " << nick.constData() << " " << contents.constData();
+				case display_message_subtype::ME:
+					stream << "* " << nick.constData() << " " << contents.constData();
 					break;
-					case display_message_subtype::NOTIFY:
-					*open_files[channelname] << notify_prefix.constData() << contents.constData();
+				case display_message_subtype::NOTIFY:
+					stream << notify_prefix.constData() << contents.constData();
 					break;
-					default:
-					*open_files[channelname] << "? " << contents.constData();
+				default:
+					stream << "? " << contents.constData();
 				}
-				*open_files[channelname] << endl;
+				stream << endl;
 			}
 		}
 
@@ -164,7 +173,7 @@ void run(plugin_pipe pipe, std::string name)
 						logging_disabled = true;
 						break;
 					default:
-						logging_disabled = false;
+						logging_disabled = true;
 						channel_greylist[LIRCH_DEFAULT_CHANNEL] = true;
 					}
 				}
@@ -186,7 +195,6 @@ void run(plugin_pipe pipe, std::string name)
 		}
 	}
 
-	// FIXME is this proper usage?
 	settings.setValue("disabled", logging_disabled);
 	settings.endGroup();
 }

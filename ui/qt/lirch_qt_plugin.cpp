@@ -37,6 +37,7 @@ void run(plugin_pipe p, std::string name) {
             if (data) {
                 mediator.display(*data);
             }
+            p.write(m.decrement_priority());
         } else if (m.type == LIRCH_MSG_TYPE_USERLIST) {
             auto data = dynamic_cast<userlist_message *>(m.getdata());
             if (data) {

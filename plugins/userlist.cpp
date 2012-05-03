@@ -66,57 +66,69 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 
 	if (m.type=="received")
 	{
-		auto message=dynamic_cast<received_message *>(m.getdata());
-		userList[message->nick].nick=message->nick;
-		userList[message->nick].channels.insert(message->channel);
-		userList[message->nick].ip=message->ipAddress;
-		userList[message->nick].lastseen=time(NULL);
+		auto msg=dynamic_cast<received_message *>(m.getdata());
+		if (!msg) {
+			return;
+		}
+		userList[msg->nick].nick=msg->nick;
+		userList[msg->nick].channels.insert(msg->channel);
+		userList[msg->nick].ip=msg->ipAddress;
+		userList[msg->nick].lastseen=time(NULL);
 	}
 
 	if (m.type=="received_status")
 	{
-		auto message=dynamic_cast<received_status_message *>(m.getdata());
-		userList[message->nick].lastseen=time(NULL);
-		userList[message->nick].nick=message->nick;
-		userList[message->nick].ip=message->ipAddress;
+		auto msg=dynamic_cast<received_status_message *>(m.getdata());
+		if (!msg) {
+			return;
+		}
+		userList[msg->nick].lastseen=time(NULL);
+		userList[msg->nick].nick=msg->nick;
+		userList[msg->nick].ip=msg->ipAddress;
 
-		if (message->subtype==received_status_message_subtype::LEFT)
+		if (msg->subtype==received_status_message_subtype::LEFT)
 		{
-			userList[message->nick].channels.erase(message->channel);
-			if (message->channel=="")
+			userList[msg->nick].channels.erase(msg->channel);
+			if (msg->channel=="")
 			{
-				for(const auto & iterator:userList[message->nick].channels)
-					p.write(notify_message::create(iterator,message->nick + " has logged off."));
-				userList.erase(message->nick);
+				for(const auto & iterator:userList[msg->nick].channels)
+					p.write(notify_message::create(iterator,msg->nick + " has logged off."));
+				userList.erase(msg->nick);
 			}
 			else
-				p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
+				p.write(notify_message::create(msg->channel,msg->nick+" has left channel "+msg->channel+"."));
 		}
-		else if (message->subtype==received_status_message_subtype::JOIN)
+		else if (msg->subtype==received_status_message_subtype::JOIN)
 		{
 			//Only notify people if they're joining a channel they're not in
-			if (userList[message->nick].channels.insert(message->channel).second)
-				p.write(notify_message::create(message->channel,message->nick+" has joined channel "+message->channel+"."));
+			if (userList[msg->nick].channels.count(msg->channel)) {
+				return;
+			}
+			userList[msg->nick].channels.insert(msg->channel);
+			p.write(notify_message::create(msg->channel,msg->nick+" has joined channel "+msg->channel+"."));
 		}
-		else if (message->subtype==received_status_message_subtype::HERE && message->channel!="")
+		else if (msg->subtype==received_status_message_subtype::HERE && msg->channel!="")
 		{
-			userList[message->nick].channels.insert(message->channel);
+			userList[msg->nick].channels.insert(msg->channel);
 		}
-		else if (message->subtype==received_status_message_subtype::WHOHERE)
+		else if (msg->subtype==received_status_message_subtype::WHOHERE)
 		{
-			p.write(here_message::create(message->channel));
-			userList[message->nick].channels.insert(message->channel);
+			// Only reply that you're in channels you're in
+			if (userList[currentNick].channels.count(msg->channel)) {
+				p.write(here_message::create(msg->channel));
+				userList[msg->nick].channels.insert(msg->channel);
+			}
 		}
-		else if (message->subtype==received_status_message_subtype::NICK)
+		else if (msg->subtype==received_status_message_subtype::NICK)
 		{
 			//message->channel is storing the old nickname of the user in the case that it is a nick type received.
 			//if it is, remove the person of the old nickname
-			user_status oldNickInfo = userList[message->channel];
-			oldNickInfo.nick=message->nick;
-			userList.erase(message->channel);
-			userList[message->nick]=oldNickInfo;
-			for(const auto & iterator:userList[message->nick].channels)
-				p.write(notify_message::create(iterator,message->channel+" has changed their nick to "+message->nick+"."));
+			user_status oldNickInfo = userList[msg->channel];
+			oldNickInfo.nick=msg->nick;
+			userList.erase(msg->channel);
+			userList[msg->nick]=oldNickInfo;
+			for(const auto & iterator:userList[msg->nick].channels)
+				p.write(notify_message::create(iterator,msg->channel+" has changed their nick to "+msg->nick+"."));
 		}
 
 	}
@@ -134,35 +146,26 @@ void askForUsers(plugin_pipe p, QString channel)
 }
 
 //validateName also sets old nick to new nick if it is acceptable
-bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick,bool firstTime)
+message setNick(const unordered_map<QString, user_status> &userList, QString &currentNick, nick_message &nick_msg, bool firstTime)
 {
-	bool result = false;
-
-	if (firstTime)
-		p.write(set_channel_message::create("default"));
-
-	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
+	// Case where we're trying to grab some else who isn't spartacus
+	if (userList.count(nick_msg.nick) && nick_msg.nick!=LIRCH_DEFAULT_NICK)
 	{
 		if (firstTime)
-			p.write(notify_message::create("","Default nick taken.  You will be Spartacus."));
-		else
-			p.write(notify_message::create("","Nick taken.  Keeping old nick."));
+			return notify_message::create("",QObject::tr("Default nick taken.  You will be Spartacus."));
+		return notify_message::create("",QObject::tr("Nick taken.  Keeping old nick."));
 	}
-	else if (newNick.toUtf8().size() > 64)
+	// Case when the nick is too long
+	if (nick_msg.nick.toUtf8().size() > 64)
 	{
 		if (firstTime)
-			p.write(notify_message::create("","Default nick too long.  You will be Spartacus."));
-		else
-			p.write(notify_message::create("","Nick too long.  Keeping old nick."));
+			return notify_message::create("",QObject::tr("Default nick too long.  You will be Spartacus."));
+		return notify_message::create("",QObject::tr("Nick too long.  Keeping old nick."));
 	}
-	else
-	{
-		p.write(changed_nick_message::create(oldNick,newNick));
-		oldNick = newNick;
-		result = true;
-	}
-
-	return result;
+	// General case
+	QString oldNick = currentNick;
+	currentNick = nick_msg.nick;
+	return changed_nick_message::create(oldNick,currentNick,nick_msg.changeDefault);
 }
 
 void populateDefaultChannel(plugin_pipe p)
@@ -175,7 +178,7 @@ void populateDefaultChannel(plugin_pipe p)
 
 	askForUsers(p,"default");
 
-	p.write(nick_message::create(defaultNick));
+	p.write(nick_message::create(defaultNick, true));
 
 }
 
@@ -276,7 +279,9 @@ void run(plugin_pipe p, string name)
 			if (!s)
 				continue;
 			p.write(m.decrement_priority());
-			setNick(p,userList,currentNick,s->nick,firstTime);
+			if (firstTime)
+				p.write(set_channel_message::create("default"));
+			p.write(setNick(userList,currentNick,*s,firstTime));
 
 			//The userlist is no longer a virgin
 			firstTime = false;
@@ -285,7 +290,7 @@ void run(plugin_pipe p, string name)
 			{
 				QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, LIRCH_PRODUCT_NAME);
 				settings.beginGroup("UserData");
-				settings.setValue("nick", s->nick);
+				settings.setValue("nick", currentNick);
 				settings.sync();
 				settings.endGroup();
 			}
@@ -313,6 +318,7 @@ void run(plugin_pipe p, string name)
 				continue;
 			p.write(m.decrement_priority());
 
+			// If you can't in the channel yet, ask who's there
 			if (userList[currentNick].channels.count(s->channel)==0)
 				askForUsers(p,s->channel);
 		}

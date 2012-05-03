@@ -21,17 +21,17 @@ public:
 	};
 
 	// These allow fields to be optionally set
-	// SET_NONE is the default and specifies no changes
+	// SET_NONE specifies no changes to the log options
 	// SET_LDIR specifies changes to the log directory
 	// SET_CHAN specifies changes to the channels enabled/disabled
 	// SET_MODE specifies enabling/disabling logging globally
 	// SET_FORM specifies changing the log format
 	enum logging_option {
-		SET_NONE = 0x0,
-		SET_DIRECTORY = 0x1,
-		SET_CHANNELS = 0x2,
-		SET_FORMAT = 0x4,
-		SET_MODE = 0x8,
+		SET_NONE = 0x1,
+		SET_DIRECTORY = 0x2,
+		SET_CHANNELS = 0x4,
+		SET_FORMAT = 0x8,
+		SET_MODE = 0x10,
 	};
 	// Generate flags to wrap the enum above
 	Q_DECLARE_FLAGS(logging_options, logging_option)

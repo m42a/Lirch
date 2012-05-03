@@ -430,7 +430,7 @@ void run(plugin_pipe p, string name)
 			}
 			else if (type=="here")
 			{
-                p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
+				p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
 				continue;
 			}
 			else if (type=="nick")
@@ -439,15 +439,15 @@ void run(plugin_pipe p, string name)
 				continue;
 			}
 			else if (type=="left")
-            {
-                p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
-                continue;
-            }
-            else if (type=="join")
-            {
-                p.write(received_status_message::create(received_status_message_subtype::JOIN,destinationChannel,senderNick,senderIP));
-                continue;
-            }
+			{
+				p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
+				continue;
+			}
+			else if (type=="join")
+			{
+				p.write(received_status_message::create(received_status_message_subtype::JOIN,destinationChannel,senderNick,senderIP));
+				continue;
+			}
 
 			QString sentContents=QString::fromUtf8(broadcast+132,256).section(QChar('\0'),0,0);
 
