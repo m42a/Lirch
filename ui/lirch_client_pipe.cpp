@@ -44,6 +44,16 @@ void LirchClientPipe::nick(changed_nick_message m) {
     emit nick_changed(m.newNick, m.wasDefault);
 }
 
+// The client pipe signals on nick changes
+void LirchClientPipe::channel(set_channel_message m) {
+    emit set_channel(m.channel);
+}
+
+// The client pipe signals on nick changes
+void LirchClientPipe::channel(leave_channel_message m) {
+    emit leave_channel(m.channel);
+}
+
 // The client_pipe signals on userlist updates
 void LirchClientPipe::userlist(userlist_message m) {
     QMap<QString, QSet<QString>> data;
