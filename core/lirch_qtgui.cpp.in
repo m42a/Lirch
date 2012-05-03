@@ -90,6 +90,11 @@ int main(int argc, char *argv[])
                          &main_window, SLOT(userlist(QMap<QString, QSet<QString>>)));
         QObject::connect(&mediator,    SIGNAL(nick_changed(QString, bool)),
                          &main_window, SLOT(nick(QString, bool)));
+        QObject::connect(&mediator,    SIGNAL(set_channel(QString)),
+                         &main_window, SLOT(focus(QString)));
+        QObject::connect(&mediator,    SIGNAL(leave_channel(QString)),
+                         &main_window, SLOT(leave(QString)));
+        // These allow control in each of the stages
         QObject::connect(&mediator,    SIGNAL(shutdown(QString)),
                          &main_window, SLOT(die(QString)));
         QObject::connect(&mediator,    SIGNAL(run(LirchClientPipe *)),
