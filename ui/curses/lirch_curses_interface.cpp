@@ -165,7 +165,7 @@ void runplugin(plugin_pipe &p, const string &name)
 				string contents=s->contents.toLocal8Bit().constData();
 
 				if (s->channel=="")
-					s->channel=channel;
+					message_channel=channel;
 
 				if (channel_windows.count(message_channel)!=0)
 				{
