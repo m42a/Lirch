@@ -23,7 +23,7 @@ if(BUILD_TESTING)
   set(QT_USE_QTTEST TRUE)
 endif(BUILD_TESTING)
 include("${QT_USE_FILE}")
-include_directories("${QT_INCLUDE_DIR}")
+include_directories("${QT_INCLUDE_DIR}" "${CMAKE_SOURCE_DIR}/tclap/include")
 qt4_wrap_cpp(LIRCH_QTCORE_MOC lirch_qtcore.h)
 
 # Build the core executable with QtCore and no UI
