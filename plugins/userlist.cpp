@@ -26,15 +26,15 @@ message sendNick(QString str, QString)
 		return nick_message::create(parsedNick[2]);
 	if (parsedNick.size()>2 && parsedNick[1]=="-default")
 		return nick_message::create(parsedNick[2], true);
-    return nick_message::create(parsedNick[1]);
+	return nick_message::create(parsedNick[1]);
 }
 message sendWhois(QString str, QString channel)
 {
-    if (str.startsWith("/whois "))
-    {
-        return who_is_message::create(channel, str.section(' ',1));
-    }
-    return empty_message::create();
+	if (str.startsWith("/whois "))
+	{
+		return who_is_message::create(channel, str.section(' ',1));
+	}
+	return empty_message::create();
 }
 
 class userlist_timer : public message_data
@@ -92,11 +92,12 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 			else
 				p.write(notify_message::create(message->channel,message->nick+" has left channel "+message->channel+"."));
 		}
-        else if (message->subtype==received_status_message_subtype::JOIN)
-        {
-            userList[message->nick].channels.insert(message->channel);
-            p.write(notify_message::create(message->channel,message->nick+" has joined channel "+message->channel+"."));
-        }
+		else if (message->subtype==received_status_message_subtype::JOIN)
+		{
+			//Only notify people if they're joining a channel they're not in
+			if (userList[message->nick].channels.insert(message->channel).second)
+				p.write(notify_message::create(message->channel,message->nick+" has joined channel "+message->channel+"."));
+		}
 		else if (message->subtype==received_status_message_subtype::HERE && message->channel!="")
 		{
 			userList[message->nick].channels.insert(message->channel);
@@ -125,7 +126,7 @@ void updateSenderStatus(plugin_pipe p, message m, unordered_map<QString, user_st
 
 void askForUsers(plugin_pipe p, QString channel)
 {
-    for(int i=0; i<5; i++)
+	for(int i=0; i<5; i++)
 	{
 		p.write(who_is_here_message::create(channel));
 		this_thread::sleep_for(chrono::milliseconds(50));
@@ -135,33 +136,33 @@ void askForUsers(plugin_pipe p, QString channel)
 //validateName also sets old nick to new nick if it is acceptable
 bool setNick(plugin_pipe p, unordered_map<QString, user_status> & userList,QString & oldNick, QString newNick,bool firstTime)
 {
-    bool result = false;
+	bool result = false;
 
-    if (firstTime)
-        p.write(set_channel_message::create("default"));
+	if (firstTime)
+		p.write(set_channel_message::create("default"));
 
 	if (userList.count(newNick) && newNick!=LIRCH_DEFAULT_NICK)
 	{
 		if (firstTime)
 			p.write(notify_message::create("","Default nick taken.  You will be Spartacus."));
 		else
-            p.write(notify_message::create("","Nick taken.  Keeping old nick."));
+			p.write(notify_message::create("","Nick taken.  Keeping old nick."));
 	}
 	else if (newNick.toUtf8().size() > 64)
 	{
 		if (firstTime)
 			p.write(notify_message::create("","Default nick too long.  You will be Spartacus."));
 		else
-            p.write(notify_message::create("","Nick too long.  Keeping old nick."));
+			p.write(notify_message::create("","Nick too long.  Keeping old nick."));
 	}
 	else
-    {
+	{
 		p.write(changed_nick_message::create(oldNick,newNick));
 		oldNick = newNick;
-        result = true;
+		result = true;
 	}
 
-    return result;
+	return result;
 }
 
 void populateDefaultChannel(plugin_pipe p)
@@ -253,10 +254,10 @@ void run(plugin_pipe p, string name)
 			}
 			p.write(userlist_message::create(currentNick, userList));
 			thread([](plugin_pipe p)
-			{
-				this_thread::sleep_for(chrono::seconds(10));
-				p.write(userlist_timer::create());
-			}, p).detach();
+					{
+					this_thread::sleep_for(chrono::seconds(10));
+					p.write(userlist_timer::create());
+					}, p).detach();
 		}
 		else if (m.type=="handler_ready")
 		{
@@ -301,7 +302,7 @@ void run(plugin_pipe p, string name)
 					QStringList channelList;
 					for (auto &c : i.second.channels)
 						channelList.append(c);
-                    p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), QDateTime::fromTime_t(i.second.lastseen).toString(), channelList.join(" "))));
+					p.write(notify_message::create(s->destinationChannel, QObject::tr("User %1 (%2) was last seen at %3 and is in the following channels: %4").arg(i.second.nick, i.second.ip.toString(), QDateTime::fromTime_t(i.second.lastseen).toString(), channelList.join(" "))));
 				}
 			}
 		}

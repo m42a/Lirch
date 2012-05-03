@@ -6,6 +6,7 @@ LirchSetupWizard::LirchSetupWizard(QWidget *parent) :
 	ui(new Ui::LirchSetupWizard)
 {
 	ui->setupUi(this);
+	ui->nickname_lineedit->setText(tr(LIRCH_DEFAULT_NICK));
 	// Configure fields (nick is mandatory)
 	// ui->nickname_config_page->registerField("UserSettings.nick*", ui->nickname_lineedit);
 	// ui->nickname_config_page->registerField("UserSettings.nick_is_default", ui->nickname_checkbox);
