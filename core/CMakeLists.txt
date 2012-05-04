@@ -27,7 +27,7 @@ include_directories("${QT_INCLUDE_DIR}" "${CMAKE_SOURCE_DIR}/tclap/include")
 qt4_wrap_cpp(LIRCH_QTCORE_MOC lirch_qtcore.h)
 
 # Build the core executable with QtCore and no UI
-add_executable(lirch alirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
+add_executable(lirch ${CMAKE_BINARY_DIR}/core/lirch_qtcore.cpp ${LIRCH_QTCORE_MOC})
 target_link_libraries(lirch lirch-core ${QT_LIBRARIES})
 install(TARGETS lirch DESTINATION bin)
 
