@@ -24,7 +24,6 @@
  * add the timed "still here" messages
  */
 
-
 #include <thread>
 #include <iostream>
 #include <QByteArray>
@@ -124,9 +123,9 @@ void run(plugin_pipe p, string name)
 				QString channel="";
 				QString type="left";
 				QString contents="";
-                int flag = 0;;
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
+				QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -221,25 +220,25 @@ void run(plugin_pipe p, string name)
 				else if(castMessage->subtype==edict_message_subtype::ME)
 					type="mdct";
 
-                int flag = 0;;
-                QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
+				int flag = 0;
+				QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
 
 				//change to use write() function when we have time
-                switch (flag)
-                {
-                    case 1:
-                        p.write(notify_message::create(channel,"Channel name too long."));
-                        break;
-                    case 2:
-                        p.write(notify_message::create(channel,"Nick too long."));
-                        break;
-                    case 3:
-                        p.write(notify_message::create(channel,"Message too long."));
-                        break;
-                    default:
-                        udpSocket.writeDatagram(message,groupAddress,port);
-                        lastSent=time(NULL);
-                }
+				switch (flag)
+				{
+					case 1:
+						p.write(notify_message::create(channel,"Channel name too long."));
+						break;
+					case 2:
+						p.write(notify_message::create(channel,"Nick too long."));
+						break;
+					case 3:
+						p.write(notify_message::create(channel,"Message too long."));
+						break;
+					default:
+						udpSocket.writeDatagram(message,groupAddress,port);
+						lastSent=time(NULL);
+				}
 			}
 			else if(m.type=="sendable_notify")
 			{
@@ -253,26 +252,26 @@ void run(plugin_pipe p, string name)
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
 				QString type="ntfy";
-                int flag = 0;;
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
+				QByteArray message = formatMessage(type,channel,currentNick,contents,flag);
 
 				//change to use write() function when we have time
-                switch (flag)
-                {
-                    case 1:
-                        p.write(notify_message::create(channel,"Channel name too long."));
-                        break;
-                    case 2:
-                        p.write(notify_message::create(channel,"Nick too long."));
-                        break;
-                    case 3:
-                        p.write(notify_message::create(channel,"Message too long."));
-                        break;
-                    default:
-                        udpSocket.writeDatagram(message,groupAddress,port);
-                        lastSent=time(NULL);
-                }
+				switch (flag)
+				{
+					case 1:
+						p.write(notify_message::create(channel,"Channel name too long."));
+						break;
+					case 2:
+						p.write(notify_message::create(channel,"Nick too long."));
+						break;
+					case 3:
+						p.write(notify_message::create(channel,"Message too long."));
+						break;
+					default:
+						udpSocket.writeDatagram(message,groupAddress,port);
+						lastSent=time(NULL);
+				}
 			}
 			else if(m.type == "block query")
 			{
@@ -293,9 +292,9 @@ void run(plugin_pipe p, string name)
 
 				QString channel=castMessage->channel;
 				QString type="whhe";
-                int flag = 0;;
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
+				QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -315,9 +314,9 @@ void run(plugin_pipe p, string name)
 
 				QString channel=castMessage->channel;
 				QString type="here";
-                int flag = 0;;
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
+				QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -337,9 +336,9 @@ void run(plugin_pipe p, string name)
 
 
 				QString type = "nick";
-                int flag = 0;;
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,currentNick,castMessage->newNick,"",flag);
+				QByteArray message = formatMessage(type,currentNick,castMessage->newNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -350,42 +349,42 @@ void run(plugin_pipe p, string name)
 
 				currentNick=castMessage->newNick;
 			}
-            else if (m.type == "set_channel")
-            {
-                auto castMessage=dynamic_cast<set_channel_message *>(m.getdata());
-                p.write(m.decrement_priority());
+			else if (m.type == "set_channel")
+			{
+				auto castMessage=dynamic_cast<set_channel_message *>(m.getdata());
+				p.write(m.decrement_priority());
 
-                //if it's not actually a set channel message, ignore it and move on
-                if (!castMessage)
-                    continue;
+				//if it's not actually a set channel message, ignore it and move on
+				if (!castMessage)
+					continue;
 
-                QString channel = castMessage->channel;
-                QString type = "join";
-                int flag = 0;;
+				QString channel = castMessage->channel;
+				QString type = "join";
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
+				QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
-                //change to use write() function when we have time
-                if(message.length()>0)
-                {
-                    udpSocket.writeDatagram(message,groupAddress,port);
-                    lastSent=time(NULL);
-                }
-            }
+				//change to use write() function when we have time
+				if(message.length()>0)
+				{
+					udpSocket.writeDatagram(message,groupAddress,port);
+					lastSent=time(NULL);
+				}
+			}
 			else if (m.type == "leave_channel")
 			{
 				auto castMessage=dynamic_cast<leave_channel_message *>(m.getdata());
 				p.write(m.decrement_priority());
 
-                //if it's not actually a leave channel message, ignore it and move on
+				//if it's not actually a leave channel message, ignore it and move on
 				if (!castMessage)
 					continue;
 
 				QString channel = castMessage->channel;
 				QString type = "left";
-                int flag = 0;;
+				int flag = 0;
 
-                QByteArray message = formatMessage(type,channel,currentNick,"",flag);
+				QByteArray message = formatMessage(type,channel,currentNick,"",flag);
 
 				//change to use write() function when we have time
 				if(message.length()>0)
@@ -490,29 +489,29 @@ void run(plugin_pipe p, string name)
 //1 if channel, 2 if nick, 3 if contents
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents, int &flag)
 {
-    flag = 0;
+	flag = 0;
 
-    if (channel.toUtf8().length()>64)
-    {
-        flag = 1;
-        return QByteArray();
-    }
-    if (nick.toUtf8().length()>64)
-    {
-        flag = 2;
-        return QByteArray();
-    }
-    if (contents.toUtf8().length()>256)
-    {
-        flag = 3;
+	if (channel.toUtf8().length()>64)
+	{
+		flag = 1;
 		return QByteArray();
-    }
+	}
+	if (nick.toUtf8().length()>64)
+	{
+		flag = 2;
+		return QByteArray();
+	}
+	if (contents.toUtf8().length()>256)
+	{
+		flag = 3;
+		return QByteArray();
+	}
 
-    QByteArray output;
-    output += type.toUtf8();
-    output += channel.toUtf8().leftJustified(64,'\0',true);
-    output += nick.toUtf8().leftJustified(64,'\0',true);
-    output += contents.toUtf8();
+	QByteArray output;
+	output += type.toUtf8();
+	output += channel.toUtf8().leftJustified(64,'\0',true);
+	output += nick.toUtf8().leftJustified(64,'\0',true);
+	output += contents.toUtf8();
 	output += '\0';
 	return output;
 }
