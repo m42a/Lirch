@@ -400,7 +400,7 @@ void run(plugin_pipe p, string name)
 			}
 		}
 
-		while (udpSocket.hasPendingDatagrams())
+		if (udpSocket.waitForReadyRead(50))
 		{
 			char broadcast[512];
 			QHostAddress senderIP;
@@ -468,7 +468,6 @@ void run(plugin_pipe p, string name)
 			}
 		}
 
-
 		//sends out a "still here" message every minute
 		if(time(NULL)-lastSent>60)
 		{
@@ -480,7 +479,6 @@ void run(plugin_pipe p, string name)
 			udpSocket.writeDatagram(message,groupAddress,port);
 			lastSent=time(NULL);
 		}
-		this_thread::sleep_for(chrono::milliseconds(50));
 	}
 }
 
