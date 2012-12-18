@@ -23,7 +23,7 @@ bool verbose;
 
 ostream &operator<<(ostream &out, const message &m)
 {
-	return out << '(' << m.type << ',' << m.priority << ',' << m.getdata() << ')';
+	return out << '(' << m.type << ',' << m.priority << /*',' << m.getdata() <<*/ ')';
 }
 
 static void to_plugin(message m)
@@ -57,7 +57,7 @@ static void to_plugin(message m)
 
 static void add_plugin(const message &m)
 {
-	auto pa=dynamic_cast<plugin_adder *>(m.getdata());
+	auto pa=m.try_extract<plugin_adder>();
 	if (!pa)
 		//The message wasn't a plugin_adder
 		return;
@@ -71,7 +71,7 @@ static void add_plugin(const message &m)
 	message_pipe mp;
 	if (load_plugin(pa->filename, plugin_pipe(bidirectional_message_pipe(mp, in_pipe))))
 	{
-		mp.write(hello_message::create(pa->name));
+		mp.write<hello_message>(pa->name);
 		out_pipes[pa->name]=mp;
 		if (verbose)
 			cerr << " loaded plugin " << pa->name << " from " << pa->filename << endl;
@@ -85,7 +85,7 @@ static void add_plugin(const message &m)
 
 static void remove_plugin(const message &m)
 {
-	auto d=dynamic_cast<done_message *>(m.getdata());
+	auto d=m.try_extract<done_message>();
 	if (!d)
 		return;
 	for (auto &i : message_registrations)
@@ -101,7 +101,7 @@ static void remove_plugin(const message &m)
 
 static void add_registration(const message &m)
 {
-	auto r=dynamic_cast<registration_message *>(m.getdata());
+	auto r=m.try_extract<registration_message>();
 	if (!r)
 		return;
 	if (out_pipes.count(r->plugin_name)==0)
@@ -114,14 +114,14 @@ static void add_registration(const message &m)
 
 	bool b=message_registrations[r->message_type].add(r->priority, r->plugin_name);
 	//Tell the plugin whether it failed or not
-	out_pipes[r->plugin_name].write(registration_status::create(b, r->priority, r->message_type));
+	out_pipes[r->plugin_name].write<registration_status>(b, r->priority, r->message_type);
 	if (verbose)
 		cerr << " registered " << r->message_type << " to " << r->plugin_name << endl;
 }
 
 static void remove_registration(const message &m)
 {
-	auto r=dynamic_cast<unregistration_message *>(m.getdata());
+	auto r=m.try_extract<unregistration_message>();
 	if (!r)
 		return;
 	if (message_registrations.count(r->message_type)==0)
@@ -137,7 +137,7 @@ static void remove_registration(const message &m)
 
 static void target_plugin(const message &m)
 {
-	auto i=dynamic_cast<targeted_message *>(m.getdata());
+	auto i=m.try_extract<targeted_message>();
 	if (!i)
 		return;
 	if (out_pipes.count(i->name)==0)
@@ -152,24 +152,24 @@ static void initiate_shutdown()
 	if (verbose)
 		cerr << " initiated a shutdown" << endl;
 	for (auto &i : out_pipes)
-		i.second.write(shutdown_message::create());
+		i.second.write<shutdown_message>();
 }
 
 static void process(const message &m)
 {
 	if (verbose)
 		cerr << "Message " << m;
-	if (m.gettype()=="add_plugin")
+	if (m.is<plugin_adder>())//gettype()=="add_plugin")
 		add_plugin(m);
-	else if (m.gettype()=="register")
+	else if (m.is<registration_message>())//gettype()=="register")
 		add_registration(m);
-	else if (m.gettype()=="unregister")
+	else if (m.is<unregistration_message>())//gettype()=="unregister")
 		remove_registration(m);
-	else if (m.type=="done")
+	else if (m.is<done_message>())//type=="done")
 		remove_plugin(m);
-	else if (m.type=="target")
+	else if (m.is<targeted_message>())//type=="target")
 		target_plugin(m);
-	else if (m.type=="core_quit")
+	else if (m.is<core_quit_message>())//.type=="core_quit")
 		initiate_shutdown();
 	else
 		to_plugin(m);

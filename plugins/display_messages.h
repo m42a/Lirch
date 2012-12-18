@@ -4,7 +4,6 @@
  * Display messages of Notify subtype will not use the nick data and it can be initialized with an empty string for simplicity.
  */
 
-
 #ifndef DISPLAY_MESSAGES_H
 #define DISPLAY_MESSAGES_H
 
@@ -17,20 +16,15 @@ enum class display_message_subtype
 	NORMAL,ME,NOTIFY,NOTIFY_CURRENT
 };
 
-
 // These are created for the massuese
-class display_message : public message_data
+struct display_message
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_message(*this));}
-	static message create(const display_message_subtype sub, const QString &chan, const QString &nik, const QString &cont) {return message_create("display", new display_message(sub, chan, nik, cont));}
-
-	display_message(const display_message_subtype sub, const QString &chan, const QString &nik, const QString &cont) : subtype(sub), channel(chan), contents(cont), nick(nik)  {}
+	static constexpr auto message_id="display";
 
 	display_message_subtype subtype;
 	QString channel;
-	QString contents;
 	QString nick;
+	QString contents;
 };
 
 #endif // DISPLAY_MESSAGES_H

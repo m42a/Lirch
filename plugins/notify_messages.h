@@ -20,13 +20,10 @@ enum class notify_message_subtype
 	NORMAL, CURRENT_CHANNEL
 };
 
-class notify_message : public message_data
+struct notify_message
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new notify_message(*this));}
-
 	//notify messages have only one conent, string to be displayed
-	static message create(const QString &chan, const QString &con, const notify_message_subtype & sub = notify_message_subtype::CURRENT_CHANNEL) {return message_create("notify", new notify_message(chan,con,sub));}
+	static constexpr auto message_id="notify";
 
 	notify_message(const QString &chan, const QString &con, const notify_message_subtype & sub = notify_message_subtype::CURRENT_CHANNEL) : channel(chan), contents(con), type(sub) {}
 
@@ -35,15 +32,10 @@ public:
 	notify_message_subtype type;
 };
 
-class sendable_notify_message : public message_data
+struct sendable_notify_message
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new sendable_notify_message(*this));}
-
 	//local notify messages have only one conent, string to be displayed
-	static message create(const QString &chan, const QString &con) {return message_create("sendable_notify", new sendable_notify_message(chan,con));}
-
-	sendable_notify_message(const QString &chan, const QString &con) : channel(chan), contents(con) {}
+	static constexpr auto message_id="sendable_notify";
 
 	QString channel;
 	QString contents;

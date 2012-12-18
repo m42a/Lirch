@@ -165,11 +165,11 @@ void LirchQtInterface::on_actionConnect_triggered(bool checked)
 	auto end = channels.end();
 	if (checked) {
 		for (auto itr = channels.begin(); itr != end; ++itr) {
-			client_pipe->send(set_channel_message::create(itr.key()));
+			client_pipe->send(message::create<set_channel_message>(itr.key()));
 		}
 	} else {
 		for (auto itr = channels.begin(); itr != end; ++itr) {
-			client_pipe->send(leave_channel_message::create(itr.key()));
+			client_pipe->send(message::create<leave_channel_message>(itr.key()));
 			// TODO better message
 			itr.value()->add_message(tr("Disconnected"), true, false);
 		}
@@ -356,7 +356,7 @@ void LirchQtInterface::on_actionWizard_triggered()
 		logging_message log_data(options);
 		log_data.set_directory(setup_wizard.get_logging_directory());
 		log_data.set_mode(setup_wizard.get_logging_mode());
-		client_pipe->send(logging_message::create(log_data));
+		client_pipe->send(message::create<logging_message>(log_data));
 	}
 }
 
@@ -573,7 +573,7 @@ void LirchQtInterface::request_new_channel(QString name, bool connected)
 		// FIXME field is not validated
 		LirchChannel *channel = new LirchChannel(name, ui);
 		channels.insert(name, channel);
-		client_pipe->send(set_channel_message::create(name));
+		client_pipe->send(message::create<set_channel_message>(name));
 	}
 }
 
@@ -583,14 +583,14 @@ void LirchQtInterface::request_edict_send(QString text, bool connected)
 		auto tab_widget = ui->chatTabWidget;
 		QString channel_name = tab_widget->tabText(tab_widget->currentIndex());
 		// The core will pass this raw edict to the meatgrinder
-		client_pipe->send(raw_edict_message::create(text, channel_name));
+		client_pipe->send(message::create<raw_edict_message>(text, channel_name));
 	}
 }
 
 void LirchQtInterface::request_nick_change(QString new_nick, bool make_default)
 {
 	// The core will pass this request to the userlist
-	client_pipe->send(nick_message::create(new_nick, make_default));
+	client_pipe->send(message::create<nick_message>(new_nick, make_default));
 }
 
 // FIXME do this more elegantly
@@ -600,7 +600,7 @@ void LirchQtInterface::request_block_ignore(QString name, bool block)
 	block_message_subtype request_type = block_message_subtype::ADD;
 	if (block) {
 		// FIXME field is not validated
-		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
+		client_pipe->send(message::create<block_message>(request_type, QHostAddress(name)));
 	} else {
 		ignored_users.insert(name);
 	}
@@ -611,7 +611,7 @@ void LirchQtInterface::request_unblock_unignore(QString name, bool block)
 	block_message_subtype request_type = block_message_subtype::REMOVE;
 	if (block) {
 		// FIXME field is not validated
-		client_pipe->send(block_message::create(request_type, QHostAddress(name)));
+		client_pipe->send(message::create<block_message>(request_type, QHostAddress(name)));
 	} else {
 		ignored_users.remove(name);
 	}

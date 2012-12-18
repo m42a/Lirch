@@ -25,27 +25,21 @@ void send_input(plugin_pipe out, plugin_pipe in)
 		if (in.has_message())
 		{
 			message m=in.read();
-			if (m.type=="set_channel")
+			if (auto i=m.try_extract<set_channel_message>())
 			{
-				auto i=dynamic_cast<set_channel_message *>(m.getdata());
-				if (i)
-					channel=i->channel;
+				channel=i->channel;
 			}
 		}
-		out.write(raw_edict_message::create(q,channel));
+		out.write<raw_edict_message>(q,channel);
 	}
-	out.write(core_quit_message::create());
+	out.write<core_quit_message>();
 }
 
-class display_single_channel : public message_data
+struct display_single_channel
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new display_single_channel(*this));}
+	static constexpr auto message_id="only";
 
-	//notify messages have only one conent, string to be displayed
-	static message create(const QString &chan) {return message_create("only", new display_single_channel(chan));}
-
-	display_single_channel(const QString &chan) : channel(chan) {}
+	//display_single_channel(const QString &chan) : channel(chan) {}
 
 	QString channel;
 };
@@ -53,8 +47,8 @@ public:
 message handle_only(QString text, QString)
 {
 	if (text.startsWith("/only"))
-		return display_single_channel::create(text.remove(0, 6));
-	return empty_message::create();
+		return message::create<display_single_channel>(text.remove(0, 6));
+	return message::create<empty_message>();
 }
 
 void run(plugin_pipe p, string name)
@@ -62,40 +56,34 @@ void run(plugin_pipe p, string name)
 	QString channel="";
 	bidirectional_message_pipe bmp;
 	thread(send_input, p, plugin_pipe(bmp)).detach();
-	p.write(registration_message::create(-30000, name, "display"));
-	p.write(registration_message::create(-30000, name, "set_channel"));
-	p.write(registration_message::create(-30000, name, "handler_ready"));
-	p.write(registration_message::create(-30000, name, "only"));
-	p.write(registration_message::create(-30000, name, "query_channel"));
+	p.write<registration_message>(-30000, name, "display");
+	p.write<registration_message>(-30000, name, "set_channel");
+	p.write<registration_message>(-30000, name, "handler_ready");
+	p.write<registration_message>(-30000, name, "only");
+	p.write<registration_message>(-30000, name, "query_channel");
 
 	while (true)
 	{
 		message m=p.blocking_read();
-		if (m.type=="shutdown")
+		if (m.is<shutdown_message>())
 		{
 			return;
 		}
-		else if (m.type=="registration_status")
+		else if (auto s=m.try_extract<registration_status>())
 		{
-			auto s=dynamic_cast<registration_status *>(m.getdata());
-			if (!s)
-				continue;
 			if (!s->status)
 			{
 				if (s->priority>-32000)
-					p.write(registration_message::create(s->priority-1, name, s->type));
+					p.write<registration_message>(s->priority-1, name, s->type);
 			}
 			else
 			{
 				if (s->type=="only")
-					p.write(register_handler::create("/only", handle_only));
+					p.write<register_handler>("/only", handle_only);
 			}
 		}
-		else if (m.type=="display")
+		else if (auto s=m.try_extract<display_message>())
 		{
-			auto s=dynamic_cast<display_message *>(m.getdata());
-			if (!s)
-				continue;
 			p.write(m.decrement_priority());
 			if (channel!="" && channel!=s->channel && s->channel!="")
 				continue;
@@ -113,34 +101,28 @@ void run(plugin_pipe p, string name)
 			if(s->subtype==display_message_subtype::NOTIFY_CURRENT)
 				cout << channel.toLocal8Bit().constData() << QString::fromUtf8(u8": \u203C\u203D").toLocal8Bit().constData() << contents << endl;
 		}
-		else if (m.type=="set_channel")
+		else if (auto i=m.try_extract<set_channel_message>())
 		{
-			auto i=dynamic_cast<set_channel_message *>(m.getdata());
-			if (!i)
-				continue;
 			p.write(m.decrement_priority());
 			if (i->channel=="")
 			{
 				if (channel=="")
-					p.write(notify_message::create("", "On all channels"));
+					p.write<notify_message>("", "On all channels");
 				else
-					p.write(notify_message::create("", "On channel "+channel));
+					p.write<notify_message>("", "On channel "+channel);
 			}
 			else
 			{
 				bmp.core_write(m);
 			}
 		}
-		else if (m.type=="only")
+		else if (auto i=m.try_extract<display_single_channel>())
 		{
-			auto i=dynamic_cast<display_single_channel *>(m.getdata());
-			if (!i)
-				continue;
 			channel=i->channel;
 		}
-		else if (m.type=="handler_ready")
+		else if (m.is<handler_ready>())
 		{
-			p.write(register_handler::create("/only", handle_only));
+			p.write<register_handler>("/only", handle_only);
 		}
 		else
 		{

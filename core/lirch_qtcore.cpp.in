@@ -37,7 +37,7 @@ void handle_sigint(int)
 	//mutex twice.  This should only be a problem under heavy load (which
 	//is exactly when we don't want to block SIGINT).
 	signal(SIGINT, SIG_DFL);
-	in_pipe.write(core_quit_message::create());
+	in_pipe.write<core_quit_message>();
 }
 
 int main(int argc, char *argv[])
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 			{
 				if (arg[1])
 				{
-					vm.push_back(plugin_adder::create(arg[0],arg[1]));
+					vm.push_back(message::create<plugin_adder>(arg[0],arg[1]));
 					++arg;
 				}
 			}
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 	{
 		for (auto &p : preloads)
 		{
-			pp.push_back(plugin_adder::create(string(p.name), string(p.filename)));
+			pp.push_back(message::create<plugin_adder>(string(p.name), string(p.filename)));
 		}
 		//Append the command-line plugins to the preloaded plugins
 	}
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	// Load the rest of the plugins specified on command line
 	while (arg[0] && arg[1])
 	{
-		pp.push_back(plugin_adder::create(arg[0],arg[1]));
+		pp.push_back(message::create<plugin_adder>(arg[0],arg[1]));
 		arg+=2;
 	}
 

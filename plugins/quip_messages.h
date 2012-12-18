@@ -19,28 +19,23 @@
 #include "plugins/quip_constants.h"
 
 // Encapsulates the data required to send a quip message over the network
-class quip_request_data : public message_data
+struct quip_request_data
 {
-public:
-	// Allows the core to be responsible with this object's data
-	virtual std::unique_ptr<message_data> copy() const
-	{
-		quip_request_data *raw_copy = new quip_request_data(*this);
-		// TODO should this be a pointer to this subtype?
-		return std::unique_ptr<message_data>(raw_copy);
-	}
-
 	// Allows an easy method for to make message containing this data
 	message to_message() const
 	{
-		std::string quip_type = QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST).toStdString();
-		quip_request_data *raw_copy = new quip_request_data(*this);
-		return message_create(quip_type, raw_copy);
+		//std::string quip_type = QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST).toStdString();
+		//quip_request_data *raw_copy = new quip_request_data(*this);
+		return message::create<quip_request_data>(channel);//, raw_copy);
 	}
 
+	/*
 	// Quip request data consists of a destined channel for a /quip
 	quip_request_data(const QString &channel_name) :
 		channel(channel_name) { }
+	*/
+
+	static constexpr auto message_id=LIRCH_MESSAGE_TYPE_QUIP_REQUEST;
 
 	QString channel;
 };

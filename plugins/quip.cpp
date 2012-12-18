@@ -31,7 +31,7 @@ message QuipPlugin::Quip::to_message()
 	edict_message_subtype quip_subtype = edict_message_subtype::ME;
 	// The format is <username> quips <fortune_text>
 	QString quip_text = QObject::tr("quips\n") + text;
-	return edict_message::create(quip_subtype, channel, quip_text);
+	return message::create<edict_message>(quip_subtype, channel, quip_text);
 }
 
 // QUIPPLUGIN CLASS FUNCTIONS (static)
@@ -40,9 +40,9 @@ message QuipPlugin::forward_quip_request(QString command, QString channel)
 {
 	if (command == QObject::tr("/quip"))
 	{
-		return quip_request_data(channel).to_message();
+		return quip_request_data{channel}.to_message();
 	}
-	return empty_message::create();
+	return message::create<empty_message>();
 }
 
 // QUIPPLUGIN CLASS FUNCTIONS (private)
@@ -58,7 +58,7 @@ void QuipPlugin::handle_registration_reply(registration_status *status_data)
 	if (!status_data->status && priority > LIRCH_MESSAGE_PRIORITY_MIN)
 	{
 		std::string message_type = status_data->type;
-		pipe.write(registration_message::create(--priority, name, message_type));
+		pipe.write<registration_message>(--priority, name, message_type);
 	}
 }
 
@@ -80,33 +80,30 @@ bool QuipPlugin::has_not_received_shutdown_command()
 {
 	message incoming_message = pipe.blocking_read();
 	// Pull out some internals for later use
-	std::unique_ptr<message_data> message_data = std::move(incoming_message.data);
 	QString message_type = QString::fromStdString(incoming_message.type);
 	// The type of a message determines what to do with it
-	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_SHUTDOWN))
+	if (incoming_message.is<shutdown_message>())//message_type == QObject::tr(LIRCH_MESSAGE_TYPE_SHUTDOWN))
 	{
 		// Shutdown messages immediately terminate the plugin
 		return false;
 	}
-	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_REGISTRATION_STATUS))
+	if (incoming_message.is<registration_message>())//message_type == QObject::tr(LIRCH_MESSAGE_TYPE_REGISTRATION_STATUS))
 	{
 		// Registration statuses might need to be echoed
-		handle_registration_reply(dynamic_cast<registration_status *>(message_data.get()));
+		handle_registration_reply(incoming_message.try_extract<registration_status>());
 		return true;
 	}
-	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST))
+	if (incoming_message.is<quip_request_data>())//message_type == QObject::tr(LIRCH_MESSAGE_TYPE_QUIP_REQUEST))
 	{
 		// Quip requests are captured and not forwarded
-		handle_quip_request(dynamic_cast<quip_request_data *>(message_data.get()));
+		handle_quip_request(incoming_message.try_extract<quip_request_data>());
 		return true;
 	}
-	if (message_type == QObject::tr(LIRCH_MESSAGE_TYPE_HANDLER_READY))
+	if (incoming_message.is<handler_ready>())//message_type == QObject::tr(LIRCH_MESSAGE_TYPE_HANDLER_READY))
 	{
 		// When the handler is ready, we want to tell it we know how to handle /quip
-		pipe.write(register_handler::create(QObject::tr("/quip"), forward_quip_request));
+		pipe.write<register_handler>(QObject::tr("/quip"), forward_quip_request);
 	}
-	// Put back what you stole
-	incoming_message.data = std::move(message_data);
 	// This message might need to be forwarded (do so by default)
 	incoming_message.decrement_priority();
 	pipe.write(incoming_message);
@@ -116,7 +113,7 @@ bool QuipPlugin::has_not_received_shutdown_command()
 void QuipPlugin::register_for_message_type(const QString &message_type, int with_priority)
 {
 	std::string type_string = message_type.toStdString();
-	pipe.write(registration_message::create(with_priority, name, type_string));
+	pipe.write<registration_message>(with_priority, name, type_string);
 }
 
 // MAIN PLUGIN FUNCTION
@@ -124,7 +121,7 @@ void QuipPlugin::register_for_message_type(const QString &message_type, int with
 void run(plugin_pipe pipe, std::string internal_name)
 {
 	// TODO remove this line once race condition is fixed
-	pipe.write(register_handler::create(QObject::tr("/quip"), QuipPlugin::forward_quip_request));
+	pipe.write<register_handler>(QObject::tr("/quip"), QuipPlugin::forward_quip_request);
 	// Construct a plugin object (used throughout)
 	QuipPlugin plugin(internal_name, pipe);
 	// Register for these message types with the following priorities:

@@ -16,26 +16,20 @@
 
 #include "core/message.h"
 
-
 enum class received_message_subtype
 {
 	NORMAL,ME,NOTIFY
 };
+
 enum class received_status_message_subtype
 {
-    LEFT,HERE,WHOHERE,NICK,JOIN
+	LEFT,HERE,WHOHERE,NICK,JOIN
 };
 
-
-class received_message : public message_data
+struct received_message
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new received_message(*this));}
-
 	//received messages have three contents, the channel to display to, the nick of the sender, and the contents of the broadcast.
-	static message create(received_message_subtype sub, const QString &chan, const QString &nik, const QString &content, const QHostAddress &ip) {return message_create("received", new received_message(sub,chan,nik,content,ip));}
-
-	received_message(received_message_subtype sub, const QString &chan, const QString &nik, const QString &conent, const QHostAddress &ip) : subtype(sub), channel(chan), nick(nik), contents(conent), ipAddress(ip) {}
+	static constexpr auto message_id="received";
 
 	received_message_subtype subtype;
 	QString channel;
@@ -44,15 +38,10 @@ public:
 	QHostAddress ipAddress;
 };
 
-class received_status_message : public message_data
+struct received_status_message
 {
-public:
-	virtual std::unique_ptr<message_data> copy() const {return std::unique_ptr<message_data>(new received_status_message(*this));}
-
 	//received messages have three contents, the channel to display to, the nick of the sender, and the contents of the broadcast.
-	static message create(received_status_message_subtype sub, const QString &chan, const QString &nik, const QHostAddress &ip) {return message_create("received_status", new received_status_message(sub,chan,nik,ip));}
-
-	received_status_message(received_status_message_subtype sub, const QString &chan, const QString &nik, const QHostAddress &ip) : subtype(sub), channel(chan), nick(nik), ipAddress(ip) {}
+	static constexpr auto message_id="received_status";
 
 	received_status_message_subtype subtype;
 	QString channel;

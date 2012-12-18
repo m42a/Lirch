@@ -31,7 +31,7 @@ extern "C"
 #endif
 		plugin_version()
 	{
-		return 0;
+		return 1;
 	}
 
 	void
@@ -41,9 +41,8 @@ extern "C"
 		plugin_init(plugin_pipe p)
 	{
 		message m=p.blocking_read();
-		if (m.type!="hello")
-			return;
-		auto d=dynamic_cast<hello_message *>(m.getdata());
+
+		auto d=m.try_extract<hello_message>();
 		if (!d)
 			return;
 		try
@@ -56,7 +55,7 @@ extern "C"
 			//Catch every exception, since uncaught exceptions will terminate the program
 			//We might want to put some logging here
 		}
-		p.write(done_message::create(d->name));
+		p.write<done_message>(d->name);
 	}
 }
 

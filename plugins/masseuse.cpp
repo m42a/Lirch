@@ -23,8 +23,8 @@ using namespace std;
 void run(plugin_pipe p, string name)
 {
 	//register for the message types the display adapter can handle
-	p.write(registration_message::create(-30000, name, "received"));
-	p.write(registration_message::create(-30000, name, "notify"));
+	p.write<registration_message>(-30000, name, "received");
+	p.write<registration_message>(-30000, name, "notify");
 
 	//needed to send nick with your messages
 	QSettings settings(QSettings::IniFormat, QSettings::UserScope, LIRCH_COMPANY_NAME, "Lirch");
@@ -35,49 +35,31 @@ void run(plugin_pipe p, string name)
 		//waits until any messages are sent to it
 		message m=p.blocking_read();
 
-		if (m.type=="shutdown")
+		if (m.is<shutdown_message>())
 		{
 			return;
 		}
-		else if (m.type=="registration_status")
+		else if (auto s=m.try_extract<registration_status>())
 		{
-			auto s=dynamic_cast<registration_status *>(m.getdata());
-			if (!s)
-				continue;
 			//Retry 2000 times until we succeed
 			if (!s->status && s->priority<-28000)
-				p.write(registration_message::create(s->priority+1, name, s->type));
+				p.write<registration_message>(s->priority+1, name, s->type);
 		}
-
 		//message parsing is simple, just putting the right things in the right fields.
-		else if (m.type=="received")
+		else if (auto castMessage=m.try_extract<received_message>())
 		{
-			auto castMessage=dynamic_cast<received_message *>(m.getdata());
-
-			//if it's not actually a received message, ignore it and move on
-			if (!castMessage)
-				continue;
-
 			if(castMessage->subtype==received_message_subtype::NORMAL)
-				p.write(display_message::create(display_message_subtype::NORMAL,castMessage->channel,castMessage->nick,castMessage->contents));
+				p.write<display_message>(display_message_subtype::NORMAL,castMessage->channel,castMessage->nick,castMessage->contents);
 			else if(castMessage->subtype==received_message_subtype::ME)
-				p.write(display_message::create(display_message_subtype::ME,castMessage->channel,castMessage->nick,castMessage->contents));
+				p.write<display_message>(display_message_subtype::ME,castMessage->channel,castMessage->nick,castMessage->contents);
 			else if(castMessage->subtype==received_message_subtype::NOTIFY)
-				p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,castMessage->nick,castMessage->contents));
+				p.write<display_message>(display_message_subtype::NOTIFY,castMessage->channel,castMessage->nick,castMessage->contents);
 			p.write(m.decrement_priority());
 		}
-		else if (m.type=="notify")
+		else if (auto castMessage=m.try_extract<notify_message>())
 		{
-			auto castMessage=dynamic_cast<notify_message *>(m.getdata());
-
-			//if it's not actually a notify me message, ignore it and move on
-			if (!castMessage)
-				continue;
-
-			p.write(display_message::create(display_message_subtype::NOTIFY,castMessage->channel,"",castMessage->contents));
+			p.write<display_message>(display_message_subtype::NOTIFY,castMessage->channel,"",castMessage->contents);
 		}
-
-
 		//what is this doing here? take it back, i don't want it.
 		else
 		{

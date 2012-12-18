@@ -101,7 +101,7 @@ void LirchClientPipe::close(QString reason) {
 
 // The client pipe wait on the core thread when the UI is closed
 void LirchClientPipe::join() {
-    send(core_quit_message::create());
+    send(message::create<core_quit_message>());
     // Wait for the core to exit
     if (core_thread) {
         core_thread->join();

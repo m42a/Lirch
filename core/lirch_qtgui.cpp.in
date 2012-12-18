@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 	// Run the core in a separate thread
 	vector<message> add_messages;
 	for (auto &p : plugins) {
-		add_messages.push_back(plugin_adder::create(p.first, p.second));
+		add_messages.push_back(message::create<plugin_adder>(p.first, p.second));
 	}
 	thread core_thread(run_core, add_messages);
 	// The mediator needs to know which thread to join

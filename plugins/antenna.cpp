@@ -52,12 +52,12 @@ message sendBlock(QString str, QString channel)
 	if (str.startsWith("/block "))
 	{
 		if(!QHostAddress(str.section(' ',1)).isNull())
-			return block_message::create(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
-		return block_name_message::create(str.section(' ',1), channel,block_name_message_subtype::ADD);
+			return message::create<block_message>(block_message_subtype::ADD,QHostAddress(str.section(' ',1)));
+		return message::create<block_name_message>(str.section(' ',1), channel,block_name_message_subtype::ADD);
 	}
 	if (str.startsWith("/block"))
-		return display_blocks_message::create(channel);
-	return empty_message::create();
+		return message::create<display_blocks_message>(channel);
+	return message::create<empty_message>();
 }
 
 message sendUnblock(QString str, QString channel)
@@ -65,10 +65,10 @@ message sendUnblock(QString str, QString channel)
 	if (str.startsWith("/unblock "))
 	{
 		if(!QHostAddress(str.section(' ',1)).isNull())
-			return block_message::create(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
-		return block_name_message::create(str.section(' ',1), channel,block_name_message_subtype::REMOVE);
+			return message::create<block_message>(block_message_subtype::REMOVE,QHostAddress(str.section(' ',1)));
+		return message::create<block_name_message>(str.section(' ',1), channel,block_name_message_subtype::REMOVE);
 	}
-	return empty_message::create();
+	return message::create<empty_message>();
 }
 
 QByteArray formatMessage(QString type, QString channel, QString nick, QString contents, int &flag);
@@ -80,17 +80,17 @@ void run(plugin_pipe p, string name)
 	time_t lastSent=time(NULL);
 
 	//register for the message types the antenna can handle
-	p.write(registration_message::create(0, name, "block"));
-	p.write(registration_message::create(0, name, "edict"));
-	p.write(registration_message::create(0, name, "here"));
-	p.write(registration_message::create(0, name, "who is here"));
-	p.write(registration_message::create(0, name, "handler_ready"));
-	p.write(registration_message::create(0, name, "block query"));
-	p.write(registration_message::create(0, name, "changed_nick"));
-	p.write(registration_message::create(0, name, "sendable_notify"));
-	p.write(registration_message::create(0, name, "leave_channel"));
-	p.write(registration_message::create(0, name, "set_channel"));
-	p.write(registration_message::create(0, name, "display blocks"));
+	p.write<registration_message>(0, name, "block");
+	p.write<registration_message>(0, name, "edict");
+	p.write<registration_message>(0, name, "here");
+	p.write<registration_message>(0, name, "who is here");
+	p.write<registration_message>(0, name, "handler_ready");
+	p.write<registration_message>(0, name, "block query");
+	p.write<registration_message>(0, name, "changed_nick");
+	p.write<registration_message>(0, name, "sendable_notify");
+	p.write<registration_message>(0, name, "leave_channel");
+	p.write<registration_message>(0, name, "set_channel");
+	p.write<registration_message>(0, name, "display blocks");
 
 	//connect to multicast group
 	QUdpSocket udpSocket;
@@ -101,12 +101,12 @@ void run(plugin_pipe p, string name)
 	//TODO: Explicitly set QAbstractSocket::MulticastLoopbackOption to 1
 	if (!udpSocket.bind(groupAddress,port,QUdpSocket::ShareAddress))
 	{
-		p.write(notify_message::create("default","Failed to bind."));
+		p.write<notify_message>("default","Failed to bind.");
 		return;
 	}
 	if(!udpSocket.joinMulticastGroup(groupAddress))
 	{
-		p.write(notify_message::create("default","Failed to join Multicast Group."));
+		p.write<notify_message>("default","Failed to join Multicast Group.");
 		return;
 	}
 
@@ -118,7 +118,7 @@ void run(plugin_pipe p, string name)
 		{
 			message m = p.read();
 
-			if (m.type=="shutdown")
+			if (m.is<shutdown_message>())
 			{
 				QString channel="";
 				QString type="left";
@@ -138,40 +138,32 @@ void run(plugin_pipe p, string name)
 				udpSocket.close();
 				return;
 			}
-			else if (m.type=="registration_status")
+			else if (auto s=m.try_extract<registration_status>())
 			{
-				auto s=dynamic_cast<registration_status *>(m.getdata());
-				if (!s)
-					continue;
 				//Retry 2000 times until we succeed
 				if (!s->status)
 				{
 					if (s->priority<2000)
-						p.write(registration_message::create(s->priority+1, name, s->type));
+						p.write<registration_message>(s->priority+1, name, s->type);
 				}
 				else
 				{
 					if (s->type=="handler_ready")
 					{
-						p.write(register_handler::create("/block", sendBlock));
-						p.write(register_handler::create("/unblock", sendUnblock));
+						p.write<register_handler>("/block", sendBlock);
+						p.write<register_handler>("/unblock", sendUnblock);
 					}
 				}
 			}
-			else if(m.type=="handler_ready")
+			else if(m.is<handler_ready>())
 			{
-				p.write(register_handler::create("/block", sendBlock));
-				p.write(register_handler::create("/unblock", sendUnblock));
+				p.write<register_handler>("/block", sendBlock);
+				p.write<register_handler>("/unblock", sendUnblock);
 				p.write(m.decrement_priority());
 			}
-			else if(m.type=="block")
+			else if(auto castMessage=m.try_extract<block_message>())
 			{
-				auto castMessage=dynamic_cast<block_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a block message, ignore it and move on
-				if (!castMessage)
-					continue;
 
 				//this contains the IP that /block or /unblock was called on
 				auto toModify=castMessage->ip;
@@ -179,38 +171,28 @@ void run(plugin_pipe p, string name)
 				if(castMessage->subtype==block_message_subtype::ADD)
 				{
 					blocklist.insert(toModify);
-					p.write(notify_message::create("default",toModify.toString()+" is now blocked."));
+					p.write<notify_message>("default",toModify.toString()+" is now blocked.");
 				}
 				if(castMessage->subtype==block_message_subtype::REMOVE)
 				{
 					blocklist.erase(toModify);
-					p.write(notify_message::create("default",toModify.toString()+" is now unblocked."));
+					p.write<notify_message>("default",toModify.toString()+" is now unblocked.");
 				}
 				if(castMessage->subtype == block_message_subtype::QUERY)
 				{
-					p.write(block_status_message::create(castMessage->ip, blocklist.count(castMessage->ip)));
+					p.write<block_status_message>(castMessage->ip, blocklist.count(castMessage->ip)!=0);
 				}
 			}
-			else if(m.type=="display blocks")
+			else if(auto castMessage=m.try_extract<display_blocks_message>())
 			{
-				auto castMessage=dynamic_cast<display_blocks_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				if (!castMessage)
-					continue;
 
 				for(auto iter = blocklist.begin(); iter != blocklist.end(); iter++)
-					p.write(notify_message::create(castMessage->channel, iter->toString()+" is blocked"));
+					p.write<notify_message>(castMessage->channel, iter->toString()+" is blocked");
 			}
-			else if(m.type=="edict")
+			else if(auto castMessage=m.try_extract<edict_message>())
 			{
-				auto castMessage=dynamic_cast<edict_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually an edict message, ignore it and move on
-				if (!castMessage)
-					continue;
-
 
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
@@ -227,27 +209,22 @@ void run(plugin_pipe p, string name)
 				switch (flag)
 				{
 					case 1:
-						p.write(notify_message::create(channel,"Channel name too long."));
+						p.write<notify_message>(channel,"Channel name too long.");
 						break;
 					case 2:
-						p.write(notify_message::create(channel,"Nick too long."));
+						p.write<notify_message>(channel,"Nick too long.");
 						break;
 					case 3:
-						p.write(notify_message::create(channel,"Message too long."));
+						p.write<notify_message>(channel,"Message too long.");
 						break;
 					default:
 						udpSocket.writeDatagram(message,groupAddress,port);
 						lastSent=time(NULL);
 				}
 			}
-			else if(m.type=="sendable_notify")
+			else if(auto castMessage=m.try_extract<sendable_notify_message>())
 			{
-				auto castMessage=dynamic_cast<sendable_notify_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a notify message, ignore it and move on
-				if (!castMessage)
-					continue;
 
 				QString channel=castMessage->channel;
 				QString contents=castMessage->contents;
@@ -260,35 +237,27 @@ void run(plugin_pipe p, string name)
 				switch (flag)
 				{
 					case 1:
-						p.write(notify_message::create(channel,"Channel name too long."));
+						p.write<notify_message>(channel,"Channel name too long.");
 						break;
 					case 2:
-						p.write(notify_message::create(channel,"Nick too long."));
+						p.write<notify_message>(channel,"Nick too long.");
 						break;
 					case 3:
-						p.write(notify_message::create(channel,"Message too long."));
+						p.write<notify_message>(channel,"Message too long.");
 						break;
 					default:
 						udpSocket.writeDatagram(message,groupAddress,port);
 						lastSent=time(NULL);
 				}
 			}
-			else if(m.type == "block query")
+			else if(m.is<block_query_message>())
 			{
-				auto castMessage = dynamic_cast<block_query_message *>(m.getdata());
 				p.write(m.decrement_priority());
-				if(!castMessage)
-					continue;
-				p.write(block_list_message::create(blocklist));
+				p.write<block_list_message>(blocklist);
 			}
-			else if(m.type=="who is here")
+			else if(auto castMessage=m.try_extract<who_is_here_message>())
 			{
-				auto castMessage=dynamic_cast<who_is_here_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a who's here message, ignore it and move on
-				if (!castMessage)
-					continue;
 
 				QString channel=castMessage->channel;
 				QString type="whhe";
@@ -303,14 +272,9 @@ void run(plugin_pipe p, string name)
 					lastSent=time(NULL);
 				}
 			}
-			else if(m.type=="here")
+			else if(auto castMessage=m.try_extract<here_message>())
 			{
-				auto castMessage=dynamic_cast<here_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a here message, ignore it and move on
-				if (!castMessage)
-					continue;
 
 				QString channel=castMessage->channel;
 				QString type="here";
@@ -325,15 +289,9 @@ void run(plugin_pipe p, string name)
 					lastSent=time(NULL);
 				}
 			}
-			else if (m.type == "changed_nick")
+			else if (auto castMessage=m.try_extract<changed_nick_message>())
 			{
-				auto castMessage=dynamic_cast<changed_nick_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a here message, ignore it and move on
-				if (!castMessage)
-					continue;
-
 
 				QString type = "nick";
 				int flag = 0;
@@ -349,14 +307,9 @@ void run(plugin_pipe p, string name)
 
 				currentNick=castMessage->newNick;
 			}
-			else if (m.type == "set_channel")
+			else if (auto castMessage=m.try_extract<set_channel_message>())
 			{
-				auto castMessage=dynamic_cast<set_channel_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a set channel message, ignore it and move on
-				if (!castMessage)
-					continue;
 
 				QString channel = castMessage->channel;
 				QString type = "join";
@@ -371,14 +324,9 @@ void run(plugin_pipe p, string name)
 					lastSent=time(NULL);
 				}
 			}
-			else if (m.type == "leave_channel")
+			else if (auto castMessage=m.try_extract<leave_channel_message>())
 			{
-				auto castMessage=dynamic_cast<leave_channel_message *>(m.getdata());
 				p.write(m.decrement_priority());
-
-				//if it's not actually a leave channel message, ignore it and move on
-				if (!castMessage)
-					continue;
 
 				QString channel = castMessage->channel;
 				QString type = "left";
@@ -414,7 +362,7 @@ void run(plugin_pipe p, string name)
 
 			if (type=="auto")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),senderIP));
+				p.write<received_status_message>(received_status_message_subtype::HERE,"",QString::fromUtf8(broadcast+4),senderIP);
 				continue;
 			}
 
@@ -424,27 +372,27 @@ void run(plugin_pipe p, string name)
 
 			if (type=="whhe")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::WHOHERE,destinationChannel,senderNick,senderIP));
+				p.write<received_status_message>(received_status_message_subtype::WHOHERE,destinationChannel,senderNick,senderIP);
 				continue;
 			}
 			else if (type=="here")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP));
+				p.write<received_status_message>(received_status_message_subtype::HERE,destinationChannel,senderNick,senderIP);
 				continue;
 			}
 			else if (type=="nick")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::NICK,destinationChannel,senderNick,senderIP));
+				p.write<received_status_message>(received_status_message_subtype::NICK,destinationChannel,senderNick,senderIP);
 				continue;
 			}
 			else if (type=="left")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP));
+				p.write<received_status_message>(received_status_message_subtype::LEFT,destinationChannel,senderNick,senderIP);
 				continue;
 			}
 			else if (type=="join")
 			{
-				p.write(received_status_message::create(received_status_message_subtype::JOIN,destinationChannel,senderNick,senderIP));
+				p.write<received_status_message>(received_status_message_subtype::JOIN,destinationChannel,senderNick,senderIP);
 				continue;
 			}
 
@@ -452,15 +400,15 @@ void run(plugin_pipe p, string name)
 
 			if (type=="edct")
 			{
-				p.write(received_message::create(received_message_subtype::NORMAL,destinationChannel,senderNick,sentContents,senderIP));
+				p.write<received_message>(received_message_subtype::NORMAL,destinationChannel,senderNick,sentContents,senderIP);
 			}
 			else if (type=="mdct")
 			{
-				p.write(received_message::create(received_message_subtype::ME,destinationChannel,senderNick,sentContents,senderIP));
+				p.write<received_message>(received_message_subtype::ME,destinationChannel,senderNick,sentContents,senderIP);
 			}
 			else if (type=="ntfy")
 			{
-				p.write(received_message::create(received_message_subtype::NOTIFY,destinationChannel,senderNick,sentContents,senderIP));
+				p.write<received_message>(received_message_subtype::NOTIFY,destinationChannel,senderNick,sentContents,senderIP);
 			}
 			else
 			{

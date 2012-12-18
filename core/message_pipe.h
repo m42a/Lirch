@@ -22,6 +22,12 @@ public:
 	message read();
 	message blocking_read();
 	void write(const message &);
+
+	template <class T, class ...Args>
+	void write(Args &&...args)
+	{
+		write(message::create<T>(std::forward<Args>(args)...));
+	}
 private:
 
 	bool locked_has_message() const;

@@ -28,7 +28,7 @@ bool load_plugin(const string &fname, const plugin_pipe &p)
 	}
 
 	int ver=(*(int __cdecl (*)())(ver_func))();
-	if (ver!=0)
+	if (ver!=1)
 	{
 		FreeLibrary(obj);
 		return false;
@@ -61,7 +61,7 @@ bool load_plugin(const string &fname, const plugin_pipe &p)
 	}
 	//Plugin had the wrong version, so we can't load it
 	int ver=(*ver_func)();
-	if (ver!=0)
+	if (ver!=1)
 	{
 		dlclose(obj);
 		return false;

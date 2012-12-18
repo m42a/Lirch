@@ -90,7 +90,6 @@ void runplugin(plugin_pipe &p, const string &name)
 		return;
 	//Be lazy and let the input scroll
 	scrollok(input_display, TRUE);
-	//p.write(registration_message::create(-30000, name, "display"));
 	while (true)
 	{
 		wint_t key;
@@ -99,7 +98,7 @@ void runplugin(plugin_pipe &p, const string &name)
 		{
 			if (key=='\r' || key=='\n')
 			{
-				p.write(raw_edict_message::create(input.getQString(),channel));
+				p.write<raw_edict_message>(input.getQString(),channel);
 				input.kill_whole_line();
 			}
 			else if (key==(unsigned char)CTRL('U'))
@@ -131,7 +130,7 @@ void runplugin(plugin_pipe &p, const string &name)
 			}
 			else if (key==KEY_ENTER)
 			{
-				p.write(raw_edict_message::create(input.getQString(),channel));
+				p.write<raw_edict_message>(input.getQString(),channel);
 				input.kill_whole_line();
 			}
 		}
@@ -142,22 +141,16 @@ void runplugin(plugin_pipe &p, const string &name)
 			{
 				return;
 			}
-			else if (m.type=="registration_status")
+			else if (auto s=m.try_extract<registration_status>())
 			{
-				auto s=dynamic_cast<registration_status *>(m.getdata());
-				if (!s)
-					continue;
 				if (!s->status)
 				{
 					if (s->priority>-32000)
-						p.write(registration_message::create(s->priority-1, name, s->type));
+						p.write<registration_message>(s->priority-1, name, s->type);
 				}
 			}
-			else if (m.type=="display")
+			else if (auto s=m.try_extract<display_message>())
 			{
-				auto s=dynamic_cast<display_message *>(m.getdata());
-				if (!s)
-					continue;
 				p.write(m.decrement_priority());
 
 				QString message_channel=s->channel;
@@ -179,28 +172,22 @@ void runplugin(plugin_pipe &p, const string &name)
 						wprintu(channel_windows[message_channel], QString::fromUtf8(u8"\u203C\u203C\u203D %s\n").toLocal8Bit().constData(), contents.c_str());
 				}
 			}
-			else if (m.type=="set_channel")
+			else if (auto i=m.try_extract<set_channel_message>())
 			{
-				auto i=dynamic_cast<set_channel_message *>(m.getdata());
-				if (!i)
-					continue;
 				p.write(m.decrement_priority());
 				if (i->channel=="")
-					p.write(notify_message::create(channel, "On channel "+channel));
+					p.write<notify_message>(channel, "On channel "+channel);
 				else
 					channel=i->channel;
 			}
-			else if (m.type=="leave_channel")
+			else if (auto i=m.try_extract<leave_channel_message>())
 			{
-				auto i=dynamic_cast<leave_channel_message *>(m.getdata());
-				if (!i)
-					continue;
 				p.write(m.decrement_priority());
 				if (i->channel=="")
 					i->channel=channel;
 				channel_windows.erase(i->channel);
 				if (i->channel==channel)
-					p.write(set_channel_message::create(channel));
+					p.write<set_channel_message>(channel);
 			}
 			else
 				p.write(m.decrement_priority());
@@ -215,14 +202,14 @@ void runplugin(plugin_pipe &p, const string &name)
 		//to cope with the screen refreshing at 10Hz
 		doupdate();
 	}
-	p.write(core_quit_message::create());
+	p.write<core_quit_message>();
 }
 
 void run(plugin_pipe p, string name)
 {
-	p.write(registration_message::create(-30000, name, "display"));
-	p.write(registration_message::create(-30000, name, "set_channel"));
-	p.write(registration_message::create(-30000, name, "leave_channel"));
+	p.write<registration_message>(-30000, name, "display");
+	p.write<registration_message>(-30000, name, "set_channel");
+	p.write<registration_message>(-30000, name, "leave_channel");
 	//Set the delay when hitting escape to 10 milliseconds, unless it was
 	//already set.  The ESCDELAY variable is not supported in all curses
 	//implementations, but should not cause problems in implementations

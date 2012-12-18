@@ -9,9 +9,10 @@
 #include "core/message.h"
 
 // A logging message configures logging of messages
-class logging_message : public message_data
+class logging_message //: public message_data
 {
 public:
+	static constexpr auto message_id=LIRCH_MSG_TYPE_LOGGING;
 	// These are expandable for future use
 	enum class logging_mode {
 		ON, DEFAULT, OFF
@@ -36,15 +37,6 @@ public:
 	// Generate flags to wrap the enum above
 	Q_DECLARE_FLAGS(logging_options, logging_option)
 
-	// Obligatory message copypasta
-	virtual std::unique_ptr<message_data> copy() const {
-		return std::unique_ptr<message_data>(new logging_message(*this));
-	}
-	static message create(const logging_message &msg) {
-		return message_create(LIRCH_MSG_TYPE_LOGGING, new logging_message(msg));
-	}
-
-	// Logging messages should have options specified
 	logging_message(logging_options options = logging_options(logging_option::SET_NONE)) :
 		log_options(options),
 		log_mode(logging_mode::DEFAULT),
